@@ -6,8 +6,8 @@ const Fastify = require('fastify');
 const cors = require('@fastify/cors');
 const rateLimit = require('@fastify/rate-limit');
 
-const audiusAdapter = require('./adapters/audius');
-const internetArchiveAdapter = require('./adapters/internet_archive');
+// Adapters removed
+const jiosaavnAdapter = require('./adapters/jiosaavn');
 const { SourceHealthMonitor } = require('./adapters/health_monitor');
 
 // ── Server setup ──────────────────────────────────────────────────────
@@ -36,7 +36,7 @@ fastify.register(rateLimit, {
 
 // ── Health monitor (runs every 5 minutes) ─────────────────────────────
 
-const adapters = [audiusAdapter, internetArchiveAdapter];
+const adapters = [jiosaavnAdapter];
 const healthMonitor = new SourceHealthMonitor(adapters);
 healthMonitor.start();
 
