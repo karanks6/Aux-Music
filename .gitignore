@@ -1,0 +1,33 @@
+# Flutter
+aux_music/.dart_tool/
+aux_music/.flutter-plugins
+aux_music/.flutter-plugins-dependencies
+aux_music/build/
+aux_music/.packages
+aux_music/pubspec.lock
+
+# Firebase generated (contains real credentials — commit your own after flutterfire configure)
+# Uncomment this line if you don't want to share credentials:
+# aux_music/lib/firebase_options.dart
+
+# Android
+aux_music/android/.gradle/
+aux_music/android/local.properties
+aux_music/android/key.properties
+
+# iOS
+aux_music/ios/.symlinks/
+aux_music/ios/Flutter/Flutter.framework
+aux_music/ios/Flutter/Flutter.podspec
+aux_music/ios/Pods/
+aux_music/ios/.packages
+
+# BFF
+bff/node_modules/
+bff/.env
+
+# General
+.DS_Store
+Thumbs.db
+*.log
+*.class
