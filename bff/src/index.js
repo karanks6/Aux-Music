@@ -7,6 +7,7 @@ const cors = require('@fastify/cors');
 const rateLimit = require('@fastify/rate-limit');
 
 // Adapters removed
+const youtubeMusicAdapter = require('./adapters/youtube_music');
 const jiosaavnAdapter = require('./adapters/jiosaavn');
 const { SourceHealthMonitor } = require('./adapters/health_monitor');
 
@@ -36,7 +37,7 @@ fastify.register(rateLimit, {
 
 // ── Health monitor (runs every 5 minutes) ─────────────────────────────
 
-const adapters = [jiosaavnAdapter];
+const adapters = [youtubeMusicAdapter, jiosaavnAdapter];
 const healthMonitor = new SourceHealthMonitor(adapters);
 healthMonitor.start();
 
@@ -115,11 +116,6 @@ fastify.get('/stream-url/:source/:trackId', async (request, reply) => {
   const adapter = adapters.find((a) => a.sourceId === source);
   if (!adapter) {
     return reply.status(404).send({ error: `Unknown source: ${source}` });
-  }
-  if (!healthMonitor.isHealthy(source)) {
-    return reply.status(503).send({
-      error: `Source "${source}" is temporarily unavailable.`,
-    });
   }
 
   try {

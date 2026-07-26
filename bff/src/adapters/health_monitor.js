@@ -61,7 +61,7 @@ class SourceHealthMonitor {
         await Promise.race([
           adapter.healthCheck(),
           new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Health check timeout')), 5000)
+            setTimeout(() => reject(new Error('Health check timeout')), 15000)
           ),
         ]);
         this.statuses[adapter.sourceId] = {
