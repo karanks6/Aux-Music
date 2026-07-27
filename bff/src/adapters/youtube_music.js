@@ -2,6 +2,7 @@
 
 const YTMusic = require('ytmusic-api');
 const youtubedl = require('youtube-dl-exec');
+const ytdl = require('@distube/ytdl-core');
 
 const ytmusic = new YTMusic();
 let isInitialized = false;
@@ -119,17 +120,28 @@ module.exports = {
 
   async resolveStreamUrl(trackId) {
     const nativeId = trackId.replace('youtube_music:', '');
+    
+    // Try ytdl-core first as it might bypass BotGuard better than yt-dlp on Datacenter IPs
+    try {
+      const info = await ytdl.getInfo(nativeId);
+      const format = ytdl.chooseFormat(info.formats, { quality: 'highestaudio' });
+      if (format && format.url) {
+        return format.url;
+      }
+    } catch (err) {
+      console.warn(`[YouTube Music] ytdl-core failed for ${nativeId}:`, err.message);
+    }
+
+    // Fallback to yt-dlp
     try {
       const url = `https://www.youtube.com/watch?v=${nativeId}`;
       const output = await youtubedl(url, {
         dumpJson: true,
         noWarnings: true,
-        noCallHome: true,
         noCheckCertificate: true,
         preferFreeFormats: true,
-        youtubeSkipDashManifest: true,
         format: 'm4a/bestaudio/best',
-        extractorArgs: 'youtube:player-client=android'
+        extractorArgs: 'youtube:player-client=ios'
       });
       
       if (!output || !output.url) {
