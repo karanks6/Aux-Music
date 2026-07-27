@@ -10,6 +10,7 @@ const rateLimit = require('@fastify/rate-limit');
 const youtubeMusicAdapter = require('./adapters/youtube_music');
 const jiosaavnAdapter = require('./adapters/jiosaavn');
 const { SourceHealthMonitor } = require('./adapters/health_monitor');
+const axios = require('axios');
 
 // ── Server setup ──────────────────────────────────────────────────────
 
@@ -124,6 +125,50 @@ fastify.get('/stream-url/:source/:trackId', async (request, reply) => {
   } catch (err) {
     fastify.log.error(err);
     return reply.status(502).send({ error: 'Failed to resolve stream URL.' });
+  }
+});
+
+/**
+ * GET /proxy-stream/:source/:trackId
+ * Streams the actual audio data from the resolved URL.
+ * Bypasses YouTube's IP-binding restrictions by fetching from the backend's IP.
+ */
+fastify.get('/proxy-stream/:source/:trackId', async (request, reply) => {
+  const { source, trackId } = request.params;
+
+  const adapter = adapters.find((a) => a.sourceId === source);
+  if (!adapter) {
+    return reply.status(404).send({ error: `Unknown source: ${source}` });
+  }
+
+  try {
+    const url = await adapter.resolveStreamUrl(trackId);
+    
+    const headers = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    };
+    if (request.headers.range) {
+      headers['Range'] = request.headers.range;
+    }
+
+    const response = await axios({
+      method: 'get',
+      url: url,
+      responseType: 'stream',
+      headers: headers,
+      validateStatus: () => true // Allow all statuses so we can forward 206 Partial Content
+    });
+
+    reply.status(response.status);
+    reply.header('Content-Type', response.headers['content-type']);
+    if (response.headers['content-length']) reply.header('Content-Length', response.headers['content-length']);
+    if (response.headers['content-range']) reply.header('Content-Range', response.headers['content-range']);
+    reply.header('Accept-Ranges', 'bytes');
+    
+    return reply.send(response.data);
+  } catch (err) {
+    fastify.log.error(err);
+    return reply.status(502).send({ error: 'Failed to proxy stream data.' });
   }
 });
 
