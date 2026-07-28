@@ -305,8 +305,20 @@ class JioSaavnAdapter implements MusicSourceAdapter {
         'pids': nativeId,
       });
       
-      final song = data[nativeId] ?? (data as Map).values.firstOrNull;
-      if (song == null) throw Exception('Song not found');
+      Map<String, dynamic>? song;
+      if (data is Map && data.containsKey(nativeId) && data[nativeId] is Map) {
+         song = data[nativeId] as Map<String, dynamic>;
+      } else if (data is Map && data.containsKey('songs') && data['songs'] is List && (data['songs'] as List).isNotEmpty) {
+         final firstSong = data['songs'][0];
+         if (firstSong is Map) {
+            song = firstSong as Map<String, dynamic>;
+         }
+      } else if (data is Map) {
+         final possibleSong = data.values.whereType<Map<String, dynamic>>().firstOrNull;
+         song = possibleSong;
+      }
+      
+      if (song == null) throw Exception('Song not found or invalid format');
       
       final moreInfo = song['more_info'] ?? <String, dynamic>{};
       final url = _decodeMediaUrl(moreInfo['encrypted_media_url'] as String? ?? song['media_preview_url'] as String?);

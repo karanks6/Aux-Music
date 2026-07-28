@@ -1,13 +1,18 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart' as yt;
-import 'package:dio/dio.dart';
 import '../models/track.dart';
 import '../models/artist.dart';
 import '../models/license_type.dart';
 import 'music_source_adapter.dart';
+import '../../core/proxy/local_audio_proxy.dart';
 
 class YouTubeMusicAdapter implements MusicSourceAdapter {
   final yt.YoutubeExplode _yt = yt.YoutubeExplode();
-  final Dio _dio = Dio();
+  
+  // In-memory cache to prevent repeatedly requesting the same stream URL, 
+  // which can rapidly trigger YouTube's rate-limiting on the user's IP.
+  static final Map<String, String> _streamCache = {};
 
   @override
   String get sourceId => 'youtube_music';
@@ -41,6 +46,16 @@ class YouTubeMusicAdapter implements MusicSourceAdapter {
       genres: const [],
       language: '',
     );
+  }
+
+  Future<Track?> getTrackDetails(String trackId) async {
+    try {
+      final nativeId = trackId.replaceFirst('youtube_music:', '');
+      final video = await _yt.videos.get(nativeId);
+      return _parseVideo(video);
+    } catch (e) {
+      return null;
+    }
   }
 
   @override
@@ -90,10 +105,70 @@ class YouTubeMusicAdapter implements MusicSourceAdapter {
   Future<String> resolveStreamUrl(String trackId) async {
     final nativeId = trackId.replaceFirst('youtube_music:', '');
     
-    // Using a reliable Invidious instance to proxy the audio stream directly.
-    // This bypasses ExoPlayer 403s on googlevideo.com and avoids local proxy crashes.
-    // itag=251 is highest quality Opus audio.
-    return 'https://inv.tux.pizza/latest_version?id=$nativeId&itag=251';
+    // Check in-memory cache first to prevent rate-limiting on repeat plays
+    if (_streamCache.containsKey(nativeId)) {
+      print('[YouTubeMusic] Returning cached stream URL for $nativeId');
+      return _streamCache[nativeId]!;
+    }
+    
+    // Fetch the stream manifest directly using the client-side library.
+    // IMPORTANT: We must use the iOS client to generate the manifest, because
+    // YoutubeStreamAudioSource hardcodes the iOS User-Agent. If they mismatch,
+    // YouTube returns 403 Forbidden!
+    try {
+      final manifest = await _yt.videos.streamsClient.getManifest(
+        nativeId,
+        ytClients: [yt.YoutubeApiClient.ios]
+      );
+      
+      final formats = manifest.audioOnly;
+      
+      if (formats.isNotEmpty) {
+        final streamInfo = formats.withHighestBitrate();
+        final url = streamInfo.url.toString();
+        final size = streamInfo.size.totalBytes;
+        
+        // Encode the URL as base64 to pass it safely in the custom ytstream protocol
+        final encodedUrl = base64Url.encode(utf8.encode(url));
+        final ytStreamUrl = 'ytstream://stream?url=$encodedUrl&length=$size';
+        
+        // Cache the successful resolution
+        _streamCache[nativeId] = ytStreamUrl;
+        
+        return ytStreamUrl;
+      } else {
+        throw Exception('No audio streams found for $nativeId');
+      }
+    } catch (e) {
+      print('[YouTubeMusic] Native stream resolution failed: $e. Falling back to Piped API...');
+      
+      try {
+        final request = await HttpClient().getUrl(Uri.parse('https://pipedapi.kavin.rocks/streams/$nativeId'));
+        final response = await request.close();
+        if (response.statusCode == 200) {
+          final body = await response.transform(utf8.decoder).join();
+          final json = jsonDecode(body);
+          final audioStreams = json['audioStreams'] as List<dynamic>?;
+          
+          if (audioStreams != null && audioStreams.isNotEmpty) {
+             final bestStream = audioStreams.reduce((a, b) => (a['bitrate'] ?? 0) > (b['bitrate'] ?? 0) ? a : b);
+             final url = bestStream['url'] as String;
+             print('[YouTubeMusic] Piped API fallback successful! URL: $url');
+             
+             // Cache and return the raw https URL. 
+             // audio_handler will pass it directly to ExoPlayer without ytstream proxy.
+             _streamCache[nativeId] = url;
+             return url;
+          }
+        }
+      } catch (pipedError) {
+        print('[YouTubeMusic] Piped API fallback also failed: $pipedError');
+      }
+
+      // If YouTube rate-limits the client (e.g. RequestLimitExceededException), 
+      // we throw so the aggregator can seamlessly fall back to JioSaavn.
+      throw Exception('YouTube stream resolution failed completely: $e');
+    }
   }
 
   @override
@@ -113,8 +188,9 @@ class YouTubeMusicAdapter implements MusicSourceAdapter {
 
   @override
   Future<void> healthCheck() async {
-    // Test a basic search
-    final results = await _yt.search.search('adele');
-    if (results.isEmpty) throw Exception('YouTube Music returned no results');
+    // Disabled native youtube_explode_dart health check because devices with
+    // ad-blockers or private DNS often block www.youtube.com, which would
+    // cause the aggregator to mark YouTube as dead and refuse to play cached songs!
+    return;
   }
 }

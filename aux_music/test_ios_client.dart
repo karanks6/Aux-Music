@@ -1,0 +1,1 @@
+﻿import 'package:youtube_explode_dart/youtube_explode_dart.dart'; import 'dart:io'; void main() async { final yt = YoutubeExplode(); try { final manifest = await yt.videos.streamsClient.getManifest('kPa7bsKwL-c', ytClients: [YoutubeApiClient.ios]); print('Manifest fetched'); } catch(e) { print(e); } }
