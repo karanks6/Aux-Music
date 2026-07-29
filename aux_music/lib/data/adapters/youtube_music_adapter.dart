@@ -87,15 +87,19 @@ class YouTubeMusicAdapter implements MusicSourceAdapter {
     int limit = 20,
   }) async {
     try {
-      String query = 'global top 50 songs';
+      final currentYear = DateTime.now().year;
+      String query = 'global top 50 songs $currentYear';
       if (genre != null) {
-        query = '$genre hit songs';
+        query = 'latest $genre hit songs $currentYear';
       } else if (language != null) {
-        query = 'top $language songs';
+        query = 'latest top $language songs $currentYear';
       }
       
       final results = await _yt.search.search(query);
-      return results.take(limit).map((v) => _parseVideo(v)).whereType<Track>().toList();
+      
+      final tracks = results.take(limit).map((v) => _parseVideo(v)).whereType<Track>().toList();
+      tracks.shuffle();
+      return tracks;
     } catch (e) {
       return [];
     }

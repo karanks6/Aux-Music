@@ -38,9 +38,9 @@ class LocalAudioProxy {
               streamRequest.headers.set('range', range);
             }
             
-            // Use the Android YouTube User-Agent to match the default client used by youtube_explode_dart.
+            // Use the iOS YouTube User-Agent to match the YoutubeApiClient.ios client used by youtube_explode_dart.
             if (targetUrl.contains('googlevideo.com')) {
-              streamRequest.headers.set('user-agent', 'com.google.android.youtube/19.29.37 (Linux; U; Android 13; en_US) gzip');
+              streamRequest.headers.set('user-agent', 'com.google.ios.youtube/19.29.1 (iPhone16,2; U; CPU iOS 17_5_1 like Mac OS X)');
             } else {
               streamRequest.headers.set('user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.18 Safari/537.36');
             }

@@ -213,8 +213,6 @@ class JioSaavnAdapter implements MusicSourceAdapter {
     }
   }
 
-  // ── Trending ───────────────────────────────────────────────────────
-
   @override
   Future<List<Track>> trending({
     String? genre,
@@ -222,23 +220,26 @@ class JioSaavnAdapter implements MusicSourceAdapter {
     int limit = 20,
   }) async {
     try {
+      final currentYear = DateTime.now().year;
       if (genre != null) {
         final genreMap = {
-          'bollywood': 'latest bollywood hits',
-          'hip-hop': 'hip hop top hits',
-          'desi hip-hop': 'desi hip hop',
-          'electronic': 'edm top hits',
-          'english': 'latest english pop hits',
-          'global pop': 'global pop hits',
-          'kannada': 'kannada hit songs',
-          'classical': 'classical hit songs',
-          'rock': 'rock hits',
-          'jazz': 'jazz hits',
-          'punjabi': 'latest punjabi hits',
-          'ambient': 'ambient relaxing music',
+          'bollywood': 'latest bollywood hits $currentYear',
+          'hip-hop': 'hip hop top hits $currentYear',
+          'desi hip-hop': 'latest desi hip hop $currentYear',
+          'electronic': 'edm top hits $currentYear',
+          'english': 'latest english pop hits $currentYear',
+          'global pop': 'global pop hits $currentYear',
+          'kannada': 'latest kannada hit songs $currentYear',
+          'classical': 'classical hit songs $currentYear',
+          'rock': 'new rock hits $currentYear',
+          'jazz': 'new jazz hits $currentYear',
+          'punjabi': 'latest punjabi hits $currentYear',
+          'ambient': 'ambient relaxing music $currentYear',
         };
-        final query = genreMap[genre.toLowerCase()] ?? '$genre hits';
-        return searchTracks(query, limit: limit);
+        final query = genreMap[genre.toLowerCase()] ?? 'new $genre hits $currentYear';
+        final tracks = await searchTracks(query, limit: limit);
+        tracks.shuffle();
+        return tracks;
       }
 
       final langMap = {
@@ -267,18 +268,25 @@ class JioSaavnAdapter implements MusicSourceAdapter {
       final trackArrays = await Future.wait(trackFutures);
       
       final List<Track> tracks = trackArrays.expand((e) => e).take(limit).toList();
-      if (tracks.isNotEmpty) return tracks;
+      if (tracks.isNotEmpty) {
+        tracks.shuffle();
+        return tracks;
+      }
 
-      final query = saavnLang == 'hindi' ? 'new hindi songs 2024' :
-                    saavnLang == 'kannada' ? 'new kannada songs 2024' :
-                    saavnLang == 'tamil' ? 'new tamil songs 2024' :
-                    saavnLang == 'telugu' ? 'new telugu songs 2024' :
-                    saavnLang == 'punjabi' ? 'new punjabi songs 2024' :
-                    'new songs 2024';
-      return searchTracks(query, limit: limit);
+      final query = saavnLang == 'hindi' ? 'new hindi songs $currentYear' :
+                    saavnLang == 'kannada' ? 'new kannada songs $currentYear' :
+                    saavnLang == 'tamil' ? 'new tamil songs $currentYear' :
+                    saavnLang == 'telugu' ? 'new telugu songs $currentYear' :
+                    saavnLang == 'punjabi' ? 'new punjabi songs $currentYear' :
+                    'new songs $currentYear';
+      final fallbackTracks = await searchTracks(query, limit: limit);
+      fallbackTracks.shuffle();
+      return fallbackTracks;
     } catch (e) {
-      final query = language != null ? 'new $language hit songs' : 'new hindi hit songs';
-      return searchTracks(query, limit: limit);
+      final query = language != null ? 'new $language hit songs ${DateTime.now().year}' : 'new hindi hit songs ${DateTime.now().year}';
+      final fallbackTracks = await searchTracks(query, limit: limit);
+      fallbackTracks.shuffle();
+      return fallbackTracks;
     }
   }
 
