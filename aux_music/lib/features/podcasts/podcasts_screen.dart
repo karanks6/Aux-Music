@@ -16,11 +16,11 @@ import '../../data/models/podcast.dart';
 final _techPodcastsProvider = FutureProvider<List<Podcast>>((ref) async {
   final repo = ref.read(podcastRepositoryProvider);
   final feeds = [
-    'https://feeds.simplecast.com/7123pI11', // Waveform
+    'https://feeds.megaphone.fm/VMP5705694065', // Waveform
     'https://lexfridman.com/feed/podcast/', // Lex Fridman
     'https://feeds.megaphone.fm/vergecast', // Vergecast
   ];
-  final futures = feeds.map((url) => repo.parseFeedUrl(url).then((p) => p as Podcast).catchError((_) => null));
+  final futures = feeds.map((url) => repo.parseFeedUrl(url).then<Podcast?>((p) => p).catchError((_) => null));
   final results = await Future.wait(futures);
   return results.whereType<Podcast>().toList();
 });
@@ -32,7 +32,7 @@ final _comedyPodcastsProvider = FutureProvider<List<Podcast>>((ref) async {
     'https://rss.art19.com/smartless', // SmartLess
     'https://wtfpod.libsyn.com/rss', // WTF with Marc Maron
   ];
-  final futures = feeds.map((url) => repo.parseFeedUrl(url).then((p) => p as Podcast).catchError((_) => null));
+  final futures = feeds.map((url) => repo.parseFeedUrl(url).then<Podcast?>((p) => p).catchError((_) => null));
   final results = await Future.wait(futures);
   return results.whereType<Podcast>().toList();
 });
@@ -44,7 +44,7 @@ final _newsPodcastsProvider = FutureProvider<List<Podcast>>((ref) async {
     'https://feeds.npr.org/510318/podcast.xml', // Up First
     'https://podcasts.files.bbci.co.uk/p02nq0gn.rss', // Global News Podcast
   ];
-  final futures = feeds.map((url) => repo.parseFeedUrl(url).then((p) => p as Podcast).catchError((_) => null));
+  final futures = feeds.map((url) => repo.parseFeedUrl(url).then<Podcast?>((p) => p).catchError((_) => null));
   final results = await Future.wait(futures);
   return results.whereType<Podcast>().toList();
 });
@@ -53,10 +53,10 @@ final _businessPodcastsProvider = FutureProvider<List<Podcast>>((ref) async {
   final repo = ref.read(podcastRepositoryProvider);
   final feeds = [
     'https://feeds.npr.org/510289/podcast.xml', // Planet Money
-    'https://feeds.simplecast.com/s6wEExXo', // Freakonomics Radio
+    'https://feeds.npr.org/510325/podcast.xml', // The Indicator
     'https://feeds.npr.org/510313/podcast.xml', // How I Built This
   ];
-  final futures = feeds.map((url) => repo.parseFeedUrl(url).then((p) => p as Podcast).catchError((_) => null));
+  final futures = feeds.map((url) => repo.parseFeedUrl(url).then<Podcast?>((p) => p).catchError((_) => null));
   final results = await Future.wait(futures);
   return results.whereType<Podcast>().toList();
 });
