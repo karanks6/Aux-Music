@@ -371,6 +371,24 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
     await _playlist.removeAt(index);
   }
 
+  /// Custom method to reorder items in the queue
+  Future<void> moveQueueItem(int currentIndex, int newIndex) async {
+    final q = List<MediaItem>.from(queue.value);
+    if (currentIndex < 0 || currentIndex >= q.length) return;
+    if (newIndex < 0 || newIndex > q.length) return;
+    
+    // Adjust newIndex if we are moving downwards
+    if (currentIndex < newIndex) {
+      newIndex--;
+    }
+    
+    final item = q.removeAt(currentIndex);
+    q.insert(newIndex, item);
+    queue.add(q);
+    
+    await _playlist.move(currentIndex, newIndex);
+  }
+
 
 
   // ── Private helpers ───────────────────────────────────────────────
@@ -412,6 +430,7 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
       }
 
       String url;
+      Track? fallbackTrack;
       final download = await _library.getDownload(trackId);
       if (download != null && File(download.localPath).existsSync()) {
         url = 'file://${download.localPath}';
@@ -419,11 +438,13 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
         url = currentItem.extras?['streamUrl'] as String? ?? currentItem.extras?['sourceUrl'] as String? ?? '';
         if (url.isEmpty) throw Exception('Podcast missing stream URL');
       } else {
-        url = await _aggregator.resolveStreamUrl(
+        final result = await _aggregator.resolveStreamUrl(
           trackId,
           title: currentItem.title,
           artistName: currentItem.artist,
         );
+        url = result.url;
+        fallbackTrack = result.fallbackTrack;
       }
       
       final q2 = queue.value;
@@ -432,7 +453,20 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
       final item = q2[index];
       final newExtras = Map<String, dynamic>.from(item.extras ?? {})
         ..['streamUrl'] = url;
-      final updatedItem = item.copyWith(extras: newExtras);
+        
+      if (fallbackTrack != null) {
+        newExtras['trackId'] = fallbackTrack.id;
+        newExtras['sourceId'] = fallbackTrack.sourceId;
+      }
+
+      final updatedItem = item.copyWith(
+        id: fallbackTrack?.id ?? item.id,
+        title: fallbackTrack?.title ?? item.title,
+        artist: fallbackTrack?.artistName ?? item.artist,
+        album: fallbackTrack?.albumName ?? item.album,
+        artUri: fallbackTrack?.artworkUrl != null ? Uri.parse(fallbackTrack!.artworkUrl!) : item.artUri,
+        extras: newExtras,
+      );
 
       final newQueue = List<MediaItem>.from(q2);
       newQueue[index] = updatedItem;
@@ -535,6 +569,8 @@ extension TrackToMediaItem on Track {
           'attributionString': attributionString,
           'offlineAllowed': offlineAllowed,
           'streamUrl': streamUrl ?? '',
+          'artistId': artistId,
+          'albumId': albumId,
         },
       );
 }

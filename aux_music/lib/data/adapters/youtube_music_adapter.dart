@@ -64,6 +64,7 @@ class YouTubeMusicAdapter implements MusicSourceAdapter {
     int limit = 20,
     String? genre,
     String? language,
+    bool isPodcast = false,
   }) async {
     try {
       String finalQuery = query;
@@ -74,7 +75,11 @@ class YouTubeMusicAdapter implements MusicSourceAdapter {
       }
       
       final results = await _yt.search.search(finalQuery);
-      return results.take(limit).map((v) => _parseVideo(v)).whereType<Track>().toList();
+      return results.map((v) => _parseVideo(v))
+          .whereType<Track>()
+          .where((t) => isPodcast ? t.durationMs >= 600000 : t.durationMs < 600000)
+          .take(limit)
+          .toList();
     } catch (e) {
       return [];
     }
@@ -85,6 +90,7 @@ class YouTubeMusicAdapter implements MusicSourceAdapter {
     String? genre,
     String? language,
     int limit = 20,
+    bool isPodcast = false,
   }) async {
     try {
       final currentYear = DateTime.now().year;
@@ -97,7 +103,12 @@ class YouTubeMusicAdapter implements MusicSourceAdapter {
       
       final results = await _yt.search.search(query);
       
-      final tracks = results.take(limit).map((v) => _parseVideo(v)).whereType<Track>().toList();
+      final tracks = results.map((v) => _parseVideo(v))
+          .whereType<Track>()
+          .where((t) => isPodcast ? t.durationMs >= 600000 : t.durationMs < 600000)
+          .take(limit)
+          .toList();
+          
       tracks.shuffle();
       return tracks;
     } catch (e) {
@@ -145,29 +156,38 @@ class YouTubeMusicAdapter implements MusicSourceAdapter {
       }
     } catch (e) {
       print('[YouTubeMusic] Native stream resolution failed: $e. Falling back to Piped API...');
-      
-      try {
-        final request = await HttpClient().getUrl(Uri.parse('https://pipedapi.kavin.rocks/streams/$nativeId'));
-        final response = await request.close();
-        if (response.statusCode == 200) {
-          final body = await response.transform(utf8.decoder).join();
-          final json = jsonDecode(body);
-          final audioStreams = json['audioStreams'] as List<dynamic>?;
-          
-          if (audioStreams != null && audioStreams.isNotEmpty) {
-             final bestStream = audioStreams.reduce((a, b) => (a['bitrate'] ?? 0) > (b['bitrate'] ?? 0) ? a : b);
-             final url = bestStream['url'] as String;
-             print('[YouTubeMusic] Piped API fallback successful! URL: $url');
-             
-             // Cache and return the raw https URL. 
-             // audio_handler will pass it directly to ExoPlayer without ytstream proxy.
-             _streamCache[nativeId] = url;
-             return url;
+            final pipedInstances = [
+          'https://piped.projectsegfau.lt/api',
+          'https://pipedapi.kavin.rocks',
+          'https://pipedapi.smnz.de',
+          'https://piped-api.garudalinux.org',
+          'https://piped-api.lunar.icu',
+        ];
+
+        for (final instance in pipedInstances) {
+          try {
+            print('[YouTubeMusic] Trying Piped instance: $instance');
+            final request = await HttpClient().getUrl(Uri.parse('$instance/streams/$nativeId'));
+            final response = await request.close().timeout(const Duration(seconds: 3));
+            if (response.statusCode == 200) {
+              final body = await response.transform(utf8.decoder).join();
+              final json = jsonDecode(body);
+              final audioStreams = json['audioStreams'] as List<dynamic>?;
+              
+              if (audioStreams != null && audioStreams.isNotEmpty) {
+                 final bestStream = audioStreams.reduce((a, b) => (a['bitrate'] ?? 0) > (b['bitrate'] ?? 0) ? a : b);
+                 final url = bestStream['url'] as String;
+                 print('[YouTubeMusic] Piped API fallback successful with $instance! URL: $url');
+                 
+                 _streamCache[nativeId] = url;
+                 return url;
+              }
+            }
+          } catch (pipedError) {
+            print('[YouTubeMusic] Piped instance $instance failed.');
           }
         }
-      } catch (pipedError) {
-        print('[YouTubeMusic] Piped API fallback also failed: $pipedError');
-      }
+        print('[YouTubeMusic] All Piped instances failed.');
 
       // If YouTube rate-limits the client (e.g. RequestLimitExceededException), 
       // we throw so the aggregator can seamlessly fall back to JioSaavn.

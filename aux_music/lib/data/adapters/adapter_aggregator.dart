@@ -49,6 +49,7 @@ class MusicAdapterAggregator {
     int limitPerSource = 20,
     String? genre,
     String? language,
+    bool isPodcast = false,
   }) async {
     final results = await _fanOut(
       (adapter) => adapter.searchTracks(
@@ -56,6 +57,7 @@ class MusicAdapterAggregator {
         limit: limitPerSource,
         genre: genre,
         language: language,
+        isPodcast: isPodcast,
       ),
     );
     return _deduplicateTracks(results);
@@ -66,65 +68,70 @@ class MusicAdapterAggregator {
     String? genre,
     String? language,
     int limitPerSource = 20,
+    bool isPodcast = false,
   }) async {
     return _fanOut(
       (adapter) => adapter.trending(
         genre: genre,
         language: language,
         limit: limitPerSource,
+        isPodcast: isPodcast,
       ),
     );
-  }  /// Resolve stream URL — delegated to the correct adapter by sourceId prefix.
-    Future<String> resolveStreamUrl(String trackId, {String? title, String? artistName}) async {
-      final adapter = _adapterForTrackId(trackId);
-      if (adapter == null) throw Exception('No adapter found for track: $trackId');
-      
-      try {
-        return await adapter.resolveStreamUrl(trackId);
-      } catch (e) {
-        // JioSaavn Fallback for YouTube blocks
-        if (adapter is YouTubeMusicAdapter) {
-          print('[Aggregator] YouTube stream failed ($e). Attempting JioSaavn fallback...');
-          try {
-            String? fallbackTitle = title;
-            String? fallbackArtist = artistName;
+  }
+
+  /// Resolve stream URL — delegated to the correct adapter by sourceId prefix.
+  Future<({String url, Track? fallbackTrack})> resolveStreamUrl(String trackId, {String? title, String? artistName}) async {
+    final adapter = _adapterForTrackId(trackId);
+    if (adapter == null) throw Exception('No adapter found for track: $trackId');
+    
+    try {
+      final url = await adapter.resolveStreamUrl(trackId);
+      return (url: url, fallbackTrack: null);
+    } catch (e) {
+      // JioSaavn Fallback for YouTube blocks
+      if (adapter is YouTubeMusicAdapter) {
+        print('[Aggregator] YouTube stream failed ($e). Attempting JioSaavn fallback...');
+        try {
+          String? fallbackTitle = title;
+          String? fallbackArtist = artistName;
+          
+          if (fallbackTitle == null || fallbackArtist == null) {
+            final ytTrack = await adapter.getTrackDetails(trackId);
+            if (ytTrack != null) {
+              fallbackTitle = ytTrack.title;
+              fallbackArtist = ytTrack.artistName;
+            }
+          }
+
+          if (fallbackTitle != null && fallbackArtist != null) {
+            final cleanTitle = fallbackTitle.replaceAll(RegExp(r'\([^)]*\)'), '').replaceAll(RegExp(r'\[[^\]]*\]'), '').trim();
+            final query = '$cleanTitle $fallbackArtist'.trim();
+            final fallbackAdapter = _adapters.firstWhere((a) => a is JioSaavnAdapter);
             
-            // Only fetch from YouTube if we weren't provided the metadata (may fail if rate limited)
-            if (fallbackTitle == null || fallbackArtist == null) {
-              final ytTrack = await adapter.getTrackDetails(trackId);
-              if (ytTrack != null) {
-                fallbackTitle = ytTrack.title;
-                fallbackArtist = ytTrack.artistName;
+            if (fallbackAdapter.isEnabled && !_degradedSources.contains(fallbackAdapter.sourceId)) {
+              final results = await fallbackAdapter.searchTracks(query, limit: 10);
+              
+              for (final track in results) {
+                if (_isStrictMatch(fallbackTitle, track.title) && _isStrictMatch(fallbackArtist, track.artistName)) {
+                  print('[Aggregator] Strict Fallback successful: Found exact match on JioSaavn as ${track.id}');
+                  final url = await fallbackAdapter.resolveStreamUrl(track.id);
+                  return (url: url, fallbackTrack: track);
+                }
+              }
+              
+              if (results.isNotEmpty) {
+                final looseMatch = results.first;
+                print('[Aggregator] Loose Fallback successful: Found approximate match on JioSaavn as ${looseMatch.id}');
+                final url = await fallbackAdapter.resolveStreamUrl(looseMatch.id);
+                return (url: url, fallbackTrack: looseMatch);
               }
             }
-
-            if (fallbackTitle != null && fallbackArtist != null) {
-              final cleanTitle = fallbackTitle.replaceAll(RegExp(r'\([^)]*\)'), '').replaceAll(RegExp(r'\[[^\]]*\]'), '').trim();
-              final query = '$cleanTitle $fallbackArtist'.trim();
-              final fallbackAdapter = _adapters.firstWhere((a) => a is JioSaavnAdapter);
-            if (fallbackAdapter.isEnabled && !_degradedSources.contains(fallbackAdapter.sourceId)) {
-                final results = await fallbackAdapter.searchTracks(query, limit: 10);
-                                for (final track in results) {
-                    if (_isStrictMatch(fallbackTitle, track.title) && _isStrictMatch(fallbackArtist, track.artistName)) {
-                      print('[Aggregator] Strict Fallback successful: Found exact match on JioSaavn as ${track.id}');
-                      return await fallbackAdapter.resolveStreamUrl(track.id);
-                    }
-                  }
-                  
-                  if (results.isNotEmpty) {
-                    final looseMatch = results.first;
-                    print('[Aggregator] Loose Fallback successful: Found approximate match on JioSaavn as ${looseMatch.id} (${looseMatch.title} by ${looseMatch.artistName})');
-                    return await fallbackAdapter.resolveStreamUrl(looseMatch.id);
-                  }
-                  
-                  throw Exception('YouTube stream blocked and no matching song found on JioSaavn for fallback.');
-              }
           }
         } catch (fallbackError) {
           print('[Aggregator] JioSaavn fallback also failed: $fallbackError');
         }
       }
-      
       rethrow;
     }
   }

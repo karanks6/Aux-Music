@@ -33,6 +33,7 @@ abstract interface class MusicSourceAdapter {
     int limit = 20,
     String? genre,
     String? language,
+    bool isPodcast = false,
   });
 
   /// Fetch currently trending tracks.
@@ -40,6 +41,7 @@ abstract interface class MusicSourceAdapter {
     String? genre,
     String? language,
     int limit = 20,
+    bool isPodcast = false,
   });
 
   /// Resolve the actual playable stream URL for a track.

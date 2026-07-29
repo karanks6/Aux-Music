@@ -4,6 +4,7 @@ import '../../features/home/home_screen.dart';
 import '../../features/search/search_screen.dart';
 import '../../features/library/library_screen.dart';
 import '../../features/now_playing/now_playing_screen.dart';
+import '../../features/now_playing/queue_screen.dart';
 import '../../features/artist_page/artist_page_screen.dart';
 import '../../features/album_page/album_page_screen.dart';
 import '../../features/playlist_detail/playlist_detail_screen.dart';
@@ -22,6 +23,7 @@ abstract final class AppRoutes {
   static const podcasts = '/podcasts';
   static const social = '/social';
   static const nowPlaying = '/now-playing';
+  static const queue = '/queue';
   static const artist = '/artist/:id';
   static const album = '/album/:id';
   static const playlist = '/playlist/:id';
@@ -126,6 +128,11 @@ final appRouter = GoRouter(
         },
         transitionDuration: const Duration(milliseconds: 300),
       ),
+    ),
+    GoRoute(
+      path: AppRoutes.queue,
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => const QueueScreen(),
     ),
     GoRoute(
       path: AppRoutes.settings,

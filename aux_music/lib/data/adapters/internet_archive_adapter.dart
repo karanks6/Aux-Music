@@ -66,6 +66,7 @@ class InternetArchiveAdapter implements MusicSourceAdapter {
     int limit = 20,
     String? genre,
     String? language,
+    bool isPodcast = false,
   }) async {
     // Build IA search query
     var q = '($query) AND mediatype:audio';
@@ -80,6 +81,7 @@ class InternetArchiveAdapter implements MusicSourceAdapter {
     String? genre,
     String? language,
     int limit = 20,
+    bool isPodcast = false,
   }) async {
     // IA doesn't have "trending" — use recently added public-domain audio
     var q = 'mediatype:audio AND licenseurl:*';

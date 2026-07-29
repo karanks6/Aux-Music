@@ -79,7 +79,7 @@ class JioSaavnAdapter implements MusicSourceAdapter {
 
   // ── DES Decryption ──────────────────────────────────────────────────
 
-  String? _decodeMediaUrl(String? encodedUrl) {
+  String? _decodeMediaUrl(String? encodedUrl, {bool force320 = false}) {
     if (encodedUrl == null || encodedUrl.isEmpty) return null;
     try {
       final cipher = PaddedBlockCipherImpl(
@@ -107,9 +107,14 @@ class JioSaavnAdapter implements MusicSourceAdapter {
             (m) => 'https://aac.saavncdn.com',
           );
 
-      if (url.contains('_96.mp4')) url = url.replaceAll('_96.mp4', '_320.mp4');
-      if (url.contains('_160.mp4')) url = url.replaceAll('_160.mp4', '_320.mp4');
-      if (url.contains('_128.mp4')) url = url.replaceAll('_128.mp4', '_320.mp4');
+      if (force320) {
+        if (url.contains('_96.mp4')) url = url.replaceAll('_96.mp4', '_320.mp4');
+        if (url.contains('_160.mp4')) url = url.replaceAll('_160.mp4', '_320.mp4');
+        if (url.contains('_128.mp4')) url = url.replaceAll('_128.mp4', '_320.mp4');
+      } else {
+        // Upgrade 96kbps to 160kbps which is almost universally available
+        if (url.contains('_96.mp4')) url = url.replaceAll('_96.mp4', '_160.mp4');
+      }
 
       return url;
     } catch (e) {
@@ -119,7 +124,11 @@ class JioSaavnAdapter implements MusicSourceAdapter {
             RegExp(r'https?:\/\/[^\/]*(aac\.saavncdn\.com|c\.saavncdn\.com)'),
             (m) => 'https://aac.saavncdn.com',
           );
-      if (url.contains('_96.mp4')) url = url.replaceAll('_96.mp4', '_320.mp4');
+      if (force320) {
+        if (url.contains('_96.mp4')) url = url.replaceAll('_96.mp4', '_320.mp4');
+      } else {
+        if (url.contains('_96.mp4')) url = url.replaceAll('_96.mp4', '_160.mp4');
+      }
       return url;
     }
   }
@@ -143,7 +152,10 @@ class JioSaavnAdapter implements MusicSourceAdapter {
     if (song == null || song['id'] == null) return null;
     try {
       final moreInfo = song['more_info'] ?? <String, dynamic>{};
-      final mediaUrl = _decodeMediaUrl(moreInfo['encrypted_media_url'] as String? ?? song['media_preview_url'] as String?);
+      final mediaUrl = _decodeMediaUrl(
+        moreInfo['encrypted_media_url'] as String? ?? song['media_preview_url'] as String?,
+        force320: moreInfo['320kbps'] == 'true' || moreInfo['320kbps'] == true,
+      );
       if (mediaUrl == null) return null;
 
       final artistName = moreInfo['singers'] ??
@@ -197,6 +209,7 @@ class JioSaavnAdapter implements MusicSourceAdapter {
     int limit = 20,
     String? genre,
     String? language,
+    bool isPodcast = false,
   }) async {
     try {
       final data = await _apiGet({
@@ -207,7 +220,11 @@ class JioSaavnAdapter implements MusicSourceAdapter {
       });
 
       final results = data['results'] ?? data['data']?['results'] ?? [];
-      return (results as List).map((e) => _parseTrack(e as Map<String, dynamic>)).whereType<Track>().toList();
+      return (results as List)
+          .map((e) => _parseTrack(e as Map<String, dynamic>))
+          .whereType<Track>()
+          .where((t) => isPodcast ? t.durationMs >= 600000 : t.durationMs < 600000)
+          .toList();
     } catch (e) {
       return [];
     }
@@ -218,6 +235,7 @@ class JioSaavnAdapter implements MusicSourceAdapter {
     String? genre,
     String? language,
     int limit = 20,
+    bool isPodcast = false,
   }) async {
     try {
       final currentYear = DateTime.now().year;
@@ -237,7 +255,7 @@ class JioSaavnAdapter implements MusicSourceAdapter {
           'ambient': 'ambient relaxing music $currentYear',
         };
         final query = genreMap[genre.toLowerCase()] ?? 'new $genre hits $currentYear';
-        final tracks = await searchTracks(query, limit: limit);
+        final tracks = await searchTracks(query, limit: limit, isPodcast: isPodcast);
         tracks.shuffle();
         return tracks;
       }
@@ -267,7 +285,7 @@ class JioSaavnAdapter implements MusicSourceAdapter {
       final trackFutures = (albums as List).take(5).map((a) => getAlbumTracks(a['id'].toString()));
       final trackArrays = await Future.wait(trackFutures);
       
-      final List<Track> tracks = trackArrays.expand((e) => e).take(limit).toList();
+      final List<Track> tracks = trackArrays.expand((e) => e).where((t) => isPodcast ? t.durationMs >= 600000 : t.durationMs < 600000).take(limit).toList();
       if (tracks.isNotEmpty) {
         tracks.shuffle();
         return tracks;
@@ -279,12 +297,12 @@ class JioSaavnAdapter implements MusicSourceAdapter {
                     saavnLang == 'telugu' ? 'new telugu songs $currentYear' :
                     saavnLang == 'punjabi' ? 'new punjabi songs $currentYear' :
                     'new songs $currentYear';
-      final fallbackTracks = await searchTracks(query, limit: limit);
+      final fallbackTracks = await searchTracks(query, limit: limit, isPodcast: isPodcast);
       fallbackTracks.shuffle();
       return fallbackTracks;
     } catch (e) {
       final query = language != null ? 'new $language hit songs ${DateTime.now().year}' : 'new hindi hit songs ${DateTime.now().year}';
-      final fallbackTracks = await searchTracks(query, limit: limit);
+      final fallbackTracks = await searchTracks(query, limit: limit, isPodcast: isPodcast);
       fallbackTracks.shuffle();
       return fallbackTracks;
     }
@@ -329,7 +347,10 @@ class JioSaavnAdapter implements MusicSourceAdapter {
       if (song == null) throw Exception('Song not found or invalid format');
       
       final moreInfo = song['more_info'] ?? <String, dynamic>{};
-      final url = _decodeMediaUrl(moreInfo['encrypted_media_url'] as String? ?? song['media_preview_url'] as String?);
+      final url = _decodeMediaUrl(
+        moreInfo['encrypted_media_url'] as String? ?? song['media_preview_url'] as String?,
+        force320: moreInfo['320kbps'] == 'true' || moreInfo['320kbps'] == true,
+      );
       
       if (url == null) throw Exception('No stream URL in response');
       return url;
@@ -340,11 +361,53 @@ class JioSaavnAdapter implements MusicSourceAdapter {
 
   @override
   Future<List<Artist>> searchArtists(String query, {int limit = 10}) async {
-    return [];
+    try {
+      final data = await _apiGet({
+        '__call': 'search.getResults',
+        'q': query,
+        'p': 1,
+        'n': limit,
+      });
+
+      // We actually need search.getArtistResults or just filter getResults for artists if the API supports it.
+      // But JioSaavn API typically separates them or we can just fetch content.getArtistSearch.
+      // Let's use the explicit artist search if possible, or fallback to returning empty for now.
+      // Actually, JioSaavn has '__call': 'search.getArtistResults'
+      final artistData = await _apiGet({
+        '__call': 'search.getArtistResults',
+        'q': query,
+        'p': 1,
+        'n': limit,
+      });
+      
+      final results = artistData['results'] ?? artistData['data']?['results'] ?? [];
+      return (results as List).map((e) {
+        return Artist(
+          id: e['id'].toString(),
+          name: e['title']?.toString().replaceAll('&amp;', '&') ?? 'Unknown',
+          sourceId: sourceId,
+          avatarUrl: e['image']?.toString().replaceAll('150x150', '500x500'),
+        );
+      }).toList();
+    } catch (e) {
+      return [];
+    }
   }
 
   @override
   Future<List<Track>> getArtistTracks(String artistId, {int limit = 20}) async {
-    return [];
+    try {
+      final data = await _apiGet({
+        '__call': 'artist.getArtistMoreSong',
+        'artistId': artistId,
+        'p': 1,
+        'n': limit,
+      });
+
+      final results = data['results'] ?? data['data']?['results'] ?? data['topSongs'] ?? [];
+      return (results as List).map((e) => _parseTrack(e as Map<String, dynamic>)).whereType<Track>().toList();
+    } catch (e) {
+      return [];
+    }
   }
 }

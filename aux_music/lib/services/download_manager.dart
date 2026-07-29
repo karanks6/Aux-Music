@@ -41,7 +41,8 @@ class DownloadManager {
       _downloading.add(track.id);
 
       // Resolve URL
-      final url = await _aggregator.resolveStreamUrl(track.id);
+      final result = await _aggregator.resolveStreamUrl(track.id);
+      final url = result.url;
       
       // Get safe local path
       final dir = await getApplicationDocumentsDirectory();

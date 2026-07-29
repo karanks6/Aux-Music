@@ -111,6 +111,7 @@ class AudiusAdapter implements MusicSourceAdapter {
     int limit = 20,
     String? genre,
     String? language,
+    bool isPodcast = false,
   }) async {
     if (!_initialized) await initialize();
     final params = {
@@ -136,6 +137,7 @@ class AudiusAdapter implements MusicSourceAdapter {
     String? genre,
     String? language,
     int limit = 20,
+    bool isPodcast = false,
   }) async {
     if (!_initialized) await initialize();
     final params = <String, dynamic>{

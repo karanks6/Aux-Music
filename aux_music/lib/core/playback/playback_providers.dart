@@ -64,6 +64,12 @@ final queueProvider = StreamProvider<List<MediaItem>>((ref) {
   return handler.queue;
 });
 
+/// The current index in the queue.
+final queueIndexProvider = StreamProvider<int?>((ref) {
+  final handler = ref.read(audioHandlerProvider);
+  return handler.playbackState.map((s) => s.queueIndex);
+});
+
 // ── Shuffle & Repeat ──────────────────────────────────────────────
 
 enum RepeatMode { off, one, all }

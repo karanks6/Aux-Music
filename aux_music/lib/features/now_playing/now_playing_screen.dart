@@ -269,23 +269,45 @@ class _TrackInfo extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                mediaItem?.title ?? 'Nothing playing',
-                style: AuxTypography.display.copyWith(
-                  color: AuxColors.paper,
-                  fontSize: 22,
+              GestureDetector(
+                onTap: () {
+                  final albumId = mediaItem?.extras?['albumId'] as String?;
+                  if (albumId != null && albumId.isNotEmpty) {
+                    // Close the Now Playing screen first
+                    context.pop();
+                    // Navigate to Album page
+                    context.push('/album/$albumId');
+                  }
+                },
+                child: Text(
+                  mediaItem?.title ?? 'Nothing playing',
+                  style: AuxTypography.display.copyWith(
+                    color: AuxColors.paper,
+                    fontSize: 22,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: AuxSpacing.xs),
-              Text(
-                mediaItem?.artist ?? 'Open a track to start listening',
-                style: AuxTypography.body.copyWith(
-                  color: AuxColors.signalTeal,
+              GestureDetector(
+                onTap: () {
+                  final artistId = mediaItem?.extras?['artistId'] as String?;
+                  if (artistId != null && artistId.isNotEmpty) {
+                    // Close the Now Playing screen first
+                    context.pop();
+                    // Navigate to Artist page
+                    context.push('/artist/$artistId');
+                  }
+                },
+                child: Text(
+                  mediaItem?.artist ?? 'Open a track to start listening',
+                  style: AuxTypography.body.copyWith(
+                    color: AuxColors.signalTeal,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
@@ -746,6 +768,14 @@ class _ExtraControls extends StatelessWidget {
                 : AuxColors.paperMuted,
             iconSize: 22,
             onPressed: () => _showSleepTimerSheet(context, ref, sleepTimer),
+          ),
+          IconButton(
+            icon: const Icon(Icons.queue_music_rounded),
+            color: AuxColors.paperMuted,
+            iconSize: 22,
+            onPressed: () {
+              context.push('/queue');
+            },
           ),
         ],
       ),

@@ -14,22 +14,22 @@ import '../../data/models/track.dart';
 
 final _techPodcastsProvider = FutureProvider<List<Track>>((ref) async {
   final aggregator = ref.read(aggregatorProvider);
-  return aggregator.searchTracks('technology podcast', limitPerSource: 25);
+  return aggregator.searchTracks('technology podcast', limitPerSource: 25, isPodcast: true);
 });
 
 final _comedyPodcastsProvider = FutureProvider<List<Track>>((ref) async {
   final aggregator = ref.read(aggregatorProvider);
-  return aggregator.searchTracks('comedy podcast', limitPerSource: 25);
+  return aggregator.searchTracks('comedy podcast', limitPerSource: 25, isPodcast: true);
 });
 
 final _newsPodcastsProvider = FutureProvider<List<Track>>((ref) async {
   final aggregator = ref.read(aggregatorProvider);
-  return aggregator.searchTracks('news podcast', limitPerSource: 25);
+  return aggregator.searchTracks('news podcast', limitPerSource: 25, isPodcast: true);
 });
 
 final _businessPodcastsProvider = FutureProvider<List<Track>>((ref) async {
   final aggregator = ref.read(aggregatorProvider);
-  return aggregator.searchTracks('business podcast', limitPerSource: 25);
+  return aggregator.searchTracks('business podcast', limitPerSource: 25, isPodcast: true);
 });
 
 class PodcastsScreen extends ConsumerWidget {
