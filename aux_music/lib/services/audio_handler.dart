@@ -40,8 +40,10 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
 
   final MusicAdapterAggregator _aggregator;
   final LibraryRepository _library;
-  ConcatenatingAudioSource _playlist =
-      ConcatenatingAudioSource(children: []);
+  ConcatenatingAudioSource _playlist = ConcatenatingAudioSource(
+    children: [],
+    useLazyPreparation: true,
+  );
 
   // ── Public streams ────────────────────────────────────────────────
 
@@ -304,7 +306,10 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
       );
     }).toList();
     
-    _playlist = ConcatenatingAudioSource(children: audioSources);
+    _playlist = ConcatenatingAudioSource(
+      children: audioSources,
+      useLazyPreparation: true,
+    );
     await _player.setAudioSource(_playlist, initialIndex: initialIndex);
   }
 
@@ -472,27 +477,31 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
       newQueue[index] = updatedItem;
       queue.add(newQueue);
 
-      await _playlist.removeAt(index);
-      
-      AudioSource source;
-      if (url.startsWith('ytstream://')) {
-        final uri = Uri.parse(url);
-        final base64String = uri.queryParameters['url'] ?? '';
-        final decodedUrl = utf8.decode(base64Url.decode(base64String));
-        final length = int.parse(uri.queryParameters['length'] ?? '0');
-        source = YoutubeStreamAudioSource(
-          url: decodedUrl,
-          sourceLength: length,
-          tag: updatedItem,
-        );
-      } else {
-        source = AudioSource.uri(
-          Uri.parse(url), 
-          tag: updatedItem,
-        );
+      try {
+        await _playlist.removeAt(index);
+        
+        AudioSource source;
+        if (url.startsWith('ytstream://')) {
+          final uri = Uri.parse(url);
+          final base64String = uri.queryParameters['url'] ?? '';
+          final decodedUrl = utf8.decode(base64Url.decode(base64String));
+          final length = int.parse(uri.queryParameters['length'] ?? '0');
+          source = YoutubeStreamAudioSource(
+            url: decodedUrl,
+            sourceLength: length,
+            tag: updatedItem,
+          );
+        } else {
+          source = AudioSource.uri(
+            Uri.parse(url), 
+            tag: updatedItem,
+          );
+        }
+        
+        await _playlist.insert(index, source);
+      } catch (e) {
+        print('[AudioHandler] Failed to update playlist at index $index: $e');
       }
-      
-      await _playlist.insert(index, source);
     } catch (e) {
       // ignore: avoid_print
       print('[AudioHandler] Failed to resolve stream URL for $trackId: $e');

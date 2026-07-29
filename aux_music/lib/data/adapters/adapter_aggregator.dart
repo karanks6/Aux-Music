@@ -120,12 +120,7 @@ class MusicAdapterAggregator {
                 }
               }
               
-              if (results.isNotEmpty) {
-                final looseMatch = results.first;
-                print('[Aggregator] Loose Fallback successful: Found approximate match on JioSaavn as ${looseMatch.id}');
-                final url = await fallbackAdapter.resolveStreamUrl(looseMatch.id);
-                return (url: url, fallbackTrack: looseMatch);
-              }
+              print('[Aggregator] Strict Fallback failed: No exact match found on JioSaavn.');
             }
           }
         } catch (fallbackError) {

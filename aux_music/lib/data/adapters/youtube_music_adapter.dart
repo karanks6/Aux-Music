@@ -5,7 +5,8 @@ import '../models/track.dart';
 import '../models/artist.dart';
 import '../models/license_type.dart';
 import 'music_source_adapter.dart';
-import '../../core/proxy/local_audio_proxy.dart';
+import '../../core/config/env.dart';
+import 'package:dio/dio.dart' as dio;
 
 class YouTubeMusicAdapter implements MusicSourceAdapter {
   final yt.YoutubeExplode _yt = yt.YoutubeExplode();
@@ -116,24 +117,65 @@ class YouTubeMusicAdapter implements MusicSourceAdapter {
     }
   }
 
-  @override
-  Future<String> resolveStreamUrl(String trackId) async {
-    final nativeId = trackId.replaceFirst('youtube_music:', '');
-    
-    // Check in-memory cache first to prevent rate-limiting on repeat plays
-    if (_streamCache.containsKey(nativeId)) {
-      print('[YouTubeMusic] Returning cached stream URL for $nativeId');
-      return _streamCache[nativeId]!;
-    }
-    
-    // Fetch the stream manifest directly using the client-side library.
-    // IMPORTANT: We must use the iOS client to generate the manifest, because
-    // YoutubeStreamAudioSource hardcodes the iOS User-Agent. If they mismatch,
-    // YouTube returns 403 Forbidden!
-    try {
+    @override
+    Future<String> resolveStreamUrl(String trackId) async {
+      final nativeId = trackId.replaceFirst('youtube_music:', '');
+      
+      // Check in-memory cache first to prevent rate-limiting on repeat plays
+      if (_streamCache.containsKey(nativeId)) {
+        final cachedUrl = _streamCache[nativeId]!;
+        if (!cachedUrl.startsWith('ytstream://')) {
+          print('[YouTubeMusic] Invalidating old broken cache for $nativeId');
+          _streamCache.remove(nativeId);
+        } else {
+          print('[YouTubeMusic] Returning cached stream URL for $nativeId');
+          return cachedUrl;
+        }
+      }
+
+      // 1. Try BFF (Node backend) FIRST as the primary extractor
+      try {
+        print('[YouTubeMusic] Trying primary BFF (Node backend): ${Env.bffUrl}');
+        final bffResponse = await dio.Dio().get(
+          '${Env.bffUrl}/stream-url/youtube_music/$nativeId',
+          options: dio.Options(
+            sendTimeout: const Duration(seconds: 60),
+            receiveTimeout: const Duration(seconds: 60),
+            headers: {'Connection': 'close'}, // Prevent keep-alive resets
+          ),
+        );
+        
+        if (bffResponse.statusCode == 200) {
+          final json = bffResponse.data;
+          if (json['streamUrl'] != null) {
+            final url = json['streamUrl'] as String;
+            print('[YouTubeMusic] BFF extraction successful! URL: $url');
+            
+            // Encode the URL to pass it safely in the custom ytstream protocol
+            // This ensures the AudioHandler uses YoutubeStreamAudioSource, which injects the required User-Agent!
+            final encodedUrl = base64Url.encode(utf8.encode(url));
+            final ytStreamUrl = 'ytstream://stream?url=$encodedUrl&length=0';
+            
+            _streamCache[nativeId] = ytStreamUrl;
+            return ytStreamUrl;
+          }
+        } else {
+           print('[YouTubeMusic] BFF extraction failed with status: ${bffResponse.statusCode}');
+        }
+      } catch (bffError) {
+        print('[YouTubeMusic] BFF extraction failed: $bffError');
+      }
+      
+      // 2. Fetch the stream manifest directly using the client-side library (Fallback 1).
+      // Use Android clients which match the YoutubeStreamAudioSource User-Agent
+      try {
       final manifest = await _yt.videos.streamsClient.getManifest(
         nativeId,
-        ytClients: [yt.YoutubeApiClient.ios]
+        ytClients: [
+          yt.YoutubeApiClient.android, 
+          yt.YoutubeApiClient.androidVr, 
+          yt.YoutubeApiClient.tv
+        ]
       );
       
       final formats = manifest.audioOnly;
@@ -189,9 +231,9 @@ class YouTubeMusicAdapter implements MusicSourceAdapter {
         }
         print('[YouTubeMusic] All Piped instances failed.');
 
-      // If YouTube rate-limits the client (e.g. RequestLimitExceededException), 
-      // we throw so the aggregator can seamlessly fall back to JioSaavn.
-      throw Exception('YouTube stream resolution failed completely: $e');
+        // If YouTube rate-limits the client (e.g. RequestLimitExceededException), 
+        // we throw so the aggregator can seamlessly fall back to JioSaavn.
+        throw Exception('YouTube stream resolution failed completely: $e');
     }
   }
 

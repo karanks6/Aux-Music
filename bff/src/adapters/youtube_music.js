@@ -121,16 +121,7 @@ module.exports = {
   async resolveStreamUrl(trackId) {
     const nativeId = trackId.replace('youtube_music:', '');
     
-    // Try ytdl-core first as it might bypass BotGuard better than yt-dlp on Datacenter IPs
-    try {
-      const info = await ytdl.getInfo(nativeId);
-      const format = ytdl.chooseFormat(info.formats, { quality: 'highestaudio' });
-      if (format && format.url) {
-        return format.url;
-      }
-    } catch (err) {
-      console.warn(`[YouTube Music] ytdl-core failed for ${nativeId}:`, err.message);
-    }
+    // Removed ytdl-core since it generates TVHTML5 URLs which get blocked by BotGuard when used with Android User-Agent
 
     // Fallback to yt-dlp
     try {
@@ -141,7 +132,7 @@ module.exports = {
         noCheckCertificate: true,
         preferFreeFormats: true,
         format: 'm4a/bestaudio/best',
-        extractorArgs: 'youtube:player-client=ios'
+        extractorArgs: 'youtube:client=android'
       });
       
       if (!output || !output.url) {

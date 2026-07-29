@@ -9,27 +9,56 @@ import '../../core/providers/podcast_providers.dart';
 import '../../core/di/providers.dart';
 import '../../core/playback/playback_providers.dart';
 import '../../data/models/track.dart';
+import '../../data/models/podcast.dart';
 
 // ── Podcast Category Providers ──────────────────────────────────────────────
 
-final _techPodcastsProvider = FutureProvider<List<Track>>((ref) async {
-  final aggregator = ref.read(aggregatorProvider);
-  return aggregator.searchTracks('technology podcast', limitPerSource: 25, isPodcast: true);
+final _techPodcastsProvider = FutureProvider<List<Podcast>>((ref) async {
+  final repo = ref.read(podcastRepositoryProvider);
+  final feeds = [
+    'https://feeds.simplecast.com/7123pI11', // Waveform
+    'https://lexfridman.com/feed/podcast/', // Lex Fridman
+    'https://feeds.megaphone.fm/vergecast', // Vergecast
+  ];
+  final futures = feeds.map((url) => repo.parseFeedUrl(url).then((p) => p as Podcast).catchError((_) => null));
+  final results = await Future.wait(futures);
+  return results.whereType<Podcast>().toList();
 });
 
-final _comedyPodcastsProvider = FutureProvider<List<Track>>((ref) async {
-  final aggregator = ref.read(aggregatorProvider);
-  return aggregator.searchTracks('comedy podcast', limitPerSource: 25, isPodcast: true);
+final _comedyPodcastsProvider = FutureProvider<List<Podcast>>((ref) async {
+  final repo = ref.read(podcastRepositoryProvider);
+  final feeds = [
+    'https://feeds.simplecast.com/dHoohVNH', // Conan O'Brien
+    'https://rss.art19.com/smartless', // SmartLess
+    'https://wtfpod.libsyn.com/rss', // WTF with Marc Maron
+  ];
+  final futures = feeds.map((url) => repo.parseFeedUrl(url).then((p) => p as Podcast).catchError((_) => null));
+  final results = await Future.wait(futures);
+  return results.whereType<Podcast>().toList();
 });
 
-final _newsPodcastsProvider = FutureProvider<List<Track>>((ref) async {
-  final aggregator = ref.read(aggregatorProvider);
-  return aggregator.searchTracks('news podcast', limitPerSource: 25, isPodcast: true);
+final _newsPodcastsProvider = FutureProvider<List<Podcast>>((ref) async {
+  final repo = ref.read(podcastRepositoryProvider);
+  final feeds = [
+    'https://feeds.simplecast.com/54nAGcIl', // The Daily
+    'https://feeds.npr.org/510318/podcast.xml', // Up First
+    'https://podcasts.files.bbci.co.uk/p02nq0gn.rss', // Global News Podcast
+  ];
+  final futures = feeds.map((url) => repo.parseFeedUrl(url).then((p) => p as Podcast).catchError((_) => null));
+  final results = await Future.wait(futures);
+  return results.whereType<Podcast>().toList();
 });
 
-final _businessPodcastsProvider = FutureProvider<List<Track>>((ref) async {
-  final aggregator = ref.read(aggregatorProvider);
-  return aggregator.searchTracks('business podcast', limitPerSource: 25, isPodcast: true);
+final _businessPodcastsProvider = FutureProvider<List<Podcast>>((ref) async {
+  final repo = ref.read(podcastRepositoryProvider);
+  final feeds = [
+    'https://feeds.npr.org/510289/podcast.xml', // Planet Money
+    'https://feeds.simplecast.com/s6wEExXo', // Freakonomics Radio
+    'https://feeds.npr.org/510313/podcast.xml', // How I Built This
+  ];
+  final futures = feeds.map((url) => repo.parseFeedUrl(url).then((p) => p as Podcast).catchError((_) => null));
+  final results = await Future.wait(futures);
+  return results.whereType<Podcast>().toList();
 });
 
 class PodcastsScreen extends ConsumerWidget {
@@ -99,7 +128,7 @@ class PodcastsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildCategorySection(String title, AsyncValue<List<Track>> asyncTracks) {
+  Widget _buildCategorySection(String title, AsyncValue<List<Podcast>> asyncPodcasts) {
     return SliverToBoxAdapter(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -115,7 +144,7 @@ class PodcastsScreen extends ConsumerWidget {
           ),
           SizedBox(
             height: 200,
-            child: asyncTracks.when(
+            child: asyncPodcasts.when(
               loading: () => _buildShimmerShelf(),
               error: (e, _) => Center(
                 child: Text(
@@ -124,7 +153,7 @@ class PodcastsScreen extends ConsumerWidget {
                   textAlign: TextAlign.center,
                 ),
               ),
-              data: (tracks) => _TrackShelf(tracks: tracks),
+              data: (podcasts) => _PodcastShelf(podcasts: podcasts),
             ),
           ),
         ],
@@ -255,6 +284,85 @@ class PodcastsScreen extends ConsumerWidget {
           borderRadius: BorderRadius.circular(AuxSpacing.radiusCard),
         ),
       ),
+    );
+  }
+
+  Widget _PodcastShelf({required List<Podcast> podcasts}) {
+    if (podcasts.isEmpty) return const SizedBox();
+    return ListView.builder(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: AuxSpacing.lg),
+      itemCount: podcasts.length,
+      itemBuilder: (context, index) {
+        final pod = podcasts[index];
+        return GestureDetector(
+          onTap: () {
+            context.push(AppRoutes.podcastDetail.replaceFirst(':id', Uri.encodeComponent(pod.id)), extra: pod);
+          },
+          child: Container(
+            width: 160,
+            margin: const EdgeInsets.only(right: AuxSpacing.sm),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AuxSpacing.radiusCard),
+              color: AuxColors.inkRaised,
+            ),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(AuxSpacing.radiusCard),
+                  child: pod.artworkUrl != null
+                      ? Image.network(
+                          pod.artworkUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const Center(
+                            child: Icon(Icons.podcasts_rounded, color: Colors.white54, size: 40),
+                          ),
+                        )
+                      : const Center(
+                          child: Icon(Icons.podcasts_rounded, color: Colors.white54, size: 40),
+                        ),
+                ),
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(AuxSpacing.radiusCard),
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withOpacity(0.1),
+                        Colors.black.withOpacity(0.9),
+                      ],
+                      stops: const [0.0, 0.5, 1.0],
+                    ),
+                  ),
+                  padding: const EdgeInsets.all(AuxSpacing.md),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Text(
+                        pod.title,
+                        style: AuxTypography.bodySemiBold.copyWith(color: Colors.white),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        pod.author,
+                        style: AuxTypography.caption.copyWith(color: Colors.white70),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
