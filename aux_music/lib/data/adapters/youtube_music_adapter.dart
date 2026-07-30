@@ -117,6 +117,44 @@ class YouTubeMusicAdapter implements MusicSourceAdapter {
     }
   }
 
+  Future<List<Track>> getUpNext(String trackId) async {
+    try {
+      final nativeId = trackId.replaceFirst('youtube_music:', '');
+      final bffResponse = await dio.Dio().get(
+        '${Env.bffUrl}/recommendations/upnext/$nativeId',
+      );
+      if (bffResponse.statusCode == 200) {
+        final data = bffResponse.data['data'] as List;
+        return data.map((t) => Track.fromJson(t)).toList();
+      }
+    } catch (e) {
+      print('[YouTubeMusic] getUpNext error: $e');
+    }
+    return [];
+  }
+
+  Future<List<Map<String, dynamic>>> getHomeRecommendations() async {
+    try {
+      final bffResponse = await dio.Dio().get(
+        '${Env.bffUrl}/recommendations/home',
+      );
+      if (bffResponse.statusCode == 200) {
+        final data = bffResponse.data['data'] as List;
+        return data.map((shelf) {
+          final tracksList = shelf['tracks'] as List;
+          final tracks = tracksList.map((t) => Track.fromJson(t)).toList();
+          return {
+            'title': shelf['title'] as String,
+            'tracks': tracks,
+          };
+        }).toList();
+      }
+    } catch (e) {
+      print('[YouTubeMusic] getHomeRecommendations error: $e');
+    }
+    return [];
+  }
+
     @override
     Future<String> resolveStreamUrl(String trackId) async {
       final nativeId = trackId.replaceFirst('youtube_music:', '');

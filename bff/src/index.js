@@ -107,6 +107,35 @@ fastify.get('/search', async (request, reply) => {
 });
 
 /**
+ * GET /recommendations/home
+ * Returns personalized / curated shelves (like "Radio") using YouTube Music's UpNext algorithm.
+ */
+fastify.get('/recommendations/home', async (request, reply) => {
+  try {
+    const shelves = await youtubeMusicAdapter.getHomeRecommendations();
+    return { data: shelves };
+  } catch (err) {
+    fastify.log.error(err);
+    return reply.status(502).send({ error: 'Failed to fetch home recommendations.' });
+  }
+});
+
+/**
+ * GET /recommendations/upnext/:videoId
+ * Returns an infinite radio / up-next queue for a given video ID.
+ */
+fastify.get('/recommendations/upnext/:videoId', async (request, reply) => {
+  const { videoId } = request.params;
+  try {
+    const tracks = await youtubeMusicAdapter.getUpNext(videoId);
+    return { data: deduplicateTracks(tracks), count: tracks.length };
+  } catch (err) {
+    fastify.log.error(err);
+    return reply.status(502).send({ error: 'Failed to fetch up-next recommendations.' });
+  }
+});
+
+/**
  * GET /stream-url/:source/:trackId
  * Resolves and returns the direct stream URL for a track.
  * The Flutter app calls this just before playback begins.

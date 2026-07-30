@@ -10,29 +10,53 @@ let isInitialized = false;
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 function parseTrack(song) {
-  if (!song || song.type !== 'SONG' && song.type !== 'VIDEO') return null;
-  if (!song.videoId || !song.name || !song.artist) return null;
+  if (!song || (song.type !== 'SONG' && song.type !== 'VIDEO')) return null;
+  
+  const title = song.name || song.title;
+  if (!song.videoId || !title) return null;
 
   try {
-    let artworkUrl = song.thumbnails?.length
-      ? song.thumbnails[song.thumbnails.length - 1].url
-      : null;
+    let artworkUrl = null;
+    let thumbnailUrl = null;
+    
+    if (song.thumbnails?.length) {
+       artworkUrl = song.thumbnails[song.thumbnails.length - 1].url;
+       thumbnailUrl = song.thumbnails[0].url;
+    } else if (song.thumbnail) {
+       artworkUrl = song.thumbnail;
+       thumbnailUrl = song.thumbnail;
+    }
       
     if (artworkUrl) {
       artworkUrl = artworkUrl.replace(/w\d+-h\d+/, 'w500-h500');
     }
 
+    let artistName = 'Unknown Artist';
+    let artistId = null;
+    
+    if (song.artist) {
+      artistName = song.artist.name || song.artist;
+      artistId = song.artist.artistId ? `youtube_music_artist:${song.artist.artistId}` : null;
+    } else if (song.artists) {
+      // In getUpNexts, artists is sometimes an array, or a string
+      if (Array.isArray(song.artists)) {
+         artistName = song.artists.map(a => a.name || a).join(', ');
+      } else {
+         artistName = typeof song.artists === 'string' ? song.artists : 'Unknown Artist';
+      }
+    }
+
     return {
       id: `youtube_music:${song.videoId}`,
-      title: song.name,
-      artistName: song.artist.name,
-      artistId: song.artist.artistId ? `youtube_music_artist:${song.artist.artistId}` : null,
+      title: title,
+      artistName: artistName,
+      artistId: artistId,
       albumName: song.album?.name || '',
       artworkUrl: artworkUrl,
-      thumbnailUrl: song.thumbnails?.[0]?.url || null,
+      thumbnailUrl: thumbnailUrl,
       sourceId: 'youtube_music',
       licenseType: 'CUSTOM',
-      attributionString: `${song.artist.name} · YouTube Music`,
+      attributionString: `${artistName} · YouTube Music`,
       sourceUrl: `https://music.youtube.com/watch?v=${song.videoId}`,
       durationMs: 0, 
       playCount: 0,
@@ -109,6 +133,53 @@ module.exports = {
       return results.slice(0, limit).map(parseTrack).filter(Boolean);
     } catch (e) {
       console.error('[YouTube Music] trending error:', e.message);
+      return [];
+    }
+  },
+
+  async getUpNext(trackId) {
+    try {
+      await ensureInitialized();
+      const nativeId = trackId.replace('youtube_music:', '');
+      const results = await ytmusic.getUpNexts(nativeId);
+      return results.map(parseTrack).filter(Boolean);
+    } catch (e) {
+      console.error(`[YouTube Music] getUpNext error for ${trackId}:`, e.message);
+      return [];
+    }
+  },
+
+  async getHomeRecommendations() {
+    try {
+      await ensureInitialized();
+      // We will generate a few personalized / rich shelves based on "seed" tracks.
+      // Since unauthenticated getHomeSections() returns mostly RDCL playlists which are hard to parse,
+      // we generate "Radio" shelves from popular songs across different genres to simulate it.
+      const seedTracks = [
+        { title: 'Global Pop Mix', videoId: 'XXYlFuWEuKI' }, // The Weeknd
+        { title: 'Bollywood Radio', videoId: '5Eqb_-j3FDA' }, // Arijit Singh
+        { title: 'Desi Hip-Hop Radio', videoId: 'Ukm86tCq1Gk' }, // AP Dhillon
+        { title: 'Punjabi Fire', videoId: '9M4yE3-L7X8' }, // Diljit Dosanjh
+        { title: 'Electronic Dance', videoId: 'YykjpeuMNEk' } // Coldplay
+      ];
+
+      const shelves = [];
+      for (const seed of seedTracks) {
+        try {
+          const upNexts = await ytmusic.getUpNexts(seed.videoId);
+          if (upNexts && upNexts.length > 0) {
+            shelves.push({
+              title: seed.title,
+              tracks: upNexts.map(parseTrack).filter(Boolean)
+            });
+          }
+        } catch (innerError) {
+          console.error(`[YouTube Music] Failed to fetch UpNext for seed ${seed.videoId}:`, innerError.message);
+        }
+      }
+      return shelves;
+    } catch (e) {
+      console.error('[YouTube Music] getHomeRecommendations error:', e.message);
       return [];
     }
   },

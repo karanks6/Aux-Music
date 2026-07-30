@@ -1,0 +1,394 @@
+[
+  {
+    "type": "SONG",
+    "videoId": "yPYZpwSpKmA",
+    "title": "Together Forever (2022 Remaster)",
+    "artists": "Rick Astley",
+    "duration": "3:24",
+    "thumbnail": "https://i.ytimg.com/vi/yPYZpwSpKmA/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3lC9wXIFuMohsv5Fv733SHdgMLDSA"
+  },
+  {
+    "type": "SONG",
+    "videoId": "eNvUS-6PTbs",
+    "title": "Cheri Cheri Lady",
+    "artists": "Modern Talking",
+    "duration": "3:18",
+    "thumbnail": "https://i.ytimg.com/vi/eNvUS-6PTbs/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3lvjppy8eQGWC-C1iucucSMZ6ydcg"
+  },
+  {
+    "type": "SONG",
+    "videoId": "Zi_XLOBDo_Y",
+    "title": "Billie Jean",
+    "artists": "Michael Jackson",
+    "duration": "4:56",
+    "thumbnail": "https://i.ytimg.com/vi/Zi_XLOBDo_Y/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3losc7BEx-ddp9VLhwicYLuQhrGog"
+  },
+  {
+    "type": "SONG",
+    "videoId": "djV11Xbc914",
+    "title": "Take On Me",
+    "artists": "a-ha",
+    "duration": "4:04",
+    "thumbnail": "https://i.ytimg.com/vi/djV11Xbc914/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3n4j5h_GiQe61vVk1O8psgc4w2wVw"
+  },
+  {
+    "type": "SONG",
+    "videoId": "OMOGaugKpzs",
+    "title": "Every Breath You Take Video",
+    "artists": "The Police",
+    "duration": "3:49",
+    "thumbnail": "https://i.ytimg.com/vi/OMOGaugKpzs/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3k0WpWq5Si0471qdLoSHaEvS7g1HA"
+  },
+  {
+    "type": "SONG",
+    "videoId": "XEjLoHdbVeE",
+    "title": "Gimme! Gimme! Gimme! (A Man After Midnight)",
+    "artists": "ABBA",
+    "duration": "3:17",
+    "thumbnail": "https://i.ytimg.com/vi/XEjLoHdbVeE/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3lx4GZJG1PTxVtMzePS3SIUY1fjEQ"
+  },
+  {
+    "type": "SONG",
+    "videoId": "I_izvAbhExY",
+    "title": "Stayin' Alive (From \"Saturday Night Fever\" Soundtrack)",
+    "artists": "Bee Gees",
+    "duration": "4:10",
+    "thumbnail": "https://i.ytimg.com/vi/I_izvAbhExY/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3kMq5y5OISTOM-5FdcEn4EMY7yhSg"
+  },
+  {
+    "type": "SONG",
+    "videoId": "4fndeDfaWCg",
+    "title": "I Want It That Way",
+    "artists": "Backstreet Boys",
+    "duration": "3:40",
+    "thumbnail": "https://i.ytimg.com/vi/4fndeDfaWCg/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3lANiJeWnNoulYPEhOVAWRd1S0kWg"
+  },
+  {
+    "type": "SONG",
+    "videoId": "qeMFqkcPYcg",
+    "title": "Sweet Dreams (Are Made Of This)",
+    "artists": "Eurythmics, Annie Lennox, & Dave Stewart",
+    "duration": "3:35",
+    "thumbnail": "https://i.ytimg.com/vi/qeMFqkcPYcg/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3kzzcnyao-x8OFax20O52yw7nycLQ"
+  },
+  {
+    "type": "SONG",
+    "videoId": "HEXWRTEbj1I",
+    "title": "What Is Love",
+    "artists": "Haddaway",
+    "duration": "4:01",
+    "thumbnail": "https://i.ytimg.com/vi/HEXWRTEbj1I/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3lT1HZItLRkqs5xAlea_Fn00s3zlg"
+  },
+  {
+    "type": "SONG",
+    "videoId": "btPJPFnesV4",
+    "title": "Eye Of The Tiger (Official HD Video)",
+    "artists": "Survivor",
+    "duration": "4:05",
+    "thumbnail": "https://i.ytimg.com/vi/btPJPFnesV4/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3njOQ98IzaNU1x_14mv4VWcRNP23Q"
+  },
+  {
+    "type": "SONG",
+    "videoId": "BeyEGebJ1l4",
+    "title": "Whenever You Need Somebody",
+    "artists": "Rick Astley",
+    "duration": "3:28",
+    "thumbnail": "https://i.ytimg.com/vi/BeyEGebJ1l4/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3nXT4qh1ku-puwO0JwUX8pCaRniaw"
+  },
+  {
+    "type": "SONG",
+    "videoId": "HgzGwKwLmgM",
+    "title": "Don't Stop Me Now",
+    "artists": "Queen",
+    "duration": "3:32",
+    "thumbnail": "https://i.ytimg.com/vi/HgzGwKwLmgM/hqdefault.jpg?sqp=-oaymwEWCOADEI4CIAQqCggAEOADGC0guwJIWg&rs=AMzJL3lJGXhn_FYF4rSYHfTIx1CfO1VY1w"
+  },
+  {
+    "type": "SONG",
+    "videoId": "izGwDsrQ1eQ",
+    "title": "Careless Whisper (Official Video)",
+    "artists": "George Michael",
+    "duration": "5:01",
+    "thumbnail": "https://i.ytimg.com/vi/izGwDsrQ1eQ/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3lukOHpG0Leu9ivgmO_kGYWXOngXw"
+  },
+  {
+    "type": "SONG",
+    "videoId": "vx2u5uUu3DE",
+    "title": "It's My Life",
+    "artists": "Bon Jovi",
+    "duration": "4:27",
+    "thumbnail": "https://i.ytimg.com/vi/vx2u5uUu3DE/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3lZNuj85FJoqkMGWPiAgjNd9-HPJA"
+  },
+  {
+    "type": "SONG",
+    "videoId": "eYuUAGXN0KM",
+    "title": "Take Me to Your Heart",
+    "artists": "Rick Astley",
+    "duration": "3:32",
+    "thumbnail": "https://i.ytimg.com/vi/eYuUAGXN0KM/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3mDuAQWH4XVa-TfDCXsIp3EXQxCUg"
+  },
+  {
+    "type": "SONG",
+    "videoId": "9jK-NcRmVcw",
+    "title": "The Final Countdown (Official Video)",
+    "artists": "Europe",
+    "duration": "4:57",
+    "thumbnail": "https://i.ytimg.com/vi/9jK-NcRmVcw/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3l5Pi0WR87tckA4SORjyqneqDwkEQ"
+  },
+  {
+    "type": "SONG",
+    "videoId": "XXYlFuWEuKI",
+    "title": "Save Your Tears",
+    "artists": "The Weeknd",
+    "duration": "4:09",
+    "thumbnail": "https://i.ytimg.com/vi/XXYlFuWEuKI/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3mNh8GAK7D2xc5lcck_rXGbcXo-8g"
+  },
+  {
+    "type": "SONG",
+    "videoId": "ViP87WipSm0",
+    "title": "Be My Lover (Official Video)",
+    "artists": "La Bouche",
+    "duration": "3:43",
+    "thumbnail": "https://i.ytimg.com/vi/ViP87WipSm0/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3mSf-xMLd9ShNTWnetOrVIBTNta5g"
+  },
+  {
+    "type": "SONG",
+    "videoId": "rZlQ28OeGMI",
+    "title": "My Arms Keep Missing You",
+    "artists": "Rick Astley",
+    "duration": "3:15",
+    "thumbnail": "https://i.ytimg.com/vi/rZlQ28OeGMI/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3kreHkr7kWdZnfVGDklgqzMj7Hang"
+  },
+  {
+    "type": "SONG",
+    "videoId": "zpzdgmqIHOQ",
+    "title": "La Isla Bonita",
+    "artists": "Madonna",
+    "duration": "4:02",
+    "thumbnail": "https://i.ytimg.com/vi/zpzdgmqIHOQ/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3n1Af_lZUSGQqcyxJscCFEft3_4nQ"
+  },
+  {
+    "type": "SONG",
+    "videoId": "ZhIsAZO5gl0",
+    "title": "I Was Made For Lovin' You",
+    "artists": "Kiss",
+    "duration": "3:59",
+    "thumbnail": "https://i.ytimg.com/vi/ZhIsAZO5gl0/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3mKFKC4QFfPDHt-MzmWNmbrpXva6g"
+  },
+  {
+    "type": "SONG",
+    "videoId": "aGCdLKXNF3w",
+    "title": "Everybody Wants To Rule The World (Official Music Video)",
+    "artists": "Tears For Fears",
+    "duration": "4:51",
+    "thumbnail": "https://i.ytimg.com/vi/aGCdLKXNF3w/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3n4cTXCTp6IJ4Dm-PCT64GQgRdKrg"
+  },
+  {
+    "type": "SONG",
+    "videoId": "yBwD4iYcWC4",
+    "title": "She Wants to Dance",
+    "artists": "Rick Astley",
+    "duration": "4:20",
+    "thumbnail": "https://i.ytimg.com/vi/yBwD4iYcWC4/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3khxPtGmJB5eQy3zMPSrjNbEpKjtA"
+  },
+  {
+    "type": "SONG",
+    "videoId": "dvgZkm1xWPE",
+    "title": "Viva la Vida",
+    "artists": "Coldplay",
+    "duration": "4:03",
+    "thumbnail": "https://i.ytimg.com/vi/dvgZkm1xWPE/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3kXcDZwmOCD34KZbMCgOKx0Jq6qPA"
+  },
+  {
+    "type": "SONG",
+    "videoId": "FTQbiNvZqaY",
+    "title": "Africa",
+    "artists": "Toto",
+    "duration": "4:32",
+    "thumbnail": "https://i.ytimg.com/vi/FTQbiNvZqaY/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3nFSMDkNJoDZtlzXrEb19E0omqyeQ"
+  },
+  {
+    "type": "SONG",
+    "videoId": "ZyhrYis509A",
+    "title": "Barbie Girl",
+    "artists": "Aqua",
+    "duration": "3:22",
+    "thumbnail": "https://i.ytimg.com/vi/ZyhrYis509A/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3nXWthmlsTtcG5exWuv2GjvoHKh3g"
+  },
+  {
+    "type": "SONG",
+    "videoId": "oRdxUFDoQe0",
+    "title": "Beat It",
+    "artists": "Michael Jackson",
+    "duration": "4:59",
+    "thumbnail": "https://i.ytimg.com/vi/oRdxUFDoQe0/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3lS-S-liMYSB0qgzcHxm_yIBplo3w"
+  },
+  {
+    "type": "SONG",
+    "videoId": "Fe93CLbHjxQ",
+    "title": "Ghostbusters (Official HD Video)",
+    "artists": "Ray Parker Jr.",
+    "duration": "4:06",
+    "thumbnail": "https://i.ytimg.com/vi/Fe93CLbHjxQ/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3lkG8GFlZbjhuk-ORQUeBqFnfw25w"
+  },
+  {
+    "type": "SONG",
+    "videoId": "oNjQXmoxiQ8",
+    "title": "Forever Young",
+    "artists": "Alphaville",
+    "duration": "3:43",
+    "thumbnail": "https://i.ytimg.com/vi/oNjQXmoxiQ8/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3k7Kmnj7CZOXQGRKn5lEixkR8dvog"
+  },
+  {
+    "type": "SONG",
+    "videoId": "PIb6AZdTr-A",
+    "title": "Girls Just Want To Have Fun",
+    "artists": "Cyndi Lauper",
+    "duration": "4:27",
+    "thumbnail": "https://i.ytimg.com/vi/PIb6AZdTr-A/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3mgIQO_c1GoLPyiKq0F_puk-yM6Kg"
+  },
+  {
+    "type": "SONG",
+    "videoId": "6dOwHzCHfgA",
+    "title": "(I Just) Died In Your Arms (Official Music Video)",
+    "artists": "Cutting Crew",
+    "duration": "4:32",
+    "thumbnail": "https://i.ytimg.com/vi/6dOwHzCHfgA/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3ljVC6BYnJE-yT8CXJ41BsJJp74mA"
+  },
+  {
+    "type": "SONG",
+    "videoId": "uxX2gA18grk",
+    "title": "Caribbean Queen (No More Love on the Run) (Official HD Video)",
+    "artists": "Billy Ocean",
+    "duration": "3:41",
+    "thumbnail": "https://i.ytimg.com/vi/uxX2gA18grk/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3kRJCqmZVeMc33vk8B00du80R6-kw"
+  },
+  {
+    "type": "SONG",
+    "videoId": "Gs069dndIYk",
+    "title": "September",
+    "artists": "Earth, Wind & Fire",
+    "duration": "3:36",
+    "thumbnail": "https://i.ytimg.com/vi/Gs069dndIYk/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3mSiPnSmGEnm7usgAV02MSSN478Tw"
+  },
+  {
+    "type": "SONG",
+    "videoId": "ltrMfT4Qz5Y",
+    "title": "Footloose (Official Video)",
+    "artists": "Kenny Loggins",
+    "duration": "2:56",
+    "thumbnail": "https://i.ytimg.com/vi/ltrMfT4Qz5Y/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3kPshFghDUouGv6a9jMPDqZ2f297Q"
+  },
+  {
+    "type": "SONG",
+    "videoId": "Qt2mbGP6vFI",
+    "title": "Another Day In Paradise (Live)",
+    "artists": "Phil Collins",
+    "duration": "4:50",
+    "thumbnail": "https://i.ytimg.com/vi/Qt2mbGP6vFI/sddefault.jpg?sqp=-oaymwEWCIAFEOgCIAQqCggAEIAFGDwgpANIWg&rs=AMzJL3mCg3QqvkJ2zd8drjaVhP7ZOR8TFQ"
+  },
+  {
+    "type": "SONG",
+    "videoId": "7YvAYIJSSZY",
+    "title": "Somebody's Watching Me (Official Music Video)",
+    "artists": "Rockwell",
+    "duration": "3:36",
+    "thumbnail": "https://i.ytimg.com/vi/7YvAYIJSSZY/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3lCCOB4j_JwgzDu__bNy-V2U-4pfQ"
+  },
+  {
+    "type": "SONG",
+    "videoId": "hCuMWrfXG4E",
+    "title": "Uptown Girl",
+    "artists": "Billy Joel",
+    "duration": "3:23",
+    "thumbnail": "https://i.ytimg.com/vi/hCuMWrfXG4E/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3lU0ygEcJCI-m27eBnIVXK4BkoQDA"
+  },
+  {
+    "type": "SONG",
+    "videoId": "J9gKyRmic20",
+    "title": "Don't Dream It's Over (Official Music Video)",
+    "artists": "Crowded House",
+    "duration": "3:59",
+    "thumbnail": "https://i.ytimg.com/vi/J9gKyRmic20/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3mmcvETXkZBsqlVbFeNmkJOYGMnvQ"
+  },
+  {
+    "type": "SONG",
+    "videoId": "yURRmWtbTbo",
+    "title": "Don't Stop 'Til You Get Enough",
+    "artists": "Michael Jackson",
+    "duration": "4:14",
+    "thumbnail": "https://i.ytimg.com/vi/yURRmWtbTbo/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3nCmo4CoZvz5mCepaDcHJ4dgit03w"
+  },
+  {
+    "type": "SONG",
+    "videoId": "PGNiXGX2nLU",
+    "title": "You Spin Me Round (Like a Record) (Official Video)",
+    "artists": "Dead Or Alive",
+    "duration": "3:17",
+    "thumbnail": "https://i.ytimg.com/vi/PGNiXGX2nLU/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3kMsVNdyeCSMrwE-INFcCQPsMLkfg"
+  },
+  {
+    "type": "SONG",
+    "videoId": "eH3giaIzONA",
+    "title": "I Wanna Dance With Somebody (Official 4K Video)",
+    "artists": "Whitney Houston",
+    "duration": "5:15",
+    "thumbnail": "https://i.ytimg.com/vi/eH3giaIzONA/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3lijBM2n7etk2uqcbznBmCTIETVjQ"
+  },
+  {
+    "type": "SONG",
+    "videoId": "Bx51eegLTY8",
+    "title": "Take My Breath Away (Official Video - Top Gun)",
+    "artists": "Berlin",
+    "duration": "4:12",
+    "thumbnail": "https://i.ytimg.com/vi/Bx51eegLTY8/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3k22vNTxdEd4R7Zb2j-0k4ozawBDA"
+  },
+  {
+    "type": "SONG",
+    "videoId": "UtvmTu4zAMg",
+    "title": "She Drives Me Crazy",
+    "artists": "Fine Young Cannibals",
+    "duration": "3:39",
+    "thumbnail": "https://i.ytimg.com/vi/UtvmTu4zAMg/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3mKNLaVjimfvQuPxuaJqY7vz9yZ8w"
+  },
+  {
+    "type": "SONG",
+    "videoId": "ulZQTrV8QlQ",
+    "title": "Lay All Your Love On Me (Official Lyric Video)",
+    "artists": "ABBA",
+    "duration": "4:41",
+    "thumbnail": "https://i.ytimg.com/vi/ulZQTrV8QlQ/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3k6LGAPc7sH6IFuvxF1Qz4J6zfNsw"
+  },
+  {
+    "type": "SONG",
+    "videoId": "ILWSp0m9G2U",
+    "title": "Flashdance... What a Feeling ('95 version)",
+    "artists": "Irene Cara",
+    "duration": "3:20",
+    "thumbnail": "https://i.ytimg.com/vi/ILWSp0m9G2U/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3mK-Jqm-FqZ6Toah-14nu-b9mRrJw"
+  },
+  {
+    "type": "SONG",
+    "videoId": "j2F4INQFjEI",
+    "title": "Heaven Is A Place On Earth",
+    "artists": "Belinda Carlisle",
+    "duration": "4:05",
+    "thumbnail": "https://i.ytimg.com/vi/j2F4INQFjEI/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3lie38S-pS7M03Fn2l2NYQLZJVwpg"
+  },
+  {
+    "type": "SONG",
+    "videoId": "u-XqzY5y8uA",
+    "title": "Funky Town",
+    "artists": "Lipps Inc.",
+    "duration": "3:57",
+    "thumbnail": "https://i.ytimg.com/vi/u-XqzY5y8uA/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3loo2FcBwTttpPIcjEINLD3VneCPg"
+  },
+  {
+    "type": "SONG",
+    "videoId": "RP0_8J7uxhs",
+    "title": "Self Control",
+    "artists": "Laura Branigan",
+    "duration": "5:08",
+    "thumbnail": "https://i.ytimg.com/vi/RP0_8J7uxhs/hq720.jpg?sqp=-oaymwEKCNUGEN8DIABIWg&rs=AMzJL3mLjtqtpuggY2kUiNH8BWmCi0qLtg"
+  }
+]

@@ -80,6 +80,16 @@ class MusicAdapterAggregator {
     );
   }
 
+  Future<List<Track>> getUpNext(String trackId) async {
+    final adapter = _adapters.firstWhere((a) => a is YouTubeMusicAdapter) as YouTubeMusicAdapter;
+    return adapter.getUpNext(trackId);
+  }
+
+  Future<List<Map<String, dynamic>>> getHomeRecommendations() async {
+    final adapter = _adapters.firstWhere((a) => a is YouTubeMusicAdapter) as YouTubeMusicAdapter;
+    return adapter.getHomeRecommendations();
+  }
+
   /// Resolve stream URL — delegated to the correct adapter by sourceId prefix.
   Future<({String url, Track? fallbackTrack})> resolveStreamUrl(String trackId, {String? title, String? artistName}) async {
     final adapter = _adapterForTrackId(trackId);

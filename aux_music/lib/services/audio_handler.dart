@@ -62,6 +62,8 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
 
   // ── Initialization ────────────────────────────────────────────────
 
+  bool _isFetchingUpNext = false;
+
   Future<void> _init() async {
     // Start the local Dart audio proxy to bypass YouTube 403s safely
     await LocalAudioProxy().start();
@@ -72,7 +74,7 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
     });
 
     // Forward player's current index → audio_service mediaItem
-    _player.currentIndexStream.listen((index) {
+    _player.currentIndexStream.listen((index) async {
       if (index != null && index < queue.value.length) {
         // Only update mediaItem if we aren't currently overriding it for loading state
         if (!_isLoadingStream) {
@@ -83,6 +85,37 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
           final nextTrackId = queue.value[index + 1].extras?['trackId'] as String?;
           if (nextTrackId != null) {
             _ensureStreamUrl(nextTrackId, index: index + 1);
+          }
+        }
+        
+        // Infinite Radio: Fetch UpNext when approaching end of queue
+        if (index >= queue.value.length - 2 && !_isFetchingUpNext) {
+          _isFetchingUpNext = true;
+          try {
+            final currentTrackId = queue.value[index].extras?['trackId'] as String?;
+            if (currentTrackId != null && currentTrackId.startsWith('youtube_music:')) {
+               final tracks = await _aggregator.getUpNext(currentTrackId);
+               if (tracks.isNotEmpty) {
+                 // Append tracks to the queue, avoiding duplicates if possible
+                 final q = queue.value;
+                 final existingIds = q.map((i) => i.extras?['trackId'] as String?).toSet();
+                 final newTracks = tracks.where((t) => !existingIds.contains(t.id)).toList();
+                 if (newTracks.isNotEmpty) {
+                   final newMediaItems = newTracks.map((t) => t.toMediaItem()).toList();
+                   final currentQ = List<MediaItem>.from(queue.value)..addAll(newMediaItems);
+                   queue.add(currentQ);
+                   
+                   for (final item in newMediaItems) {
+                     await _playlist.add(AudioSource.uri(Uri.parse('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA='), tag: item));
+                   }
+                   print('[AudioHandler] Infinite Radio: Appended ${newTracks.length} tracks to queue');
+                 }
+               }
+            }
+          } catch (e) {
+            print('[AudioHandler] Infinite Radio fetch failed: $e');
+          } finally {
+            _isFetchingUpNext = false;
           }
         }
       }

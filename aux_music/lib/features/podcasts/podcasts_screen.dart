@@ -20,9 +20,16 @@ final _techPodcastsProvider = FutureProvider<List<Podcast>>((ref) async {
     'https://lexfridman.com/feed/podcast/', // Lex Fridman
     'https://feeds.megaphone.fm/vergecast', // Vergecast
   ];
-  final futures = feeds.map((url) => repo.parseFeedUrl(url).then<Podcast?>((p) => p).catchError((_) => null));
-  final results = await Future.wait(futures);
-  return results.whereType<Podcast>().toList();
+  final results = <Podcast>[];
+  for (final url in feeds) {
+    try {
+      final p = await repo.parseFeedUrl(url);
+      results.add(p);
+    } catch (e) {
+      print('Failed to load tech podcast $url: $e');
+    }
+  }
+  return results;
 });
 
 final _comedyPodcastsProvider = FutureProvider<List<Podcast>>((ref) async {
@@ -32,9 +39,16 @@ final _comedyPodcastsProvider = FutureProvider<List<Podcast>>((ref) async {
     'https://rss.art19.com/smartless', // SmartLess
     'https://wtfpod.libsyn.com/rss', // WTF with Marc Maron
   ];
-  final futures = feeds.map((url) => repo.parseFeedUrl(url).then<Podcast?>((p) => p).catchError((_) => null));
-  final results = await Future.wait(futures);
-  return results.whereType<Podcast>().toList();
+  final results = <Podcast>[];
+  for (final url in feeds) {
+    try {
+      final p = await repo.parseFeedUrl(url);
+      results.add(p);
+    } catch (e) {
+      print('Failed to load comedy podcast $url: $e');
+    }
+  }
+  return results;
 });
 
 final _newsPodcastsProvider = FutureProvider<List<Podcast>>((ref) async {
@@ -44,9 +58,16 @@ final _newsPodcastsProvider = FutureProvider<List<Podcast>>((ref) async {
     'https://feeds.npr.org/510318/podcast.xml', // Up First
     'https://podcasts.files.bbci.co.uk/p02nq0gn.rss', // Global News Podcast
   ];
-  final futures = feeds.map((url) => repo.parseFeedUrl(url).then<Podcast?>((p) => p).catchError((_) => null));
-  final results = await Future.wait(futures);
-  return results.whereType<Podcast>().toList();
+  final results = <Podcast>[];
+  for (final url in feeds) {
+    try {
+      final p = await repo.parseFeedUrl(url);
+      results.add(p);
+    } catch (e) {
+      print('Failed to load news podcast $url: $e');
+    }
+  }
+  return results;
 });
 
 final _businessPodcastsProvider = FutureProvider<List<Podcast>>((ref) async {
@@ -56,9 +77,16 @@ final _businessPodcastsProvider = FutureProvider<List<Podcast>>((ref) async {
     'https://feeds.npr.org/510325/podcast.xml', // The Indicator
     'https://feeds.npr.org/510313/podcast.xml', // How I Built This
   ];
-  final futures = feeds.map((url) => repo.parseFeedUrl(url).then<Podcast?>((p) => p).catchError((_) => null));
-  final results = await Future.wait(futures);
-  return results.whereType<Podcast>().toList();
+  final results = <Podcast>[];
+  for (final url in feeds) {
+    try {
+      final p = await repo.parseFeedUrl(url);
+      results.add(p);
+    } catch (e) {
+      print('Failed to load business podcast $url: $e');
+    }
+  }
+  return results;
 });
 
 class PodcastsScreen extends ConsumerWidget {
@@ -288,7 +316,15 @@ class PodcastsScreen extends ConsumerWidget {
   }
 
   Widget _PodcastShelf({required List<Podcast> podcasts}) {
-    if (podcasts.isEmpty) return const SizedBox();
+    if (podcasts.isEmpty) {
+      return Center(
+        child: Text(
+          'Temporarily unavailable.',
+          style: AuxTypography.body.copyWith(color: AuxColors.paperMuted),
+          textAlign: TextAlign.center,
+        ),
+      );
+    }
     return ListView.builder(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: AuxSpacing.lg),

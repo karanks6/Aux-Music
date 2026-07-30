@@ -9,31 +9,11 @@ import '../../data/models/track.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/router/app_router.dart';
 
-// ── Trending providers for multiple shelves ────────────────────────────────
+// ── Dynamic Recommendations Provider ──────────────────────────────────────
 
-final _bollywoodProvider = FutureProvider<List<Track>>((ref) async {
+final _homeRecommendationsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final aggregator = ref.read(aggregatorProvider);
-  return aggregator.trending(genre: 'bollywood', limitPerSource: 25);
-});
-
-final _englishProvider = FutureProvider<List<Track>>((ref) async {
-  final aggregator = ref.read(aggregatorProvider);
-  return aggregator.trending(genre: 'english', limitPerSource: 25);
-});
-
-final _desiHipHopProvider = FutureProvider<List<Track>>((ref) async {
-  final aggregator = ref.read(aggregatorProvider);
-  return aggregator.trending(genre: 'desi hip-hop', limitPerSource: 25);
-});
-
-final _punjabiProvider = FutureProvider<List<Track>>((ref) async {
-  final aggregator = ref.read(aggregatorProvider);
-  return aggregator.trending(genre: 'punjabi', limitPerSource: 25);
-});
-
-final _globalPopProvider = FutureProvider<List<Track>>((ref) async {
-  final aggregator = ref.read(aggregatorProvider);
-  return aggregator.trending(genre: 'global pop', limitPerSource: 25);
+  return aggregator.getHomeRecommendations();
 });
 
 class HomeScreen extends ConsumerWidget {
@@ -41,22 +21,14 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final bollywood = ref.watch(_bollywoodProvider);
-    final english = ref.watch(_englishProvider);
-    final desiHipHop = ref.watch(_desiHipHopProvider);
-    final punjabi = ref.watch(_punjabiProvider);
-    final globalPop = ref.watch(_globalPopProvider);
+    final recommendationsAsync = ref.watch(_homeRecommendationsProvider);
 
     return Scaffold(
       body: RefreshIndicator(
         color: AuxColors.ember,
         backgroundColor: AuxColors.inkRaised,
         onRefresh: () async {
-          ref.invalidate(_bollywoodProvider);
-          ref.invalidate(_englishProvider);
-          ref.invalidate(_desiHipHopProvider);
-          ref.invalidate(_punjabiProvider);
-          ref.invalidate(_globalPopProvider);
+          ref.invalidate(_homeRecommendationsProvider);
         },
         child: CustomScrollView(
           slivers: [
@@ -89,13 +61,54 @@ class HomeScreen extends ConsumerWidget {
               ],
             ),
 
-            // ── Multiple Shelves ────────────────────────────────────
+            // ── Dynamic Shelves ────────────────────────────────────
             
-            _buildCategorySection('Top Bollywood Songs', bollywood),
-            _buildCategorySection('Trending English Hits', english),
-            _buildCategorySection('Desi Hip-Hop', desiHipHop),
-            _buildCategorySection('Top Punjabi Tracks', punjabi),
-            _buildCategorySection('Global Pop', globalPop),
+            recommendationsAsync.when(
+              loading: () => SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) => _buildShimmerSection(),
+                  childCount: 3,
+                ),
+              ),
+              error: (e, _) => SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(AuxSpacing.xl),
+                  child: Center(
+                    child: Text(
+                      'Temporarily unavailable.',
+                      style: AuxTypography.body.copyWith(color: AuxColors.paperMuted),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+              ),
+              data: (shelves) {
+                if (shelves.isEmpty) {
+                  return SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.all(AuxSpacing.xl),
+                      child: Center(
+                        child: Text(
+                          'No recommendations found.',
+                          style: AuxTypography.body.copyWith(color: AuxColors.paperMuted),
+                        ),
+                      ),
+                    ),
+                  );
+                }
+                return SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final shelf = shelves[index];
+                      final title = shelf['title'] as String;
+                      final tracks = shelf['tracks'] as List<Track>;
+                      return _buildCategorySection(title, tracks);
+                    },
+                    childCount: shelves.length,
+                  ),
+                );
+              },
+            ),
 
             const SliverToBoxAdapter(child: SizedBox(height: AuxSpacing.xxxl)),
           ],
@@ -104,9 +117,8 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildCategorySection(String title, AsyncValue<List<Track>> asyncTracks) {
-    return SliverToBoxAdapter(
-      child: Column(
+  Widget _buildCategorySection(String title, List<Track> tracks) {
+    return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
@@ -120,20 +132,35 @@ class HomeScreen extends ConsumerWidget {
           ),
           SizedBox(
             height: 200,
-            child: asyncTracks.when(
-              loading: () => _buildShimmerShelf(),
-              error: (e, _) => Center(
-                child: Text(
-                  'Temporarily unavailable.',
-                  style: AuxTypography.body.copyWith(color: AuxColors.paperMuted),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              data: (tracks) => _TrackShelf(tracks: tracks),
-            ),
+            child: _TrackShelf(tracks: tracks),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildShimmerSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AuxSpacing.lg, AuxSpacing.xl, AuxSpacing.lg, AuxSpacing.md,
+          ),
+          child: Container(
+            width: 150,
+            height: 24,
+            decoration: BoxDecoration(
+              color: AuxColors.inkRaised,
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+        ),
+        SizedBox(
+          height: 200,
+          child: _buildShimmerShelf(),
+        ),
+      ],
     );
   }
 
