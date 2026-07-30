@@ -151,13 +151,11 @@ class YouTubeMusicAdapter implements MusicSourceAdapter {
             final url = json['streamUrl'] as String;
             print('[YouTubeMusic] BFF extraction successful! URL: $url');
             
-            // Encode the URL to pass it safely in the custom ytstream protocol
-            // This ensures the AudioHandler uses YoutubeStreamAudioSource, which injects the required User-Agent!
-            final encodedUrl = base64Url.encode(utf8.encode(url));
-            final ytStreamUrl = 'ytstream://stream?url=$encodedUrl&length=0';
-            
-            _streamCache[nativeId] = ytStreamUrl;
-            return ytStreamUrl;
+            // Return the raw URL so ExoPlayer uses standard headers.
+            // The Android UA injected by YoutubeStreamAudioSource triggers 403 BotGuard blocks 
+            // for c=ANDROID_VR streams.
+            _streamCache[nativeId] = url;
+            return url;
           }
         } else {
            print('[YouTubeMusic] BFF extraction failed with status: ${bffResponse.statusCode}');
