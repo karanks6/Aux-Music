@@ -155,26 +155,44 @@ module.exports = {
       // We will generate a few personalized / rich shelves based on "seed" tracks.
       // Since unauthenticated getHomeSections() returns mostly RDCL playlists which are hard to parse,
       // we generate "Radio" shelves from popular songs across different genres to simulate it.
-      const seedTracks = [
-        { title: 'Global Pop Mix', videoId: 'XXYlFuWEuKI' }, // The Weeknd
-        { title: 'Bollywood Radio', videoId: '5Eqb_-j3FDA' }, // Arijit Singh
-        { title: 'Desi Hip-Hop Radio', videoId: 'Ukm86tCq1Gk' }, // AP Dhillon
-        { title: 'Punjabi Fire', videoId: '9M4yE3-L7X8' }, // Diljit Dosanjh
-        { title: 'Electronic Dance', videoId: 'YykjpeuMNEk' } // Coldplay
+      const allSeedTracks = [
+        { title: 'Global Pop Mix', videoId: 'XXYlFuWEuKI' },
+        { title: 'Bollywood Hits', videoId: '5Eqb_-j3FDA' },
+        { title: 'Desi Hip Hop', searchQuery: 'Top Desi Hip Hop songs KRSNA Divine Seedhe Maut' },
+        { title: 'Lofi Beats to Relax', videoId: '1fueZCTYkpA' },
+        { title: 'Punjabi Fire', videoId: 'VNs_cCtdbPc' },
+        { title: 'Electronic Dance', videoId: 'YykjpeuMNEk' },
+        { title: 'Rock Classics', videoId: '1w7OgIMMRc4' },
+        { title: 'R&B / Soul', videoId: 'fHI8X4OXluQ' },
+        { title: 'New Hindi Releases', searchQuery: 'Latest brand new hindi songs bollywood' },
+        { title: 'Trending Global', searchQuery: 'Global top songs trending now' },
+        { title: 'Indie Vibes', searchQuery: 'Best indie pop acoustic' },
       ];
 
+      // Shuffle categories and pick top 6
+      const shuffledSeeds = allSeedTracks.sort(() => 0.5 - Math.random()).slice(0, 6);
+
       const shelves = [];
-      for (const seed of seedTracks) {
+      for (const seed of shuffledSeeds) {
         try {
-          const upNexts = await ytmusic.getUpNexts(seed.videoId);
-          if (upNexts && upNexts.length > 0) {
+          let tracks = [];
+          if (seed.searchQuery) {
+            tracks = await ytmusic.searchSongs(seed.searchQuery);
+          } else if (seed.videoId) {
+            tracks = await ytmusic.getUpNexts(seed.videoId);
+          }
+          if (tracks && tracks.length > 0) {
+            let parsedTracks = tracks.map(parseTrack).filter(Boolean);
+            // Shuffle the tracks inside the shelf to keep it fresh
+            parsedTracks = parsedTracks.sort(() => 0.5 - Math.random());
+            
             shelves.push({
               title: seed.title,
-              tracks: upNexts.map(parseTrack).filter(Boolean)
+              tracks: parsedTracks
             });
           }
         } catch (innerError) {
-          console.error(`[YouTube Music] Failed to fetch UpNext for seed ${seed.videoId}:`, innerError.message);
+          console.error(`[YouTube Music] Failed to fetch shelf for ${seed.title}:`, innerError.message);
         }
       }
       return shelves;
