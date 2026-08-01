@@ -119,23 +119,22 @@ class HomeScreen extends ConsumerWidget {
 
   Widget _buildCategorySection(String title, List<Track> tracks) {
     return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AuxSpacing.lg, AuxSpacing.xl, AuxSpacing.lg, AuxSpacing.md,
-            ),
-            child: Text(
-              title,
-              style: AuxTypography.titleMd.copyWith(color: AuxColors.paper),
-            ),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AuxSpacing.lg, AuxSpacing.xl, AuxSpacing.lg, AuxSpacing.md,
           ),
-          SizedBox(
-            height: 200,
-            child: _TrackShelf(tracks: tracks),
+          child: Text(
+            title,
+            style: AuxTypography.titleMd.copyWith(color: AuxColors.paper),
           ),
-        ],
-      ),
+        ),
+        SizedBox(
+          height: 200,
+          child: _TrackShelf(tracks: tracks),
+        ),
+      ],
     );
   }
 
