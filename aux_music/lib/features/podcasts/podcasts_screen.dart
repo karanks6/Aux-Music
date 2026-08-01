@@ -89,6 +89,77 @@ final _businessPodcastsProvider = FutureProvider<List<Podcast>>((ref) async {
   return results;
 });
 
+final _hindiPodcastsProvider = FutureProvider<List<Podcast>>((ref) async {
+  final repo = ref.read(podcastRepositoryProvider);
+  final feeds = [
+    'https://anchor.fm/s/1d14621c/podcast/rss', // Chanakya Neeti
+    'https://anchor.fm/s/f5f50230/podcast/rss', // Desi Crime Hindi
+    'https://anchor.fm/s/1012c66c/podcast/rss', // Namaskar India
+  ];
+  final results = <Podcast>[];
+  for (final url in feeds) {
+    try {
+      final p = await repo.parseFeedUrl(url);
+      results.add(p);
+    } catch (e) {
+      print('Failed to load hindi podcast $url: $e');
+    }
+  }
+  return results;
+});
+
+final _sciencePodcastsProvider = FutureProvider<List<Podcast>>((ref) async {
+  final repo = ref.read(podcastRepositoryProvider);
+  final feeds = [
+    'https://feeds.megaphone.fm/hubermanlab', // Huberman Lab
+    'https://feeds.megaphone.fm/darknetdiaries', // Darknet Diaries
+    'https://feeds.simplecast.com/BqbsxVfO', // 99% Invisible
+  ];
+  final results = <Podcast>[];
+  for (final url in feeds) {
+    try {
+      final p = await repo.parseFeedUrl(url);
+      results.add(p);
+    } catch (e) {
+      print('Failed to load science podcast $url: $e');
+    }
+  }
+  return results;
+});
+
+final _latestEpisodesProvider = FutureProvider<List<Track>>((ref) async {
+  final repo = ref.read(podcastRepositoryProvider);
+  final feeds = [
+    'https://feeds.simplecast.com/7PWFZi_d', // The Ranveer Show
+    'https://anchor.fm/s/f5347ab0/podcast/rss', // Figuring Out with Raj Shamani
+    'https://feeds.hubhopper.com/664690fdea0d7a6f61a052da119934d3.rss', // WTF is Nikhil Kamath
+    'https://media.rss.com/thebarbershopwithshantanu/feed.xml', // The BarberShop Shantanu Deshpande
+    'https://anchor.fm/s/f6473eec/podcast/rss', // Prakhar Ke Pravachan
+    'https://feeds.soundcloud.com/users/soundcloud:users:208848919/sounds.rss', // Maha Bharat Dhruv Rathee
+    'https://anchor.fm/s/1067cac0c/podcast/rss', // Bollywood Besharams
+    'https://feeds.megaphone.fm/ISP4190320966', // Khandaan- A Bollywood Podcast
+    'https://anchor.fm/s/10b9ff4f0/podcast/rss', // Mahabharat - The Complete Saga
+    'https://anchor.fm/s/fb3c4924/podcast/rss', // Jaani Ki Kahaani
+    'https://feeds.megaphone.fm/ISP2247765054', // Big Story Hindi
+  ];
+  
+  final latestTracks = <Track>[];
+  final shuffledFeeds = feeds.toList()..shuffle();
+  for (final url in shuffledFeeds.take(6)) {
+    try {
+      final pod = await repo.parseFeedUrl(url);
+      final eps = await repo.fetchEpisodes(pod);
+      if (eps.isNotEmpty) {
+        final ep = eps.first; // Get latest episode
+        latestTracks.add(ep.toTrack(podcastTitle: pod.title, podcastAuthor: pod.author));
+      }
+    } catch (e) {
+      print('Failed to load latest episode for $url: $e');
+    }
+  }
+  return latestTracks;
+});
+
 class PodcastsScreen extends ConsumerWidget {
   const PodcastsScreen({super.key});
 
@@ -99,6 +170,9 @@ class PodcastsScreen extends ConsumerWidget {
     final comedy = ref.watch(_comedyPodcastsProvider);
     final news = ref.watch(_newsPodcastsProvider);
     final business = ref.watch(_businessPodcastsProvider);
+    final hindi = ref.watch(_hindiPodcastsProvider);
+    final science = ref.watch(_sciencePodcastsProvider);
+    final latestEpisodes = ref.watch(_latestEpisodesProvider);
 
     return Scaffold(
       body: RefreshIndicator(
@@ -109,6 +183,9 @@ class PodcastsScreen extends ConsumerWidget {
           ref.invalidate(_comedyPodcastsProvider);
           ref.invalidate(_newsPodcastsProvider);
           ref.invalidate(_businessPodcastsProvider);
+          ref.invalidate(_hindiPodcastsProvider);
+          ref.invalidate(_sciencePodcastsProvider);
+          ref.invalidate(_latestEpisodesProvider);
         },
         child: CustomScrollView(
           slivers: [
@@ -143,7 +220,29 @@ class PodcastsScreen extends ConsumerWidget {
             // Local RSS subscriptions
             _buildLocalSubscriptionsSection(subscriptions, ref),
 
+            // Latest Single Episodes
+            SliverPadding(
+              padding: const EdgeInsets.only(top: AuxSpacing.lg, left: AuxSpacing.lg, bottom: AuxSpacing.md),
+              sliver: SliverToBoxAdapter(
+                child: Text('Latest Episodes', style: AuxTypography.titleMd.copyWith(color: AuxColors.paper)),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: SizedBox(
+                height: 200,
+                child: latestEpisodes.when(
+                  loading: () => _buildShimmerShelf(),
+                  error: (e, _) => Center(
+                    child: Text('Failed to load latest episodes', style: AuxTypography.body.copyWith(color: AuxColors.paperMuted)),
+                  ),
+                  data: (tracks) => _TrackShelf(tracks: tracks),
+                ),
+              ),
+            ),
+
             // Online podcast categories
+            _buildCategorySection('Hindi & Indian Culture', hindi),
+            _buildCategorySection('Science & History', science),
             _buildCategorySection('Technology', tech),
             _buildCategorySection('Comedy', comedy),
             _buildCategorySection('News & Politics', news),
