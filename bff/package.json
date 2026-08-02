@@ -19,7 +19,9 @@
     "fast-xml-parser": "^4.4.0",
     "fastify": "^4.28.0",
     "play-dl": "^1.9.7",
-    "youtubei.js": "^13.0.0",
-    "ytmusic-api": "^5.3.1"
+    "youtubei.js": "^13.0.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.1"
   }
 }

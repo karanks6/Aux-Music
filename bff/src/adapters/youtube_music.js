@@ -1,18 +1,20 @@
 'use strict';
 
-const YTMusic = require('ytmusic-api');
-const { resolveStreamUrl: _resolveStream } = require('./stream_resolver');
-
-const ytmusic = new YTMusic();
-let isInitialized = false;
-
-// ── Helpers ────────────────────────────────────────────────────────────────
+const { resolveStreamUrl: _resolveStream, getInnertube } = require('./stream_resolver');
 
 function parseTrack(song) {
-  if (!song || (song.type !== 'SONG' && song.type !== 'VIDEO')) return null;
+  if (!song || !song.id) return null;
   
-  const title = song.name || song.title;
-  if (!song.videoId || !title) return null;
+  // youtubei.js returns song titles sometimes as strings, sometimes as Text object
+  let title = song.title || song.name;
+  if (typeof title === 'object' && title.text) {
+    title = title.text;
+  } else if (typeof title === 'object') {
+    title = title.toString();
+  }
+
+  const videoId = song.id || song.video_id;
+  if (!videoId || !title) return null;
 
   try {
     let artworkUrl = null;
@@ -22,31 +24,28 @@ function parseTrack(song) {
        artworkUrl = song.thumbnails[song.thumbnails.length - 1].url;
        thumbnailUrl = song.thumbnails[0].url;
     } else if (song.thumbnail) {
-       artworkUrl = song.thumbnail;
-       thumbnailUrl = song.thumbnail;
+       artworkUrl = song.thumbnail[0]?.url || song.thumbnail;
+       thumbnailUrl = artworkUrl;
     }
       
-    if (artworkUrl) {
+    if (artworkUrl && typeof artworkUrl === 'string') {
       artworkUrl = artworkUrl.replace(/w\d+-h\d+/, 'w500-h500');
     }
 
     let artistName = 'Unknown Artist';
     let artistId = null;
     
-    if (song.artist) {
-      artistName = song.artist.name || song.artist;
-      artistId = song.artist.artistId ? `youtube_music_artist:${song.artist.artistId}` : null;
-    } else if (song.artists) {
-      // In getUpNexts, artists is sometimes an array, or a string
-      if (Array.isArray(song.artists)) {
-         artistName = song.artists.map(a => a.name || a).join(', ');
-      } else {
-         artistName = typeof song.artists === 'string' ? song.artists : 'Unknown Artist';
+    if (song.artists && song.artists.length > 0) {
+      artistName = song.artists.map(a => a.name).join(', ');
+      if (song.artists[0].channel_id) {
+         artistId = `youtube_music_artist:${song.artists[0].channel_id}`;
       }
+    } else if (song.author) {
+      artistName = typeof song.author === 'string' ? song.author : (song.author.name || 'Unknown Artist');
     }
 
     return {
-      id: `youtube_music:${song.videoId}`,
+      id: `youtube_music:${videoId}`,
       title: title,
       artistName: artistName,
       artistId: artistId,
@@ -56,8 +55,8 @@ function parseTrack(song) {
       sourceId: 'youtube_music',
       licenseType: 'CUSTOM',
       attributionString: `${artistName} · YouTube Music`,
-      sourceUrl: `https://music.youtube.com/watch?v=${song.videoId}`,
-      durationMs: 0, 
+      sourceUrl: `https://music.youtube.com/watch?v=${videoId}`,
+      durationMs: song.duration?.seconds ? song.duration.seconds * 1000 : 0, 
       playCount: 0,
       offlineAllowed: false,
       streamUrl: null,
@@ -69,15 +68,6 @@ function parseTrack(song) {
   }
 }
 
-async function ensureInitialized() {
-  if (!isInitialized) {
-    await ytmusic.initialize();
-    isInitialized = true;
-  }
-}
-
-// ── Module exports ─────────────────────────────────────────────────────────
-
 module.exports = {
   sourceId: 'youtube_music',
   displayName: 'YouTube Music',
@@ -85,18 +75,17 @@ module.exports = {
 
   async searchTracks(query, { limit = 20, genre, language } = {}) {
     try {
-      await ensureInitialized();
+      const yt = await getInnertube();
       
       let finalQuery = query;
-      // If no query but genre/language exists, it's being used for trending fallback
       if (!query && genre) {
           finalQuery = `${genre} top hits`;
       } else if (!query && language) {
           finalQuery = `${language} top hits`;
       }
 
-      const results = await ytmusic.searchSongs(finalQuery);
-      return results.slice(0, limit).map(parseTrack).filter(Boolean);
+      const results = await yt.music.search(finalQuery, { type: 'song' });
+      return (results.contents || []).slice(0, limit).map(parseTrack).filter(Boolean);
     } catch (e) {
       console.error('[YouTube Music] searchTracks error:', e.message);
       return [];
@@ -105,7 +94,7 @@ module.exports = {
 
   async trending({ genre, language, limit = 20 } = {}) {
     try {
-      await ensureInitialized();
+      const yt = await getInnertube();
       if (genre) {
         const genreMap = {
           'bollywood': 'top bollywood songs',
@@ -122,14 +111,13 @@ module.exports = {
           'ambient': 'relaxing ambient music',
         };
         const query = genreMap[genre.toLowerCase()] || `${genre} hit songs`;
-        const results = await ytmusic.searchSongs(query);
-        return results.slice(0, limit).map(parseTrack).filter(Boolean);
+        const results = await yt.music.search(query, { type: 'song' });
+        return (results.contents || []).slice(0, limit).map(parseTrack).filter(Boolean);
       }
 
-      // Default trending if no genre
       const query = language ? `top ${language} songs` : 'global top 50 songs';
-      const results = await ytmusic.searchSongs(query);
-      return results.slice(0, limit).map(parseTrack).filter(Boolean);
+      const results = await yt.music.search(query, { type: 'song' });
+      return (results.contents || []).slice(0, limit).map(parseTrack).filter(Boolean);
     } catch (e) {
       console.error('[YouTube Music] trending error:', e.message);
       return [];
@@ -138,10 +126,10 @@ module.exports = {
 
   async getUpNext(trackId) {
     try {
-      await ensureInitialized();
+      const yt = await getInnertube();
       const nativeId = trackId.replace('youtube_music:', '');
-      const results = await ytmusic.getUpNexts(nativeId);
-      return results.map(parseTrack).filter(Boolean);
+      const results = await yt.music.getUpNext(nativeId);
+      return (results.contents || []).map(parseTrack).filter(Boolean);
     } catch (e) {
       console.error(`[YouTube Music] getUpNext error for ${trackId}:`, e.message);
       return [];
@@ -150,10 +138,7 @@ module.exports = {
 
   async getHomeRecommendations() {
     try {
-      await ensureInitialized();
-      // We will generate a few personalized / rich shelves based on "seed" tracks.
-      // Since unauthenticated getHomeSections() returns mostly RDCL playlists which are hard to parse,
-      // we generate "Radio" shelves from popular songs across different genres to simulate it.
+      const yt = await getInnertube();
       const allSeedTracks = [
         { title: 'Global Pop Mix', videoId: 'XXYlFuWEuKI' },
         { title: 'Bollywood Hits', videoId: '5Eqb_-j3FDA' },
@@ -168,7 +153,6 @@ module.exports = {
         { title: 'Indie Vibes', searchQuery: 'Best indie pop acoustic' },
       ];
 
-      // Shuffle categories and pick top 6
       const shuffledSeeds = allSeedTracks.sort(() => 0.5 - Math.random()).slice(0, 6);
 
       const shelves = [];
@@ -176,13 +160,14 @@ module.exports = {
         try {
           let tracks = [];
           if (seed.searchQuery) {
-            tracks = await ytmusic.searchSongs(seed.searchQuery);
+            const res = await yt.music.search(seed.searchQuery, { type: 'song' });
+            tracks = res.contents || [];
           } else if (seed.videoId) {
-            tracks = await ytmusic.getUpNexts(seed.videoId);
+            const res = await yt.music.getUpNext(seed.videoId);
+            tracks = res.contents || [];
           }
           if (tracks && tracks.length > 0) {
             let parsedTracks = tracks.map(parseTrack).filter(Boolean);
-            // Shuffle the tracks inside the shelf to keep it fresh
             parsedTracks = parsedTracks.sort(() => 0.5 - Math.random());
             
             shelves.push({
@@ -202,7 +187,6 @@ module.exports = {
   },
 
   async getAlbumTracks(albumId) {
-    // ytmusic-api does not have a direct getAlbumTracks exposed easily without playlist ID
     return [];
   },
 
@@ -216,11 +200,8 @@ module.exports = {
   },
 
   async healthCheck() {
-    await ensureInitialized();
-    const results = await ytmusic.searchSongs('adele');
-    if (!results.length) throw new Error('YouTube Music returned no results');
+    const yt = await getInnertube();
+    const results = await yt.music.search('adele', { type: 'song' });
+    if (!results.contents || !results.contents.length) throw new Error('YouTube Music returned no results');
   },
 };
-
-// Eager initialization to prevent initial timeout
-ensureInitialized().catch(e => console.error('[YouTube Music] Failed to eager initialize:', e.message));

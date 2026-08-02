@@ -66,4 +66,4 @@ async function resolveStreamUrl(videoId) {
   return url;
 }
 
-module.exports = { resolveStreamUrl };
+module.exports = { resolveStreamUrl, getInnertube };
