@@ -123,6 +123,9 @@ final _podcastShelvesProvider = FutureProvider<List<PodcastShelfData>>((ref) asy
     }
   }
 
+  if (shelves.isEmpty) return [];
+  if (shelves.length == 1) return shelves;
+  
   // Shuffle the final shelves slightly to feel dynamic, but keep "Latest Episodes (Hindi)" on top
   final otherShelves = shelves.sublist(1)..shuffle();
   return [shelves.first, ...otherShelves];
