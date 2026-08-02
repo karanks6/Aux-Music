@@ -38,7 +38,12 @@ class NodeServerService with WidgetsBindingObserver {
       await _waitForHealth();
       debugPrint('[NodeServer] Server ready at $_baseUrl');
     } catch (e) {
-      debugPrint('[NodeServer] Failed to start: $e');
+      if (e.toString().contains('already running')) {
+        debugPrint('[NodeServer] Node.js runtime already running. Assuming healthy.');
+        _isRunning = true;
+      } else {
+        debugPrint('[NodeServer] Failed to start: $e');
+      }
     } finally {
       _isStarting = false;
     }
