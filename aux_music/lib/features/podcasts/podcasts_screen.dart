@@ -13,151 +13,119 @@ import '../../data/models/podcast.dart';
 
 // ── Podcast Category Providers ──────────────────────────────────────────────
 
-final _techPodcastsProvider = FutureProvider<List<Podcast>>((ref) async {
-  final repo = ref.read(podcastRepositoryProvider);
-  final feeds = [
-    'https://feeds.megaphone.fm/VMP5705694065', // Waveform
-    'https://lexfridman.com/feed/podcast/', // Lex Fridman
-    'https://feeds.megaphone.fm/vergecast', // Vergecast
-  ];
-  final results = <Podcast>[];
-  for (final url in feeds) {
-    try {
-      final p = await repo.parseFeedUrl(url);
-      results.add(p);
-    } catch (e) {
-      print('Failed to load tech podcast $url: $e');
-    }
-  }
-  return results;
-});
+class PodcastShelfData {
+  final String title;
+  final bool isEpisodes;
+  final List<dynamic> items; // List<Podcast> or List<Track>
+  
+  PodcastShelfData({required this.title, required this.isEpisodes, required this.items});
+}
 
-final _comedyPodcastsProvider = FutureProvider<List<Podcast>>((ref) async {
+final _podcastShelvesProvider = FutureProvider<List<PodcastShelfData>>((ref) async {
   final repo = ref.read(podcastRepositoryProvider);
-  final feeds = [
-    'https://feeds.simplecast.com/dHoohVNH', // Conan O'Brien
-    'https://rss.art19.com/smartless', // SmartLess
-    'https://wtfpod.libsyn.com/rss', // WTF with Marc Maron
-  ];
-  final results = <Podcast>[];
-  for (final url in feeds) {
-    try {
-      final p = await repo.parseFeedUrl(url);
-      results.add(p);
-    } catch (e) {
-      print('Failed to load comedy podcast $url: $e');
-    }
-  }
-  return results;
-});
+  final shelves = <PodcastShelfData>[];
+  final seenEpisodeUrls = <String>{};
 
-final _newsPodcastsProvider = FutureProvider<List<Podcast>>((ref) async {
-  final repo = ref.read(podcastRepositoryProvider);
-  final feeds = [
-    'https://feeds.simplecast.com/54nAGcIl', // The Daily
-    'https://feeds.npr.org/510318/podcast.xml', // Up First
-    'https://podcasts.files.bbci.co.uk/p02nq0gn.rss', // Global News Podcast
-  ];
-  final results = <Podcast>[];
-  for (final url in feeds) {
-    try {
-      final p = await repo.parseFeedUrl(url);
-      results.add(p);
-    } catch (e) {
-      print('Failed to load news podcast $url: $e');
+  // Helper to fetch latest episodes for a query
+  Future<List<Track>> getEpisodesForQuery(String query, {int limit = 4}) async {
+    final pods = await repo.searchPodcasts(query, limit: limit);
+    final tracks = <Track>[];
+    for (final pod in pods) {
+      try {
+        final eps = await repo.fetchEpisodes(pod);
+        for (final ep in eps) {
+          if (ep.streamUrl != null && !seenEpisodeUrls.contains(ep.streamUrl)) {
+            seenEpisodeUrls.add(ep.streamUrl!);
+            tracks.add(ep.toTrack(podcastTitle: pod.title, podcastAuthor: pod.author));
+            break; // Just one episode per podcast
+          }
+        }
+      } catch (e) {
+        // ignore
+      }
     }
+    return tracks;
   }
-  return results;
-});
 
-final _businessPodcastsProvider = FutureProvider<List<Podcast>>((ref) async {
-  final repo = ref.read(podcastRepositoryProvider);
-  final feeds = [
-    'https://feeds.npr.org/510289/podcast.xml', // Planet Money
-    'https://feeds.npr.org/510325/podcast.xml', // The Indicator
-    'https://feeds.npr.org/510313/podcast.xml', // How I Built This
+  // 1. Latest Hindi Content Episodes (Explicitly requested by user)
+  final hindiNames = [
+    'The Ranveer Show',
+    'Figuring Out Raj Shamani',
+    'WTF is Nikhil Kamath',
+    'The BarberShop Shantanu',
+    'Prakhar Ke Pravachan',
+    'Maha Bharat Dhruv Rathee',
+    'Bollywood Besharams',
+    'Khandaan Bollywood',
+    'Mahabharat Complete Saga',
+    'Jaani Ki Kahaani',
+    'Big Story Hindi',
   ];
-  final results = <Podcast>[];
-  for (final url in feeds) {
-    try {
-      final p = await repo.parseFeedUrl(url);
-      results.add(p);
-    } catch (e) {
-      print('Failed to load business podcast $url: $e');
-    }
-  }
-  return results;
-});
-
-final _hindiPodcastsProvider = FutureProvider<List<Podcast>>((ref) async {
-  final repo = ref.read(podcastRepositoryProvider);
-  final feeds = [
-    'https://anchor.fm/s/1d14621c/podcast/rss', // Chanakya Neeti
-    'https://anchor.fm/s/f5f50230/podcast/rss', // Desi Crime Hindi
-    'https://anchor.fm/s/1012c66c/podcast/rss', // Namaskar India
-  ];
-  final results = <Podcast>[];
-  for (final url in feeds) {
-    try {
-      final p = await repo.parseFeedUrl(url);
-      results.add(p);
-    } catch (e) {
-      print('Failed to load hindi podcast $url: $e');
-    }
-  }
-  return results;
-});
-
-final _sciencePodcastsProvider = FutureProvider<List<Podcast>>((ref) async {
-  final repo = ref.read(podcastRepositoryProvider);
-  final feeds = [
-    'https://feeds.megaphone.fm/hubermanlab', // Huberman Lab
-    'https://feeds.megaphone.fm/darknetdiaries', // Darknet Diaries
-    'https://feeds.simplecast.com/BqbsxVfO', // 99% Invisible
-  ];
-  final results = <Podcast>[];
-  for (final url in feeds) {
-    try {
-      final p = await repo.parseFeedUrl(url);
-      results.add(p);
-    } catch (e) {
-      print('Failed to load science podcast $url: $e');
-    }
-  }
-  return results;
-});
-
-final _latestEpisodesProvider = FutureProvider<List<Track>>((ref) async {
-  final repo = ref.read(podcastRepositoryProvider);
-  final feeds = [
-    'https://feeds.simplecast.com/7PWFZi_d', // The Ranveer Show
-    'https://anchor.fm/s/f5347ab0/podcast/rss', // Figuring Out with Raj Shamani
-    'https://feeds.hubhopper.com/664690fdea0d7a6f61a052da119934d3.rss', // WTF is Nikhil Kamath
-    'https://media.rss.com/thebarbershopwithshantanu/feed.xml', // The BarberShop Shantanu Deshpande
-    'https://anchor.fm/s/f6473eec/podcast/rss', // Prakhar Ke Pravachan
-    'https://feeds.soundcloud.com/users/soundcloud:users:208848919/sounds.rss', // Maha Bharat Dhruv Rathee
-    'https://anchor.fm/s/1067cac0c/podcast/rss', // Bollywood Besharams
-    'https://feeds.megaphone.fm/ISP4190320966', // Khandaan- A Bollywood Podcast
-    'https://anchor.fm/s/10b9ff4f0/podcast/rss', // Mahabharat - The Complete Saga
-    'https://anchor.fm/s/fb3c4924/podcast/rss', // Jaani Ki Kahaani
-    'https://feeds.megaphone.fm/ISP2247765054', // Big Story Hindi
-  ];
+  hindiNames.shuffle();
   
   final latestTracks = <Track>[];
-  final shuffledFeeds = feeds.toList()..shuffle();
-  for (final url in shuffledFeeds.take(6)) {
-    try {
-      final pod = await repo.parseFeedUrl(url);
-      final eps = await repo.fetchEpisodes(pod);
-      if (eps.isNotEmpty) {
-        final ep = eps.first; // Get latest episode
-        latestTracks.add(ep.toTrack(podcastTitle: pod.title, podcastAuthor: pod.author));
-      }
-    } catch (e) {
-      print('Failed to load latest episode for $url: $e');
+  for (final name in hindiNames.take(6)) {
+     final eps = await getEpisodesForQuery(name, limit: 1);
+     latestTracks.addAll(eps);
+  }
+  
+  if (latestTracks.isNotEmpty) {
+    shelves.add(PodcastShelfData(
+      title: 'Latest Episodes (Hindi)',
+      isEpisodes: true,
+      items: latestTracks..shuffle(),
+    ));
+  }
+
+  // 2. Some Dynamic Podcast Album Shelves
+  final categories = [
+    {'title': 'Top Tech Podcasts', 'query': 'technology'},
+    {'title': 'Comedy Specials', 'query': 'comedy'},
+    {'title': 'News & Politics', 'query': 'news'},
+    {'title': 'Science & History', 'query': 'science history'},
+    {'title': 'True Crime', 'query': 'true crime'},
+    {'title': 'Business & Finance', 'query': 'business'},
+  ];
+  
+  categories.shuffle();
+  final selectedCategories = categories.take(3); // Pick 3 random categories for Albums
+  
+  for (final cat in selectedCategories) {
+    final pods = await repo.searchPodcasts(cat['query']!, limit: 10);
+    if (pods.isNotEmpty) {
+      shelves.add(PodcastShelfData(
+        title: cat['title']!,
+        isEpisodes: false,
+        items: pods,
+      ));
     }
   }
-  return latestTracks;
+
+  // 3. More Single Episodes
+  final epCategories = [
+    {'title': 'Trending Tech Episodes', 'query': 'technology'},
+    {'title': 'Popular Comedy Episodes', 'query': 'comedy'},
+    {'title': 'New in Science', 'query': 'science'},
+    {'title': 'Business Insights', 'query': 'startup business'},
+  ];
+  
+  epCategories.shuffle();
+  final selectedEpCategories = epCategories.take(2); // Pick 2 random categories for Episodes
+  
+  for (final cat in selectedEpCategories) {
+    final eps = await getEpisodesForQuery(cat['query']!, limit: 6);
+    if (eps.isNotEmpty) {
+      shelves.add(PodcastShelfData(
+        title: cat['title']!,
+        isEpisodes: true,
+        items: eps,
+      ));
+    }
+  }
+
+  // Shuffle the final shelves slightly to feel dynamic, but keep "Latest Episodes (Hindi)" on top
+  final otherShelves = shelves.sublist(1)..shuffle();
+  return [shelves.first, ...otherShelves];
 });
 
 class PodcastsScreen extends ConsumerWidget {
@@ -166,26 +134,14 @@ class PodcastsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final subscriptions = ref.watch(subscribedPodcastsProvider);
-    final tech = ref.watch(_techPodcastsProvider);
-    final comedy = ref.watch(_comedyPodcastsProvider);
-    final news = ref.watch(_newsPodcastsProvider);
-    final business = ref.watch(_businessPodcastsProvider);
-    final hindi = ref.watch(_hindiPodcastsProvider);
-    final science = ref.watch(_sciencePodcastsProvider);
-    final latestEpisodes = ref.watch(_latestEpisodesProvider);
+    final shelvesAsync = ref.watch(_podcastShelvesProvider);
 
     return Scaffold(
       body: RefreshIndicator(
         color: AuxColors.ember,
         backgroundColor: AuxColors.inkRaised,
         onRefresh: () async {
-          ref.invalidate(_techPodcastsProvider);
-          ref.invalidate(_comedyPodcastsProvider);
-          ref.invalidate(_newsPodcastsProvider);
-          ref.invalidate(_businessPodcastsProvider);
-          ref.invalidate(_hindiPodcastsProvider);
-          ref.invalidate(_sciencePodcastsProvider);
-          ref.invalidate(_latestEpisodesProvider);
+          ref.invalidate(_podcastShelvesProvider);
         },
         child: CustomScrollView(
           slivers: [
@@ -220,33 +176,61 @@ class PodcastsScreen extends ConsumerWidget {
             // Local RSS subscriptions
             _buildLocalSubscriptionsSection(subscriptions, ref),
 
-            // Latest Single Episodes
-            SliverPadding(
-              padding: const EdgeInsets.only(top: AuxSpacing.lg, left: AuxSpacing.lg, bottom: AuxSpacing.md),
-              sliver: SliverToBoxAdapter(
-                child: Text('Latest Episodes', style: AuxTypography.titleMd.copyWith(color: AuxColors.paper)),
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: SizedBox(
-                height: 200,
-                child: latestEpisodes.when(
-                  loading: () => _buildShimmerShelf(),
-                  error: (e, _) => Center(
-                    child: Text('Failed to load latest episodes', style: AuxTypography.body.copyWith(color: AuxColors.paperMuted)),
-                  ),
-                  data: (tracks) => _TrackShelf(tracks: tracks),
+            // Dynamic Shelves
+            shelvesAsync.when(
+              loading: () => SliverToBoxAdapter(
+                child: Column(
+                  children: List.generate(3, (index) => Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(AuxSpacing.lg),
+                        child: Container(width: 150, height: 24, color: AuxColors.inkRaised),
+                      ),
+                      SizedBox(height: 200, child: _buildShimmerShelf()),
+                    ],
+                  )),
                 ),
               ),
+              error: (e, _) => SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(AuxSpacing.xl),
+                  child: Center(
+                    child: Text('Failed to load podcasts.\n$e', style: AuxTypography.body.copyWith(color: AuxColors.paperMuted), textAlign: TextAlign.center,),
+                  ),
+                ),
+              ),
+              data: (shelves) {
+                return SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final shelf = shelves[index];
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(
+                              AuxSpacing.lg, AuxSpacing.xl, AuxSpacing.lg, AuxSpacing.md,
+                            ),
+                            child: Text(
+                              shelf.title,
+                              style: AuxTypography.titleMd.copyWith(color: AuxColors.paper),
+                            ),
+                          ),
+                          SizedBox(
+                            height: 200,
+                            child: shelf.isEpisodes
+                                ? _TrackShelf(tracks: shelf.items as List<Track>)
+                                : _PodcastShelf(podcasts: shelf.items as List<Podcast>),
+                          ),
+                        ],
+                      );
+                    },
+                    childCount: shelves.length,
+                  ),
+                );
+              },
             ),
-
-            // Online podcast categories
-            _buildCategorySection('Hindi & Indian Culture', hindi),
-            _buildCategorySection('Science & History', science),
-            _buildCategorySection('Technology', tech),
-            _buildCategorySection('Comedy', comedy),
-            _buildCategorySection('News & Politics', news),
-            _buildCategorySection('Business & Finance', business),
 
             const SliverToBoxAdapter(child: SizedBox(height: AuxSpacing.xxxl)),
           ],
@@ -255,38 +239,7 @@ class PodcastsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildCategorySection(String title, AsyncValue<List<Podcast>> asyncPodcasts) {
-    return SliverToBoxAdapter(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AuxSpacing.lg, AuxSpacing.xl, AuxSpacing.lg, AuxSpacing.md,
-            ),
-            child: Text(
-              title,
-              style: AuxTypography.titleMd.copyWith(color: AuxColors.paper),
-            ),
-          ),
-          SizedBox(
-            height: 200,
-            child: asyncPodcasts.when(
-              loading: () => _buildShimmerShelf(),
-              error: (e, _) => Center(
-                child: Text(
-                  'Temporarily unavailable.',
-                  style: AuxTypography.body.copyWith(color: AuxColors.paperMuted),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              data: (podcasts) => _PodcastShelf(podcasts: podcasts),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+
 
   Widget _buildLocalSubscriptionsSection(AsyncValue subscriptions, WidgetRef ref) {
     return SliverToBoxAdapter(

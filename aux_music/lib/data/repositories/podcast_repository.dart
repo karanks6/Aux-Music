@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:xml/xml.dart';
 import 'package:dio/dio.dart';
+import 'dart:convert';
 import '../../data/models/podcast.dart';
 import '../local/database.dart';
 
@@ -122,5 +123,49 @@ class PodcastRepository {
     }
     
     return episodes;
+  }
+
+  // ── iTunes API Search ────────────────────────────────────────────
+
+  Future<List<Podcast>> searchPodcasts(String term, {int limit = 10}) async {
+    try {
+      final url = 'https://itunes.apple.com/search?term=${Uri.encodeComponent(term)}&entity=podcast&limit=$limit';
+      final response = await _dio.get(url);
+      
+      final data = response.data is String ? response.data : response.data.toString();
+      // Dio might parse JSON automatically
+      Map<String, dynamic> json;
+      if (response.data is Map<String, dynamic>) {
+        json = response.data;
+      } else {
+        json = (response.data as Map<String, dynamic>? ?? {});
+        // If it's string, we need to decode, but dio handles application/javascript or application/json automatically
+        // Actually itunes api returns text/javascript, so dio might not parse it.
+        if (response.data is String) {
+          json = jsonDecode(response.data);
+        }
+      }
+
+      final results = json['results'] as List<dynamic>? ?? [];
+      
+      final podcasts = <Podcast>[];
+      for (final r in results) {
+        final feedUrl = r['feedUrl'] as String?;
+        if (feedUrl == null) continue;
+
+        podcasts.add(Podcast(
+          id: feedUrl,
+          title: r['collectionName'] as String? ?? 'Unknown Podcast',
+          author: r['artistName'] as String? ?? 'Unknown Author',
+          description: '',
+          feedUrl: feedUrl,
+          artworkUrl: r['artworkUrl600'] as String? ?? r['artworkUrl100'] as String?,
+        ));
+      }
+      return podcasts;
+    } catch (e) {
+      print('iTunes search error for $term: $e');
+      return [];
+    }
   }
 }

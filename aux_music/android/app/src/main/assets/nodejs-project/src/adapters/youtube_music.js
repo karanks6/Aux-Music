@@ -139,18 +139,23 @@ module.exports = {
   async getHomeRecommendations() {
     try {
       const yt = await getInnertube();
+      const currentYear = new Date().getFullYear();
+      const currentMonth = new Date().toLocaleString('default', { month: 'long' });
+      
       const allSeedTracks = [
         { title: 'Global Pop Mix', videoId: 'XXYlFuWEuKI' },
         { title: 'Bollywood Hits', videoId: '5Eqb_-j3FDA' },
-        { title: 'Desi Hip Hop', searchQuery: 'Top Desi Hip Hop songs KRSNA Divine Seedhe Maut' },
+        { title: 'Desi Hip Hop', searchQuery: `Top Desi Hip Hop songs ${currentYear}` },
         { title: 'Lofi Beats to Relax', videoId: '1fueZCTYkpA' },
-        { title: 'Punjabi Fire', videoId: 'VNs_cCtdbPc' },
+        { title: 'Punjabi Fire', searchQuery: `Latest Punjabi Hits ${currentMonth} ${currentYear}` },
         { title: 'Electronic Dance', videoId: 'YykjpeuMNEk' },
         { title: 'Rock Classics', videoId: '1w7OgIMMRc4' },
         { title: 'R&B / Soul', videoId: 'fHI8X4OXluQ' },
-        { title: 'New Hindi Releases', searchQuery: 'Latest brand new hindi songs bollywood' },
-        { title: 'Trending Global', searchQuery: 'Global top songs trending now' },
-        { title: 'Indie Vibes', searchQuery: 'Best indie pop acoustic' },
+        { title: 'New Hindi Releases', searchQuery: `Latest brand new hindi songs bollywood ${currentMonth} ${currentYear}` },
+        { title: 'Trending Global', searchQuery: `Global top songs trending now ${currentMonth} ${currentYear}` },
+        { title: 'Indie Vibes', searchQuery: `Best indie pop acoustic ${currentYear}` },
+        { title: 'Top English Hits', searchQuery: `English Hits ${currentYear}` },
+        { title: 'Viral Songs', searchQuery: `Viral Tiktok Reels Songs ${currentYear}` },
       ];
 
       const shuffledSeeds = allSeedTracks.sort(() => 0.5 - Math.random()).slice(0, 6);
