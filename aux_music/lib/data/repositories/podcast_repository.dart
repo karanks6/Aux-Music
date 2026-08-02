@@ -133,17 +133,13 @@ class PodcastRepository {
       final response = await _dio.get(url);
       
       final data = response.data is String ? response.data : response.data.toString();
-      // Dio might parse JSON automatically
       Map<String, dynamic> json;
       if (response.data is Map<String, dynamic>) {
         json = response.data;
+      } else if (response.data is String) {
+        json = jsonDecode(response.data);
       } else {
-        json = (response.data as Map<String, dynamic>? ?? {});
-        // If it's string, we need to decode, but dio handles application/javascript or application/json automatically
-        // Actually itunes api returns text/javascript, so dio might not parse it.
-        if (response.data is String) {
-          json = jsonDecode(response.data);
-        }
+        json = {};
       }
 
       final results = json['results'] as List<dynamic>? ?? [];
