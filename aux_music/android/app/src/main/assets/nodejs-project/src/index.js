@@ -2,6 +2,11 @@
 
 require('dotenv').config();
 
+// Polyfill Intl for Android nodejs-mobile engine (which lacks ICU)
+if (typeof global.Intl === 'undefined') {
+  global.Intl = require('intl');
+}
+
 const Fastify = require('fastify');
 const cors = require('@fastify/cors');
 const rateLimit = require('@fastify/rate-limit');

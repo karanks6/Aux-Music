@@ -68,6 +68,17 @@ function parseTrack(song) {
   }
 }
 
+function getTracksFromResult(res) {
+  if (!res) return [];
+  if (res.contents && res.contents.length > 0) {
+    if (res.contents[0].type === 'MusicShelf' || res.contents[0].type === 'SectionList') {
+      return res.contents.flatMap(shelf => shelf.contents || []).filter(item => item.type === 'MusicResponsiveListItem' || item.type === 'PlaylistPanelVideo');
+    }
+    return res.contents.filter(item => item.type === 'MusicResponsiveListItem' || item.type === 'PlaylistPanelVideo');
+  }
+  return [];
+}
+
 module.exports = {
   sourceId: 'youtube_music',
   displayName: 'YouTube Music',
@@ -85,7 +96,8 @@ module.exports = {
       }
 
       const results = await yt.music.search(finalQuery, { type: 'song' });
-      return (results.contents || []).slice(0, limit).map(parseTrack).filter(Boolean);
+      const tracks = getTracksFromResult(results);
+      return tracks.slice(0, limit).map(parseTrack).filter(Boolean);
     } catch (e) {
       console.error('[YouTube Music] searchTracks error:', e.message);
       return [];
@@ -112,12 +124,12 @@ module.exports = {
         };
         const query = genreMap[genre.toLowerCase()] || `${genre} hit songs`;
         const results = await yt.music.search(query, { type: 'song' });
-        return (results.contents || []).slice(0, limit).map(parseTrack).filter(Boolean);
+        return getTracksFromResult(results).slice(0, limit).map(parseTrack).filter(Boolean);
       }
 
       const query = language ? `top ${language} songs` : 'global top 50 songs';
       const results = await yt.music.search(query, { type: 'song' });
-      return (results.contents || []).slice(0, limit).map(parseTrack).filter(Boolean);
+      return getTracksFromResult(results).slice(0, limit).map(parseTrack).filter(Boolean);
     } catch (e) {
       console.error('[YouTube Music] trending error:', e.message);
       return [];
@@ -129,7 +141,7 @@ module.exports = {
       const yt = await getInnertube();
       const nativeId = trackId.replace('youtube_music:', '');
       const results = await yt.music.getUpNext(nativeId);
-      return (results.contents || []).map(parseTrack).filter(Boolean);
+      return getTracksFromResult(results).map(parseTrack).filter(Boolean);
     } catch (e) {
       console.error(`[YouTube Music] getUpNext error for ${trackId}:`, e.message);
       return [];
@@ -159,32 +171,30 @@ module.exports = {
       ];
 
       const shuffledSeeds = allSeedTracks.sort(() => 0.5 - Math.random()).slice(0, 6);
-
-      const shelves = [];
-      for (const seed of shuffledSeeds) {
+      const selectedSeeds = allSeedTracks.sort(() => 0.5 - Math.random()).slice(0, 6);
+      const shelves = await Promise.all(selectedSeeds.map(async (seed) => {
         try {
           let tracks = [];
-          if (seed.searchQuery) {
-            const res = await yt.music.search(seed.searchQuery, { type: 'song' });
-            tracks = res.contents || [];
-          } else if (seed.videoId) {
-            const res = await yt.music.getUpNext(seed.videoId);
-            tracks = res.contents || [];
+          if (seed.videoId) {
+            const results = await yt.music.getUpNext(seed.videoId);
+            tracks = getTracksFromResult(results).slice(0, 5).map(parseTrack).filter(Boolean);
+          } else {
+            const results = await yt.music.search(seed.searchQuery, { type: 'song' });
+            tracks = getTracksFromResult(results).slice(0, 5).map(parseTrack).filter(Boolean);
           }
-          if (tracks && tracks.length > 0) {
-            let parsedTracks = tracks.map(parseTrack).filter(Boolean);
-            parsedTracks = parsedTracks.sort(() => 0.5 - Math.random());
-            
-            shelves.push({
+          if (tracks.length > 0) {
+            tracks.sort(() => 0.5 - Math.random());
+            return {
               title: seed.title,
-              tracks: parsedTracks
-            });
+              tracks: tracks
+            };
           }
         } catch (innerError) {
           console.error(`[YouTube Music] Failed to fetch shelf for ${seed.title}:`, innerError.message);
+          return null;
         }
-      }
-      return shelves;
+      }));
+      return shelves.filter(Boolean);
     } catch (e) {
       console.error('[YouTube Music] getHomeRecommendations error:', e.message);
       return [];

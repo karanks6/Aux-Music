@@ -19,8 +19,9 @@
     "dotenv": "^16.4.5",
     "fast-xml-parser": "^4.4.0",
     "fastify": "^4.28.0",
+    "intl": "^1.2.5",
     "play-dl": "^1.9.7",
-    "youtubei.js": "^13.0.0"
+    "youtubei.js": "^17.2.0"
   },
   "devDependencies": {
     "esbuild": "^0.28.1"
