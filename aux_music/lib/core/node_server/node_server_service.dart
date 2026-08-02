@@ -16,6 +16,7 @@ class NodeServerService with WidgetsBindingObserver {
   static const Duration _healthRetryDelay = Duration(milliseconds: 500);
 
   bool _isRunning = false;
+  bool _isStarting = false;
 
   /// Starts the embedded Node.js server and waits for it to be ready.
   /// Call this from main() before runApp().
@@ -25,7 +26,8 @@ class NodeServerService with WidgetsBindingObserver {
   }
 
   Future<void> _startServer() async {
-    if (_isRunning) return;
+    if (_isRunning || _isStarting) return;
+    _isStarting = true;
     debugPrint('[NodeServer] Starting embedded Node.js server...');
     try {
       // node_flutter looks for the entry file inside:
@@ -37,6 +39,8 @@ class NodeServerService with WidgetsBindingObserver {
       debugPrint('[NodeServer] Server ready at $_baseUrl');
     } catch (e) {
       debugPrint('[NodeServer] Failed to start: $e');
+    } finally {
+      _isStarting = false;
     }
   }
 
