@@ -2,12 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:dio/dio.dart';
 import 'firebase_options.dart';
 import 'app.dart';
-import 'core/config/env.dart';
 import 'core/di/providers.dart';
 import 'core/playback/playback_providers.dart';
+import 'core/node_server/node_server_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,20 +24,21 @@ Future<void> main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
+  // ── Embedded Node.js BFF ─────────────────────────────────────────
+  // Boots the local Fastify server inside the app process.
+  // The server listens on 127.0.0.1:3000 — no external server needed.
+  final nodeServer = NodeServerService();
+  await nodeServer.start();
+
   // ── Riverpod container ───────────────────────────────────────────
   final container = ProviderContainer();
 
-  // Trigger adapter initialization in the background (Audius node discovery, etc.)
-  // We do NOT await this, to prevent blocking runApp and showing a black screen.
+  // Trigger adapter initialization in the background
   container.read(aggregatorInitProvider.future).catchError((_) {});
 
   // ── Audio Service & RunApp ───────────────────────────────────────
   try {
     final handler = await initAudioHandler(container);
-
-    // ── BFF Keep-alive ───────────────────────────────────────────────
-    // Pings the Render free tier every 14 mins to prevent cold starts.
-    _startBffKeepAlive();
 
     runApp(
       ProviderScope(
@@ -68,12 +68,3 @@ Future<void> main() async {
   }
 }
 
-void _startBffKeepAlive() {
-  final dio = Dio();
-  // Ping immediately
-  dio.get('${Env.bffUrl}/health').catchError((_) => Response(requestOptions: RequestOptions()));
-  // Then every 14 minutes (Render sleeps after 15 min inactivity)
-  Stream.periodic(const Duration(minutes: 14)).listen((_) {
-    dio.get('${Env.bffUrl}/health').catchError((_) => Response(requestOptions: RequestOptions()));
-  });
-}

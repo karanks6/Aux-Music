@@ -12,6 +12,9 @@ dependencies:
   flutter_localizations:
     sdk: flutter
 
+  # ── Embedded Node.js Server ────────────────────────────────────────
+  node_flutter: ^0.0.4
+
   # ── State Management ──────────────────────────────────────────────
   flutter_riverpod: ^2.6.1
   riverpod_annotation: ^2.3.5

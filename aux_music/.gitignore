@@ -43,3 +43,6 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Embedded Node.js server — exclude node_modules (install with npm install --production on CI)
+/android/app/src/main/assets/nodejs-project/node_modules/
