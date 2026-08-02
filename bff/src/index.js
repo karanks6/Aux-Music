@@ -2,6 +2,49 @@
 
 require('dotenv').config();
 
+// Polyfill Intl for Android nodejs-mobile engine (which lacks ICU)
+if (typeof global.Intl === 'undefined') {
+  global.Intl = {
+    DateTimeFormat: function() {
+      return {
+        format: () => '',
+        resolvedOptions: () => ({ locale: 'en-US', timeZone: 'UTC' })
+      };
+    },
+    NumberFormat: function() {
+      return {
+        format: (n) => String(n),
+        resolvedOptions: () => ({ locale: 'en-US' })
+      };
+    },
+    RelativeTimeFormat: function() {
+      return {
+        format: () => '',
+        resolvedOptions: () => ({ locale: 'en-US' })
+      };
+    },
+    PluralRules: function() {
+      return {
+        select: () => 'other',
+        resolvedOptions: () => ({ locale: 'en-US' })
+      };
+    },
+    Collator: function() {
+      return {
+        compare: (a, b) => String(a).localeCompare(String(b)),
+        resolvedOptions: () => ({ locale: 'en-US' })
+      };
+    },
+    ListFormat: function() {
+      return {
+        format: (list) => (list || []).join(', '),
+        resolvedOptions: () => ({ locale: 'en-US' })
+      };
+    },
+    Locale: function(loc) { return { baseName: loc }; }
+  };
+}
+
 const Fastify = require('fastify');
 const cors = require('@fastify/cors');
 const rateLimit = require('@fastify/rate-limit');
