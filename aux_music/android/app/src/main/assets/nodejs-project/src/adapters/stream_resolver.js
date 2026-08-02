@@ -1,16 +1,26 @@
 'use strict';
 
-const { Innertube, Platform } = require('youtubei.js');
+let Innertube = null;
+let Platform = null;
 
-// Wire Node.js Function constructor as the JS evaluator for deciphering
-// This is required by youtubei.js to decipher YouTube's obfuscated stream URLs
-Platform.shim.eval = async (data) => {
-  return new Function(data.output)();
-};
+async function loadYoutubei() {
+  if (!Innertube) {
+    const yt = await import('youtubei.js');
+    Innertube = yt.Innertube;
+    Platform = yt.Platform;
+    
+    // Wire Node.js Function constructor as the JS evaluator for deciphering
+    // This is required by youtubei.js to decipher YouTube's obfuscated stream URLs
+    Platform.shim.eval = async (data) => {
+      return new Function(data.output)();
+    };
+  }
+}
 
 let _ytInstance = null;
 
 async function getInnertube() {
+  await loadYoutubei();
   if (!_ytInstance) {
     _ytInstance = await Innertube.create({
       generate_session_locally: true,
