@@ -140,7 +140,7 @@ module.exports = {
     try {
       const yt = await getInnertube();
       const currentYear = new Date().getFullYear();
-      const currentMonth = new Date().toLocaleString('default', { month: 'long' });
+      const currentMonth = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][new Date().getMonth()];
       
       const allSeedTracks = [
         { title: 'Global Pop Mix', videoId: 'XXYlFuWEuKI' },
