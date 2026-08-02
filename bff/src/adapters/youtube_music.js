@@ -1,8 +1,7 @@
 'use strict';
 
 const YTMusic = require('ytmusic-api');
-const youtubedl = require('youtube-dl-exec');
-const ytdl = require('@distube/ytdl-core');
+const { resolveStreamUrl: _resolveStream } = require('./stream_resolver');
 
 const ytmusic = new YTMusic();
 let isInitialized = false;
@@ -209,26 +208,8 @@ module.exports = {
 
   async resolveStreamUrl(trackId) {
     const nativeId = trackId.replace('youtube_music:', '');
-    
-    // Removed ytdl-core since it generates TVHTML5 URLs which get blocked by BotGuard when used with Android User-Agent
-
-    // Fallback to yt-dlp
     try {
-      const url = `https://www.youtube.com/watch?v=${nativeId}`;
-      const output = await youtubedl(url, {
-        dumpJson: true,
-        noWarnings: true,
-        noCheckCertificate: true,
-        preferFreeFormats: true,
-        format: 'm4a/bestaudio/best',
-        extractorArgs: 'youtube:client=android'
-      });
-      
-      if (!output || !output.url) {
-        throw new Error('No stream URL found in youtube-dl response');
-      }
-      
-      return output.url;
+      return await _resolveStream(nativeId);
     } catch (e) {
       throw new Error(`[YouTube Music] Failed to resolve stream URL for ${trackId}: ${e.message}`);
     }

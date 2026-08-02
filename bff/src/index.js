@@ -243,8 +243,10 @@ function deduplicateTracks(tracks) {
 
 // ── Start ─────────────────────────────────────────────────────────────
 
+// When running embedded on device, always bind to localhost only for security.
+// HOST env var can override for development PC usage.
 const port = parseInt(process.env.PORT || '3000', 10);
-const host = process.env.HOST || '0.0.0.0';
+const host = process.env.HOST || '127.0.0.1';
 
 fastify.listen({ port, host }, (err) => {
   if (err) {
