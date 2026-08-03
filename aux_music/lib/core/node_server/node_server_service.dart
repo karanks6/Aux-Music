@@ -30,11 +30,18 @@ class NodeServerService with WidgetsBindingObserver {
     _isStarting = true;
     debugPrint('[NodeServer] Starting embedded Node.js server...');
     try {
-      // node_flutter looks for the entry file inside:
-      // android/app/src/main/assets/nodejs-project/
-      await Nodejs.start(fileName: 'src/index.js');
+      // Nodejs.start() runs the event loop and only completes when the Node process exits.
+      // Do NOT await it, otherwise it blocks Flutter's main thread and runApp() is never called!
+      Nodejs.start(fileName: 'src/index.js').catchError((e) {
+        if (e.toString().contains('already running')) {
+          debugPrint('[NodeServer] Background Nodejs already running.');
+        } else {
+          debugPrint('[NodeServer] Background Nodejs error: $e');
+        }
+      });
+      
       _isRunning = true;
-      debugPrint('[NodeServer] Node.js runtime started. Waiting for server...');
+      debugPrint('[NodeServer] Node.js runtime booted. Waiting for server...');
       await _waitForHealth();
       debugPrint('[NodeServer] Server ready at $_baseUrl');
     } catch (e) {

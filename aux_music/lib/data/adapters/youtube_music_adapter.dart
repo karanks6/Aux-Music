@@ -7,6 +7,7 @@ import '../models/license_type.dart';
 import 'music_source_adapter.dart';
 import '../../core/config/env.dart';
 import 'package:dio/dio.dart' as dio;
+import '../../services/po_token_service.dart';
 
 class YouTubeMusicAdapter implements MusicSourceAdapter {
   final yt.YoutubeExplode _yt = yt.YoutubeExplode();
@@ -174,8 +175,14 @@ class YouTubeMusicAdapter implements MusicSourceAdapter {
       // 1. Try BFF (Node backend) FIRST as the primary extractor
       try {
         print('[YouTubeMusic] Trying primary BFF (Node backend): ${Env.bffUrl}');
+        
+        // Retrieve PoToken (must have been initialized in main or audio handler)
+        final poTokenSvc = PoTokenService();
+        final poToken = poTokenSvc.poToken ?? '';
+        final visitorData = poTokenSvc.visitorData ?? '';
+        
         final bffResponse = await dio.Dio().get(
-          '${Env.bffUrl}/stream-url/youtube_music/$nativeId',
+          '${Env.bffUrl}/stream-url/youtube_music/$nativeId?poToken=$poToken&visitorData=$visitorData',
           options: dio.Options(
             sendTimeout: const Duration(seconds: 60),
             receiveTimeout: const Duration(seconds: 60),

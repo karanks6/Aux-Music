@@ -7,6 +7,7 @@ import 'app.dart';
 import 'core/di/providers.dart';
 import 'core/playback/playback_providers.dart';
 import 'core/node_server/node_server_service.dart';
+import 'services/po_token_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,6 +36,11 @@ Future<void> main() async {
 
   // Trigger adapter initialization in the background
   container.read(aggregatorInitProvider.future).catchError((_) {});
+
+  // Initialize PoTokenService to extract YouTube PoToken in the background
+  PoTokenService().init().catchError((e) {
+    debugPrint("PoTokenService initialization failed: \$e");
+  });
 
   // ── Audio Service & RunApp ───────────────────────────────────────
   try {
