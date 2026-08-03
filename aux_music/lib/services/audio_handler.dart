@@ -7,6 +7,7 @@ import '../../data/adapters/adapter_aggregator.dart';
 import '../../data/repositories/library_repository.dart';
 import '../core/proxy/local_audio_proxy.dart';
 import '../core/proxy/youtube_stream_audio_source.dart';
+import '../core/proxy/lazy_audio_source.dart';
 import 'dart:io';
 import 'dart:convert';
 
@@ -80,14 +81,6 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
         if (!_isLoadingStream) {
           mediaItem.add(queue.value[index]);
         }
-        // Preload next track
-        if (index + 1 < queue.value.length) {
-          final nextTrackId = queue.value[index + 1].extras?['trackId'] as String?;
-          if (nextTrackId != null) {
-            _ensureStreamUrl(nextTrackId, index: index + 1);
-          }
-        }
-        
         // Infinite Radio: Fetch UpNext when approaching end of queue
         if (index >= queue.value.length - 2 && !_isFetchingUpNext) {
           _isFetchingUpNext = true;
@@ -106,7 +99,7 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
                    queue.add(currentQ);
                    
                    for (final item in newMediaItems) {
-                     await _playlist.add(AudioSource.uri(Uri.parse('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA='), tag: item));
+                     await _playlist.add(_createAudioSource(item));
                    }
                    print('[AudioHandler] Infinite Radio: Appended ${newTracks.length} tracks to queue');
                  }
@@ -188,15 +181,7 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
       if (nextIndex < q.length) {
         final nextTrackId = q[nextIndex].extras?['trackId'] as String?;
         if (nextTrackId != null) {
-          final wasPlaying = _player.playing;
-          if (wasPlaying) await _player.pause();
-          
-          _setLoadingState(true, forceIndex: nextIndex);
-          await _ensureStreamUrl(nextTrackId, index: nextIndex);
-          await _player.seek(Duration.zero, index: nextIndex);
-          _setLoadingState(false);
-          
-          if (wasPlaying) await _player.play();
+          await _player.seekToNext();
           return;
         }
       }
@@ -218,18 +203,12 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
   Future<void> skipToQueueItem(int index) async {
     final q = queue.value;
     if (index < q.length) {
-      final trackId = q[index].extras?['trackId'] as String?;
-      if (trackId != null) {
-        await _player.pause();
-        _setLoadingState(true, forceIndex: index);
-        await _ensureStreamUrl(trackId, index: index);
+      await _player.seek(Duration.zero, index: index);
+      if (!_player.playing) {
+        await _player.play();
       }
     }
-    await _player.seek(Duration.zero, index: index);
-    _setLoadingState(false);
-    await _player.play();
   }
-
   @override
   Future<void> setShuffleMode(AudioServiceShuffleMode shuffleMode) async {
     final enabled = shuffleMode != AudioServiceShuffleMode.none;
@@ -315,29 +294,7 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
   Future<void> _updateQueueWithIndex(List<MediaItem> queueList, {int initialIndex = 0}) async {
     this.queue.add(queueList);
     
-    final audioSources = queueList.map((item) {
-      final streamUrl = item.extras?['streamUrl'] as String?;
-      // Valid 44-byte silent WAV file encoded as a data URI
-      const placeholderUrl = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=';
-      final urlToParse = (streamUrl != null && streamUrl.isNotEmpty) ? streamUrl : placeholderUrl;
-      
-      if (urlToParse.startsWith('ytstream://')) {
-        final uri = Uri.parse(urlToParse);
-        final base64String = uri.queryParameters['url'] ?? '';
-        final decodedUrl = utf8.decode(base64Url.decode(base64String));
-        final length = int.parse(uri.queryParameters['length'] ?? '0');
-        return YoutubeStreamAudioSource(
-          url: decodedUrl,
-          sourceLength: length,
-          tag: item,
-        );
-      }
-      
-      return AudioSource.uri(
-        Uri.parse(urlToParse),
-        tag: item,
-      );
-    }).toList();
+    final audioSources = queueList.map((item) => _createAudioSource(item)).toList();
     
     _playlist = ConcatenatingAudioSource(
       children: audioSources,
@@ -350,56 +307,14 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
   Future<void> addQueueItem(MediaItem mediaItem) async {
     final q = List<MediaItem>.from(queue.value)..add(mediaItem);
     queue.add(q);
-    final streamUrl = mediaItem.extras?['streamUrl'] as String?;
-    const placeholderUrl = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=';
-    final urlToParse = (streamUrl != null && streamUrl.isNotEmpty) ? streamUrl : placeholderUrl;
-    
-    AudioSource source;
-    if (urlToParse.startsWith('ytstream://')) {
-      final uri = Uri.parse(urlToParse);
-      final base64String = uri.queryParameters['url'] ?? '';
-      final decodedUrl = utf8.decode(base64Url.decode(base64String));
-      final length = int.parse(uri.queryParameters['length'] ?? '0');
-      source = YoutubeStreamAudioSource(
-        url: decodedUrl,
-        sourceLength: length,
-        tag: mediaItem,
-      );
-    } else {
-      source = AudioSource.uri(
-        Uri.parse(urlToParse),
-        tag: mediaItem,
-      );
-    }
-    await _playlist.add(source);
+    await _playlist.add(_createAudioSource(mediaItem));
   }
 
   @override
   Future<void> insertQueueItem(int index, MediaItem mediaItem) async {
     final q = List<MediaItem>.from(queue.value)..insert(index, mediaItem);
     queue.add(q);
-    final streamUrl = mediaItem.extras?['streamUrl'] as String?;
-    const placeholderUrl = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=';
-    final urlToParse = (streamUrl != null && streamUrl.isNotEmpty) ? streamUrl : placeholderUrl;
-    
-    AudioSource source;
-    if (urlToParse.startsWith('ytstream://')) {
-      final uri = Uri.parse(urlToParse);
-      final base64String = uri.queryParameters['url'] ?? '';
-      final decodedUrl = utf8.decode(base64Url.decode(base64String));
-      final length = int.parse(uri.queryParameters['length'] ?? '0');
-      source = YoutubeStreamAudioSource(
-        url: decodedUrl,
-        sourceLength: length,
-        tag: mediaItem,
-      );
-    } else {
-      source = AudioSource.uri(
-        Uri.parse(urlToParse),
-        tag: mediaItem,
-      );
-    }
-    await _playlist.insert(index, source);
+    await _playlist.insert(index, _createAudioSource(mediaItem));
   }
 
   @override
@@ -442,103 +357,82 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
   }
 
   Future<void> _resolveAndPlay(Track track, {required int index}) async {
-    _setLoadingState(true, forceIndex: index);
-    await _ensureStreamUrl(track.id, index: index);
-    await Future.delayed(const Duration(milliseconds: 150));
     await _player.seek(Duration.zero, index: index);
-    _setLoadingState(false);
     await _player.play();
   }
 
-  Future<void> _ensureStreamUrl(String trackId, {required int index}) async {
-    try {
-      final q1 = queue.value;
-      if (index >= q1.length) return;
-      final currentItem = q1[index];
-      final currentStreamUrl = currentItem.extras?['streamUrl']?.toString();
-      
-      if (currentStreamUrl != null && currentStreamUrl.isNotEmpty) {
-        if (currentStreamUrl.startsWith('ytstream://') && Uri.parse(currentStreamUrl).queryParameters['url'] == null) {
-          // Found a corrupted old ytstream URL from cache (missing the query parameter). 
-          // Force a fresh fetch by falling through!
-          print('[AudioHandler] Ignoring corrupted cached stream URL for $trackId');
-        } else {
-          return; // Already resolved
-        }
+  AudioSource _createAudioSource(MediaItem item) {
+    final streamUrl = item.extras?['streamUrl'] as String?;
+    if (streamUrl != null && streamUrl.isNotEmpty && streamUrl != 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=') {
+      if (streamUrl.startsWith('ytstream://')) {
+        final uri = Uri.parse(streamUrl);
+        final base64String = uri.queryParameters['url'] ?? '';
+        final decodedUrl = utf8.decode(base64Url.decode(base64String));
+        final length = int.parse(uri.queryParameters['length'] ?? '0');
+        return YoutubeStreamAudioSource(
+          url: decodedUrl,
+          sourceLength: length,
+          tag: item,
+        );
       }
-
-      String url;
-      Track? fallbackTrack;
-      final download = await _library.getDownload(trackId);
-      if (download != null && File(download.localPath).existsSync()) {
-        url = 'file://${download.localPath}';
-      } else if (trackId.startsWith('podcast:')) {
-        url = currentItem.extras?['streamUrl'] as String? ?? currentItem.extras?['sourceUrl'] as String? ?? '';
-        if (url.isEmpty) throw Exception('Podcast missing stream URL');
-      } else {
+      return AudioSource.uri(
+        Uri.parse(streamUrl),
+        headers: const {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+        },
+        tag: item,
+      );
+    }
+    
+    return LazyAudioSource(
+      tag: item,
+      headers: const {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+      },
+      resolveUrl: () async {
+        final trackId = item.extras?['trackId'] as String? ?? item.id;
+        final download = await _library.getDownload(trackId);
+        if (download != null && File(download.localPath).existsSync()) {
+          return 'file://${download.localPath}';
+        }
+        
+        if (trackId.startsWith('podcast:')) {
+          final url = item.extras?['streamUrl'] as String? ?? item.extras?['sourceUrl'] as String? ?? '';
+          if (url.isEmpty) throw Exception('Podcast missing stream URL');
+          return url;
+        }
+        
         final result = await _aggregator.resolveStreamUrl(
           trackId,
-          title: currentItem.title,
-          artistName: currentItem.artist,
+          title: item.title,
+          artistName: item.artist,
         );
-        url = result.url;
-        fallbackTrack = result.fallbackTrack;
-      }
-      
-      final q2 = queue.value;
-      if (index >= q2.length) return;
-
-      final item = q2[index];
-      final newExtras = Map<String, dynamic>.from(item.extras ?? {})
-        ..['streamUrl'] = url;
         
-      if (fallbackTrack != null) {
-        newExtras['trackId'] = fallbackTrack.id;
-        newExtras['sourceId'] = fallbackTrack.sourceId;
-      }
-
-      final updatedItem = item.copyWith(
-        id: fallbackTrack?.id ?? item.id,
-        title: fallbackTrack?.title ?? item.title,
-        artist: fallbackTrack?.artistName ?? item.artist,
-        album: fallbackTrack?.albumName ?? item.album,
-        artUri: fallbackTrack?.artworkUrl != null ? Uri.parse(fallbackTrack!.artworkUrl!) : item.artUri,
-        extras: newExtras,
-      );
-
-      final newQueue = List<MediaItem>.from(q2);
-      newQueue[index] = updatedItem;
-      queue.add(newQueue);
-
-      try {
-        await _playlist.removeAt(index);
-        
-        AudioSource source;
-        if (url.startsWith('ytstream://')) {
-          final uri = Uri.parse(url);
-          final base64String = uri.queryParameters['url'] ?? '';
-          final decodedUrl = utf8.decode(base64Url.decode(base64String));
-          final length = int.parse(uri.queryParameters['length'] ?? '0');
-          source = YoutubeStreamAudioSource(
-            url: decodedUrl,
-            sourceLength: length,
-            tag: updatedItem,
-          );
-        } else {
-          source = AudioSource.uri(
-            Uri.parse(url), 
-            tag: updatedItem,
-          );
+        if (result.fallbackTrack != null) {
+          final fallback = result.fallbackTrack!;
+          final q = List<MediaItem>.from(queue.value);
+          final idx = q.indexWhere((i) => i.id == item.id || i.extras?['trackId'] == trackId);
+          if (idx != -1) {
+            final oldItem = q[idx];
+            final newExtras = Map<String, dynamic>.from(oldItem.extras ?? {})
+              ..['streamUrl'] = result.url
+              ..['trackId'] = fallback.id
+              ..['sourceId'] = fallback.sourceId;
+            final newItem = oldItem.copyWith(
+              id: fallback.id,
+              title: fallback.title,
+              artist: fallback.artistName,
+              album: fallback.albumName,
+              artUri: fallback.artworkUrl != null ? Uri.parse(fallback.artworkUrl!) : oldItem.artUri,
+              extras: newExtras,
+            );
+            q[idx] = newItem;
+            queue.add(q);
+          }
         }
-        
-        await _playlist.insert(index, source);
-      } catch (e) {
-        print('[AudioHandler] Failed to update playlist at index $index: $e');
-      }
-    } catch (e) {
-      // ignore: avoid_print
-      print('[AudioHandler] Failed to resolve stream URL for $trackId: $e');
-    }
+        return result.url;
+      },
+    );
   }
 
   PlaybackState _transformEvent(PlaybackEvent event) {
