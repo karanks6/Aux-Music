@@ -17,14 +17,21 @@ async function loadYoutubei() {
   }
 }
 
-let _ytInstance = null;
+let _ytMetadata = null;
+let _ytPlayer = null;
 
-async function getInnertube(poToken, visitorData) {
+async function getInnertube(poToken, visitorData, retrievePlayer = false) {
   await loadYoutubei();
   
+  // Use cached instance if no specific tokens are provided
+  if (!poToken && !visitorData) {
+    if (retrievePlayer && _ytPlayer) return _ytPlayer;
+    if (!retrievePlayer && _ytMetadata) return _ytMetadata;
+  }
+
   const config = {
     generate_session_locally: true,
-    retrieve_player: true,
+    retrieve_player: retrievePlayer,
   };
 
   if (poToken && visitorData) {
@@ -33,7 +40,22 @@ async function getInnertube(poToken, visitorData) {
     config.generate_session_locally = false;
   }
 
-  return await Innertube.create(config);
+  try {
+    const yt = await Innertube.create(config);
+    if (!poToken && !visitorData) {
+      if (retrievePlayer) _ytPlayer = yt;
+      else _ytMetadata = yt;
+    }
+    return yt;
+  } catch (err) {
+    // If it fails with retrievePlayer=true, fallback to metadata instance if available
+    console.error('[StreamResolver] Innertube.create failed:', err.message);
+    if (retrievePlayer && _ytMetadata) {
+      console.warn('[StreamResolver] Falling back to metadata Innertube instance');
+      return _ytMetadata;
+    }
+    throw err;
+  }
 }
 
 /**
@@ -46,7 +68,7 @@ async function getInnertube(poToken, visitorData) {
  * @returns {Promise<string>} - A direct HTTPS audio stream URL
  */
 async function resolveStreamUrl(videoId, poToken, visitorData) {
-  const yt = await getInnertube(poToken, visitorData);
+  const yt = await getInnertube(poToken, visitorData, true);
   const info = await yt.music.getInfo(videoId);
   const streamingData = info.streaming_data;
 
