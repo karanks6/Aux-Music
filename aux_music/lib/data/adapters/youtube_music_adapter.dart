@@ -193,14 +193,13 @@ class YouTubeMusicAdapter implements MusicSourceAdapter {
         if (bffResponse.statusCode == 200) {
           final json = bffResponse.data;
           if (json['streamUrl'] != null) {
-            final url = json['streamUrl'] as String;
-            print('[YouTubeMusic] BFF extraction successful! URL: $url');
+            final rawUrl = json['streamUrl'] as String;
+            print('[YouTubeMusic] BFF extraction successful! Raw URL: $rawUrl');
             
-            // Return the raw URL so ExoPlayer uses standard headers.
-            // The Android UA injected by YoutubeStreamAudioSource triggers 403 BotGuard blocks 
-            // for c=ANDROID_VR streams.
-            _streamCache[nativeId] = url;
-            return url;
+            // Proxy the stream through the backend to bypass IP binding and 403 errors
+            final proxyUrl = '${Env.bffUrl}/proxy-stream/youtube_music/$nativeId?poToken=$poToken&visitorData=$visitorData';
+            _streamCache[nativeId] = proxyUrl;
+            return proxyUrl;
           }
         } else {
            print('[YouTubeMusic] BFF extraction failed with status: ${bffResponse.statusCode}');
