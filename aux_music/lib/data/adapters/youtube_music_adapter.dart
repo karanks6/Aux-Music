@@ -196,10 +196,8 @@ class YouTubeMusicAdapter implements MusicSourceAdapter {
             final rawUrl = json['streamUrl'] as String;
             print('[YouTubeMusic] BFF extraction successful! Raw URL: $rawUrl');
             
-            // Proxy the stream through the backend to bypass IP binding and 403 errors
-            final proxyUrl = '${Env.bffUrl}/proxy-stream/youtube_music/$nativeId?poToken=$poToken&visitorData=$visitorData';
-            _streamCache[nativeId] = proxyUrl;
-            return proxyUrl;
+            _streamCache[nativeId] = rawUrl;
+            return rawUrl;
           }
         } else {
            print('[YouTubeMusic] BFF extraction failed with status: ${bffResponse.statusCode}');
