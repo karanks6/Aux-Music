@@ -19,15 +19,21 @@ async function loadYoutubei() {
 
 let _ytInstance = null;
 
-async function getInnertube() {
+async function getInnertube(poToken, visitorData) {
   await loadYoutubei();
-  if (!_ytInstance) {
-    _ytInstance = await Innertube.create({
-      generate_session_locally: true,
-      retrieve_player: true,
-    });
+  
+  const config = {
+    generate_session_locally: true,
+    retrieve_player: true,
+  };
+
+  if (poToken && visitorData) {
+    config.po_token = poToken;
+    config.visitor_data = visitorData;
+    config.generate_session_locally = false;
   }
-  return _ytInstance;
+
+  return await Innertube.create(config);
 }
 
 /**
@@ -35,10 +41,12 @@ async function getInnertube() {
  * Uses youtubei.js (pure JS) — no binary dependencies, mobile-safe.
  *
  * @param {string} videoId - Raw YouTube video ID (e.g. "dQw4w9WgXcQ")
+ * @param {string} [poToken]
+ * @param {string} [visitorData]
  * @returns {Promise<string>} - A direct HTTPS audio stream URL
  */
-async function resolveStreamUrl(videoId) {
-  const yt = await getInnertube();
+async function resolveStreamUrl(videoId, poToken, visitorData) {
+  const yt = await getInnertube(poToken, visitorData);
   const info = await yt.music.getInfo(videoId);
   const streamingData = info.streaming_data;
 

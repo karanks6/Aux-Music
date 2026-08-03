@@ -4,45 +4,7 @@ require('dotenv').config();
 
 // Polyfill Intl for Android nodejs-mobile engine (which lacks ICU)
 if (typeof global.Intl === 'undefined') {
-  global.Intl = {
-    DateTimeFormat: function() {
-      return {
-        format: () => '',
-        resolvedOptions: () => ({ locale: 'en-US', timeZone: 'UTC' })
-      };
-    },
-    NumberFormat: function() {
-      return {
-        format: (n) => String(n),
-        resolvedOptions: () => ({ locale: 'en-US' })
-      };
-    },
-    RelativeTimeFormat: function() {
-      return {
-        format: () => '',
-        resolvedOptions: () => ({ locale: 'en-US' })
-      };
-    },
-    PluralRules: function() {
-      return {
-        select: () => 'other',
-        resolvedOptions: () => ({ locale: 'en-US' })
-      };
-    },
-    Collator: function() {
-      return {
-        compare: (a, b) => String(a).localeCompare(String(b)),
-        resolvedOptions: () => ({ locale: 'en-US' })
-      };
-    },
-    ListFormat: function() {
-      return {
-        format: (list) => (list || []).join(', '),
-        resolvedOptions: () => ({ locale: 'en-US' })
-      };
-    },
-    Locale: function(loc) { return { baseName: loc }; }
-  };
+  global.Intl = require('intl');
 }
 
 const Fastify = require('fastify');
@@ -185,6 +147,7 @@ fastify.get('/recommendations/upnext/:videoId', async (request, reply) => {
  */
 fastify.get('/stream-url/:source/:trackId', async (request, reply) => {
   const { source, trackId } = request.params;
+  const { poToken, visitorData } = request.query;
 
   const adapter = adapters.find((a) => a.sourceId === source);
   if (!adapter) {
@@ -192,7 +155,7 @@ fastify.get('/stream-url/:source/:trackId', async (request, reply) => {
   }
 
   try {
-    const url = await adapter.resolveStreamUrl(trackId);
+    const url = await adapter.resolveStreamUrl(trackId, { poToken, visitorData });
     return { streamUrl: url, sourceId: source, trackId };
   } catch (err) {
     fastify.log.error(err);
@@ -207,6 +170,7 @@ fastify.get('/stream-url/:source/:trackId', async (request, reply) => {
  */
 fastify.get('/proxy-stream/:source/:trackId', async (request, reply) => {
   const { source, trackId } = request.params;
+  const { poToken, visitorData } = request.query;
 
   const adapter = adapters.find((a) => a.sourceId === source);
   if (!adapter) {
@@ -214,7 +178,7 @@ fastify.get('/proxy-stream/:source/:trackId', async (request, reply) => {
   }
 
   try {
-    const url = await adapter.resolveStreamUrl(trackId);
+    const url = await adapter.resolveStreamUrl(trackId, { poToken, visitorData });
     
     const headers = {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'

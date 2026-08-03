@@ -205,10 +205,10 @@ module.exports = {
     return [];
   },
 
-  async resolveStreamUrl(trackId) {
+  async resolveStreamUrl(trackId, options = {}) {
     const nativeId = trackId.replace('youtube_music:', '');
     try {
-      return await _resolveStream(nativeId);
+      return await _resolveStream(nativeId, options.poToken, options.visitorData);
     } catch (e) {
       throw new Error(`[YouTube Music] Failed to resolve stream URL for ${trackId}: ${e.message}`);
     }

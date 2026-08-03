@@ -12,15 +12,18 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
+    "@distube/ytdl-core": "^4.16.12",
     "@fastify/cors": "^9.0.1",
     "@fastify/rate-limit": "^9.1.0",
     "axios": "^1.7.0",
+    "bgutils-js": "^4.0.2",
     "des.js": "^1.1.0",
     "dotenv": "^16.4.5",
     "fast-xml-parser": "^4.4.0",
     "fastify": "^4.28.0",
     "intl": "^1.2.5",
     "play-dl": "^1.9.7",
+    "youtube-po-token-generator": "^0.6.0",
     "youtubei.js": "^17.2.0"
   },
   "devDependencies": {
