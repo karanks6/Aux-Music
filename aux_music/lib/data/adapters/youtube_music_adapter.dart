@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:aux_music/core/node_server/node_server_service.dart';
+import 'package:aux_music/core/proxy/local_audio_proxy.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart' as yt;
 import '../models/track.dart';
 import '../models/artist.dart';
@@ -163,7 +165,7 @@ class YouTubeMusicAdapter implements MusicSourceAdapter {
       // Check in-memory cache first to prevent rate-limiting on repeat plays
       if (_streamCache.containsKey(nativeId)) {
         final cachedUrl = _streamCache[nativeId]!;
-        if (!cachedUrl.startsWith('ytstream://')) {
+        if (!cachedUrl.startsWith('http://127.0.0.1') && !cachedUrl.contains('piped')) {
           print('[YouTubeMusic] Invalidating old broken cache for $nativeId');
           _streamCache.remove(nativeId);
         } else {
@@ -172,110 +174,101 @@ class YouTubeMusicAdapter implements MusicSourceAdapter {
         }
       }
 
-      // 1. Try BFF (Node backend) FIRST as the primary extractor
+      // 1. Try Piped API FIRST (Most reliable for bypassing BotGuard currently)
+      final pipedInstances = [
+        'https://piped.projectsegfau.lt/api',
+        'https://pipedapi.kavin.rocks',
+        'https://pipedapi.smnz.de',
+        'https://piped-api.garudalinux.org',
+        'https://piped-api.lunar.icu',
+      ];
+
+      for (final instance in pipedInstances) {
+        try {
+          print('[YouTubeMusic] Trying Piped instance: $instance');
+          final request = await HttpClient().getUrl(Uri.parse('$instance/streams/$nativeId'));
+          final response = await request.close().timeout(const Duration(seconds: 3));
+          if (response.statusCode == 200) {
+            final body = await response.transform(utf8.decoder).join();
+            final json = jsonDecode(body);
+            final audioStreams = json['audioStreams'] as List<dynamic>?;
+            
+            if (audioStreams != null && audioStreams.isNotEmpty) {
+               final bestStream = audioStreams.reduce((a, b) => (a['bitrate'] ?? 0) > (b['bitrate'] ?? 0) ? a : b);
+               final url = bestStream['url'] as String;
+               print('[YouTubeMusic] Piped API resolution successful with $instance!');
+               
+               _streamCache[nativeId] = url;
+               return url;
+            }
+          }
+        } catch (pipedError) {
+          print('[YouTubeMusic] Piped instance $instance failed.');
+        }
+      }
+      
+      // 2. Try BFF (Node backend) Proxy as fallback
       try {
-        print('[YouTubeMusic] Trying primary BFF (Node backend): ${Env.bffUrl}');
+        print('[YouTubeMusic] Trying BFF Proxy fallback: ${Env.bffUrl}');
         
-        // Retrieve PoToken (must have been initialized in main or audio handler)
         final poTokenSvc = PoTokenService();
+        await poTokenSvc.init(); // Wait for token extraction to finish (or timeout)
         final poToken = poTokenSvc.poToken ?? '';
         final visitorData = poTokenSvc.visitorData ?? '';
         
-        final bffResponse = await dio.Dio().get(
-          '${Env.bffUrl}/stream-url/youtube_music/$nativeId?poToken=$poToken&visitorData=$visitorData',
+        final proxyUrl = '${Env.bffUrl}/proxy-stream/youtube_music/$nativeId?poToken=$poToken&visitorData=$visitorData';
+        
+        // Do a quick HEAD request to ensure the backend can resolve and start streaming
+        // before we hand the URL off to ExoPlayer.
+        final checkResponse = await dio.Dio().head(
+          proxyUrl,
           options: dio.Options(
-            sendTimeout: const Duration(seconds: 60),
-            receiveTimeout: const Duration(seconds: 60),
-            headers: {'Connection': 'close'}, // Prevent keep-alive resets
+            sendTimeout: const Duration(seconds: 5),
+            receiveTimeout: const Duration(seconds: 5),
+            validateStatus: (status) => status != null && status < 400,
           ),
         );
         
-        if (bffResponse.statusCode == 200) {
-          final json = bffResponse.data;
-          if (json['streamUrl'] != null) {
-            final rawUrl = json['streamUrl'] as String;
-            print('[YouTubeMusic] BFF extraction successful! Raw URL: $rawUrl');
-            
-            _streamCache[nativeId] = rawUrl;
-            return rawUrl;
-          }
-        } else {
-           print('[YouTubeMusic] BFF extraction failed with status: ${bffResponse.statusCode}');
+        if (checkResponse.statusCode == 200 || checkResponse.statusCode == 206) {
+          print('[YouTubeMusic] BFF Proxy extraction successful!');
+          _streamCache[nativeId] = proxyUrl;
+          return proxyUrl;
         }
       } catch (bffError) {
-        print('[YouTubeMusic] BFF extraction failed: $bffError');
+        print('[YouTubeMusic] BFF Proxy failed: $bffError');
       }
       
-      // 2. Fetch the stream manifest directly using the client-side library (Fallback 1).
-      // Use Android clients which match the YoutubeStreamAudioSource User-Agent
+      // 3. Try Native youtube_explode_dart (Fallback 2)
       try {
-      final manifest = await _yt.videos.streamsClient.getManifest(
-        nativeId,
-        ytClients: [
-          yt.YoutubeApiClient.android, 
-          yt.YoutubeApiClient.androidVr, 
-          yt.YoutubeApiClient.tv
-        ]
-      );
-      
-      final formats = manifest.audioOnly;
-      
-      if (formats.isNotEmpty) {
-        final streamInfo = formats.withHighestBitrate();
-        final url = streamInfo.url.toString();
-        final size = streamInfo.size.totalBytes;
+        final manifest = await _yt.videos.streamsClient.getManifest(
+          nativeId,
+          ytClients: [
+            yt.YoutubeApiClient.android, 
+            yt.YoutubeApiClient.androidVr, 
+            yt.YoutubeApiClient.tv
+          ]
+        );
         
-        // Encode the URL as base64 to pass it safely in the custom ytstream protocol
-        final encodedUrl = base64Url.encode(utf8.encode(url));
-        final ytStreamUrl = 'ytstream://stream?url=$encodedUrl&length=$size';
+        final formats = manifest.audioOnly;
         
-        // Cache the successful resolution
-        _streamCache[nativeId] = ytStreamUrl;
-        
-        return ytStreamUrl;
-      } else {
-        throw Exception('No audio streams found for $nativeId');
-      }
-    } catch (e) {
-      print('[YouTubeMusic] Native stream resolution failed: $e. Falling back to Piped API...');
-            final pipedInstances = [
-          'https://piped.projectsegfau.lt/api',
-          'https://pipedapi.kavin.rocks',
-          'https://pipedapi.smnz.de',
-          'https://piped-api.garudalinux.org',
-          'https://piped-api.lunar.icu',
-        ];
-
-        for (final instance in pipedInstances) {
-          try {
-            print('[YouTubeMusic] Trying Piped instance: $instance');
-            final request = await HttpClient().getUrl(Uri.parse('$instance/streams/$nativeId'));
-            final response = await request.close().timeout(const Duration(seconds: 3));
-            if (response.statusCode == 200) {
-              final body = await response.transform(utf8.decoder).join();
-              final json = jsonDecode(body);
-              final audioStreams = json['audioStreams'] as List<dynamic>?;
-              
-              if (audioStreams != null && audioStreams.isNotEmpty) {
-                 final bestStream = audioStreams.reduce((a, b) => (a['bitrate'] ?? 0) > (b['bitrate'] ?? 0) ? a : b);
-                 final url = bestStream['url'] as String;
-                 print('[YouTubeMusic] Piped API fallback successful with $instance! URL: $url');
-                 
-                 _streamCache[nativeId] = url;
-                 return url;
-              }
-            }
-          } catch (pipedError) {
-            print('[YouTubeMusic] Piped instance $instance failed.');
-          }
+        if (formats.isNotEmpty) {
+          final streamInfo = formats.withHighestBitrate();
+          final url = streamInfo.url.toString();
+          final size = streamInfo.size.totalBytes;
+          
+          final encodedUrl = base64Url.encode(utf8.encode(url));
+          final proxySvc = LocalAudioProxy();
+          final proxyUrl = proxySvc.getProxyUrlForDirect(encodedUrl);
+          
+          _streamCache[nativeId] = proxyUrl;
+          return proxyUrl;
         }
-        print('[YouTubeMusic] All Piped instances failed.');
-
-        // If YouTube rate-limits the client (e.g. RequestLimitExceededException), 
-        // we throw so the aggregator can seamlessly fall back to JioSaavn.
-        throw Exception('YouTube stream resolution failed completely: $e');
+      } catch (e) {
+        print('[YouTubeMusic] Native stream resolution failed: $e');
+      }
+      
+      throw Exception('YouTube stream resolution failed completely for $nativeId');
     }
-  }
 
   @override
   Future<List<Artist>> searchArtists(String query, {int limit = 10}) async {

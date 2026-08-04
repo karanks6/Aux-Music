@@ -364,17 +364,6 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
   AudioSource _createAudioSource(MediaItem item) {
     final streamUrl = item.extras?['streamUrl'] as String?;
     if (streamUrl != null && streamUrl.isNotEmpty && streamUrl != 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=') {
-      if (streamUrl.startsWith('ytstream://')) {
-        final uri = Uri.parse(streamUrl);
-        final base64String = uri.queryParameters['url'] ?? '';
-        final decodedUrl = utf8.decode(base64Url.decode(base64String));
-        final length = int.parse(uri.queryParameters['length'] ?? '0');
-        return YoutubeStreamAudioSource(
-          url: decodedUrl,
-          sourceLength: length,
-          tag: item,
-        );
-      }
       return AudioSource.uri(
         Uri.parse(streamUrl),
         headers: const {
