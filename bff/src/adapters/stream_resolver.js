@@ -32,6 +32,7 @@ async function getInnertube(poToken, visitorData, retrievePlayer = false) {
   const config = {
     generate_session_locally: true,
     retrieve_player: retrievePlayer,
+    clientType: "YTMUSIC",
   };
 
   if (poToken && visitorData) {
