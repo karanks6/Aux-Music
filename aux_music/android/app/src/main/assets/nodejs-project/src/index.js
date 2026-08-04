@@ -147,6 +147,7 @@ fastify.get('/recommendations/upnext/:videoId', async (request, reply) => {
  */
 fastify.get('/stream-url/:source/:trackId', async (request, reply) => {
   const { source, trackId } = request.params;
+  const { poToken, visitorData } = request.query;
 
   const adapter = adapters.find((a) => a.sourceId === source);
   if (!adapter) {
@@ -154,7 +155,7 @@ fastify.get('/stream-url/:source/:trackId', async (request, reply) => {
   }
 
   try {
-    const url = await adapter.resolveStreamUrl(trackId);
+    const url = await adapter.resolveStreamUrl(trackId, { poToken, visitorData });
     return { streamUrl: url, sourceId: source, trackId };
   } catch (err) {
     fastify.log.error(err);
@@ -169,6 +170,7 @@ fastify.get('/stream-url/:source/:trackId', async (request, reply) => {
  */
 fastify.get('/proxy-stream/:source/:trackId', async (request, reply) => {
   const { source, trackId } = request.params;
+  const { poToken, visitorData } = request.query;
 
   const adapter = adapters.find((a) => a.sourceId === source);
   if (!adapter) {
@@ -176,7 +178,7 @@ fastify.get('/proxy-stream/:source/:trackId', async (request, reply) => {
   }
 
   try {
-    const url = await adapter.resolveStreamUrl(trackId);
+    const url = await adapter.resolveStreamUrl(trackId, { poToken, visitorData });
     
     const headers = {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
@@ -251,7 +253,7 @@ function deduplicateTracks(tracks) {
 // When running embedded on device, always bind to localhost only for security.
 // HOST env var can override for development PC usage.
 const port = parseInt(process.env.PORT || '3000', 10);
-const host = process.env.HOST || '127.0.0.1';
+const host = process.env.HOST || '0.0.0.0';
 
 fastify.listen({ port, host }, (err) => {
   if (err) {

@@ -157,30 +157,40 @@ module.exports = {
       const allSeedTracks = [
         { title: 'Global Pop Mix', videoId: 'XXYlFuWEuKI' },
         { title: 'Bollywood Hits', videoId: '5Eqb_-j3FDA' },
-        { title: 'Desi Hip Hop', searchQuery: `Top Desi Hip Hop songs ${currentYear}` },
-        { title: 'Lofi Beats to Relax', videoId: '1fueZCTYkpA' },
-        { title: 'Punjabi Fire', searchQuery: `Latest Punjabi Hits ${currentMonth} ${currentYear}` },
-        { title: 'Electronic Dance', videoId: 'YykjpeuMNEk' },
-        { title: 'Rock Classics', videoId: '1w7OgIMMRc4' },
-        { title: 'R&B / Soul', videoId: 'fHI8X4OXluQ' },
-        { title: 'New Hindi Releases', searchQuery: `Latest brand new hindi songs bollywood ${currentMonth} ${currentYear}` },
-        { title: 'Trending Global', searchQuery: `Global top songs trending now ${currentMonth} ${currentYear}` },
-        { title: 'Indie Vibes', searchQuery: `Best indie pop acoustic ${currentYear}` },
-        { title: 'Top English Hits', searchQuery: `English Hits ${currentYear}` },
-        { title: 'Viral Songs', searchQuery: `Viral Tiktok Reels Songs ${currentYear}` },
+        { videoId: 'dQw4w9WgXcQ', title: 'Pop Classics' },
+        { searchQuery: 'lofi hip hop radio', title: 'Lofi & Chill' },
+        { searchQuery: 'top hits english', title: 'Top Hits' },
+        { searchQuery: 'bollywood trending', title: 'Bollywood Hits' },
+        { searchQuery: 'electronic dance music', title: 'EDM Party' },
+        { searchQuery: 'acoustic covers', title: 'Acoustic Vibes' },
+        { searchQuery: 'indie folk', title: 'Indie Vibes' },
+        { searchQuery: 'synthwave mix', title: 'Synthwave' },
+        { searchQuery: 'jazz classics', title: 'Jazz Classics' },
+        { searchQuery: 'viral hits', title: 'Viral Hits' },
+        { searchQuery: 'rap caviar', title: 'Hip Hop & Rap' },
+        { searchQuery: 'r&b soul mix', title: 'R&B Classics' },
+        { searchQuery: 'workout motivation music', title: 'Workout' },
+        { searchQuery: 'sleep ambient', title: 'Sleep & Ambient' },
+        { searchQuery: 'kpop trending', title: 'K-Pop Hits' },
+        { searchQuery: 'rock anthems', title: 'Rock Anthems' },
+        { searchQuery: 'punjabi hits', title: 'Punjabi Hits' },
+        { searchQuery: 'telugu hit songs', title: 'Tollywood Hits' },
+        { searchQuery: 'spanish pop hits', title: 'Latin Hits' },
+        { searchQuery: 'classical masterpieces', title: 'Classical' },
       ];
 
-      const shuffledSeeds = allSeedTracks.sort(() => 0.5 - Math.random()).slice(0, 6);
-      const selectedSeeds = allSeedTracks.sort(() => 0.5 - Math.random()).slice(0, 6);
+      // Pick 8 random seed tracks to create 8 shelves
+      const selectedSeeds = allSeedTracks.sort(() => 0.5 - Math.random()).slice(0, 8);
+
       const shelves = await Promise.all(selectedSeeds.map(async (seed) => {
         try {
           let tracks = [];
           if (seed.videoId) {
             const results = await yt.music.getUpNext(seed.videoId);
-            tracks = getTracksFromResult(results).slice(0, 5).map(parseTrack).filter(Boolean);
+            tracks = getTracksFromResult(results).slice(0, 10).map(parseTrack).filter(Boolean);
           } else {
             const results = await yt.music.search(seed.searchQuery, { type: 'song' });
-            tracks = getTracksFromResult(results).slice(0, 5).map(parseTrack).filter(Boolean);
+            tracks = getTracksFromResult(results).slice(0, 10).map(parseTrack).filter(Boolean);
           }
           if (tracks.length > 0) {
             tracks.sort(() => 0.5 - Math.random());
@@ -205,10 +215,10 @@ module.exports = {
     return [];
   },
 
-  async resolveStreamUrl(trackId) {
+  async resolveStreamUrl(trackId, options = {}) {
     const nativeId = trackId.replace('youtube_music:', '');
     try {
-      return await _resolveStream(nativeId);
+      return await _resolveStream(nativeId, options.poToken, options.visitorData);
     } catch (e) {
       throw new Error(`[YouTube Music] Failed to resolve stream URL for ${trackId}: ${e.message}`);
     }
