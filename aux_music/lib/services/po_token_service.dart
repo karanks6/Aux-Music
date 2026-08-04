@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter/foundation.dart';
 
@@ -21,13 +22,26 @@ class PoTokenService {
 
     try {
       _headlessWebView = HeadlessInAppWebView(
-        initialUrlRequest: URLRequest(url: WebUri("https://www.youtube.com/watch?v=aqz-KE-bpKQ")),
+        initialUrlRequest: URLRequest(url: WebUri("https://music.youtube.com/watch?v=aqz-KE-bpKQ")),
         initialSettings: InAppWebViewSettings(
           javaScriptEnabled: true,
           userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-          mediaPlaybackRequiresUserGesture: true,
+          mediaPlaybackRequiresUserGesture: false, // Must be false so it autoplays and triggers token generation
           useShouldInterceptRequest: true,
         ),
+        initialUserScripts: UnmodifiableListView<UserScript>([
+          UserScript(
+            source: """
+              const originalPlay = HTMLMediaElement.prototype.play;
+              HTMLMediaElement.prototype.play = function() {
+                this.muted = true;
+                this.volume = 0;
+                return originalPlay.apply(this, arguments);
+              };
+            """,
+            injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
+          )
+        ]),
         onWebViewCreated: (controller) {
           controller.addJavaScriptHandler(
             handlerName: "TokenHandler", 
@@ -47,7 +61,7 @@ class PoTokenService {
           );
         },
         onLoadStart: (controller, url) async {
-          // Inject fetch hook as early as possible
+          // Inject fetch hook
           await controller.evaluateJavascript(source: """
             if (!window.fetchHooked) {
               window.fetchHooked = true;
@@ -63,13 +77,44 @@ class PoTokenService {
                     const visitorData = body.context?.client?.visitorData;
                     if (poToken && visitorData) {
                        window.flutter_inappwebview.callHandler('TokenHandler', poToken, visitorData);
+                       document.querySelectorAll('video, audio').forEach(m => m.pause());
                     }
                   } catch(e) {}
                 }
                 return originalFetch.apply(this, arguments);
               };
+
+              const originalXhrSend = XMLHttpRequest.prototype.send;
+              XMLHttpRequest.prototype.send = function(body) {
+                if (body && typeof body === 'string' && body.includes('poToken')) {
+                  try {
+                    const jsonBody = JSON.parse(body);
+                    const poToken = jsonBody.serviceIntegrityDimensions?.poToken;
+                    const visitorData = jsonBody.context?.client?.visitorData;
+                    if (poToken && visitorData) {
+                       window.flutter_inappwebview.callHandler('TokenHandler', poToken, visitorData);
+                       document.querySelectorAll('video, audio').forEach(m => m.pause());
+                    }
+                  } catch(e) {}
+                }
+                return originalXhrSend.apply(this, arguments);
+              };
+
+              // Aggressively attempt to play the video to force BotGuard token generation
+              setInterval(() => {
+                document.querySelectorAll('video, audio').forEach(m => {
+                  if (m.paused) {
+                    m.play().catch(e => {
+                        console.log("Play error: " + e.message);
+                    });
+                  }
+                });
+              }, 1000);
             }
           """);
+        },
+        onConsoleMessage: (controller, consoleMessage) {
+          debugPrint("[WebView] \${consoleMessage.message}");
         },
       );
 
@@ -79,7 +124,7 @@ class PoTokenService {
       Future.delayed(const Duration(seconds: 15), () {
         if (!_initCompleter!.isCompleted) {
            debugPrint("PoToken extraction timed out. Falling back to empty.");
-           _initCompleter!.complete(); // complete anyway to not block app
+           _initCompleter!.complete();
         }
       });
     } catch (e) {

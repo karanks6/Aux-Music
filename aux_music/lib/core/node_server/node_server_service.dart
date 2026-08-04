@@ -12,7 +12,7 @@ import 'package:node_flutter/node_flutter.dart';
 class NodeServerService with WidgetsBindingObserver {
   static const int _port = 3000;
   static const String _baseUrl = 'http://127.0.0.1:$_port';
-  static const int _maxHealthRetries = 20;
+  static const int _maxHealthRetries = 60;
   static const Duration _healthRetryDelay = Duration(milliseconds: 500);
 
   bool _isRunning = false;
