@@ -48,7 +48,7 @@ abstract interface class MusicSourceAdapter {
   /// Called lazily just before playback begins — never eagerly.
   /// Must return a direct, playable URL (no additional redirects expected
   /// by the caller, though just_audio handles HTTP redirects natively).
-  Future<String> resolveStreamUrl(String trackId);
+  Future<String> resolveStreamUrl(String trackId, {String? title, String? artistName});
 
   /// Search for artists matching [query].
   Future<List<Artist>> searchArtists(String query, {int limit = 10});

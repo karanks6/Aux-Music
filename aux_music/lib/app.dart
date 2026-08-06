@@ -4,7 +4,6 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/di/providers.dart';
-
 /// Root application widget.
 class AuxApp extends ConsumerWidget {
   const AuxApp({super.key});
@@ -24,6 +23,8 @@ class AuxApp extends ConsumerWidget {
 
       // ── Router ──────────────────────────────────────────────────
       routerConfig: appRouter,
+      
+
 
       // ── Localization ────────────────────────────────────────────
       localizationsDelegates: const [

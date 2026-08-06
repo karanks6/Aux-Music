@@ -9,8 +9,6 @@ import '../models/license_type.dart';
 import 'music_source_adapter.dart';
 import '../../core/config/env.dart';
 import 'package:dio/dio.dart' as dio;
-import '../../services/po_token_service.dart';
-
 class YouTubeMusicAdapter implements MusicSourceAdapter {
   final yt.YoutubeExplode _yt = yt.YoutubeExplode();
   
@@ -37,7 +35,7 @@ class YouTubeMusicAdapter implements MusicSourceAdapter {
       artistName: video.author,
       artistId: 'youtube_music_artist:${video.channelId.value}',
       albumName: '',
-      artworkUrl: video.thumbnails.highResUrl,
+      artworkUrl: 'https://i.ytimg.com/vi/${video.id.value}/hqdefault.jpg',
       thumbnailUrl: video.thumbnails.lowResUrl,
       sourceId: sourceId,
       licenseType: LicenseType.custom,
@@ -159,7 +157,7 @@ class YouTubeMusicAdapter implements MusicSourceAdapter {
   }
 
     @override
-    Future<String> resolveStreamUrl(String trackId) async {
+    Future<String> resolveStreamUrl(String trackId, {String? title, String? artistName}) async {
       final nativeId = trackId.replaceFirst('youtube_music:', '');
       
       // Check in-memory cache first to prevent rate-limiting on repeat plays
@@ -174,7 +172,38 @@ class YouTubeMusicAdapter implements MusicSourceAdapter {
         }
       }
 
-      // 1. Try Piped API FIRST (Most reliable for bypassing BotGuard currently)
+      // 1. Try BFF (Node backend) Proxy FIRST (Fastest and most reliable if poToken works)
+      try {
+        print('[YouTubeMusic] Trying BFF Proxy: ${Env.bffUrl}');
+        
+        final queryParams = <String>[];
+        if (title != null) queryParams.add('title=${Uri.encodeQueryComponent(title)}');
+        if (artistName != null) queryParams.add('artist=${Uri.encodeQueryComponent(artistName)}');
+        
+        final queryString = queryParams.isNotEmpty ? '?${queryParams.join('&')}' : '';
+        final proxyUrl = '${Env.bffUrl}/proxy-stream/youtube_music/$nativeId$queryString';
+        
+        // Do a quick HEAD request to ensure the backend can resolve and start streaming
+        // before we hand the URL off to ExoPlayer.
+        final checkResponse = await dio.Dio().head(
+          proxyUrl,
+          options: dio.Options(
+            sendTimeout: const Duration(seconds: 5),
+            receiveTimeout: const Duration(seconds: 5),
+            validateStatus: (status) => status != null && status < 400,
+          ),
+        );
+        
+        if (checkResponse.statusCode == 200 || checkResponse.statusCode == 206) {
+          print('[YouTubeMusic] BFF Proxy extraction successful!');
+          _streamCache[nativeId] = proxyUrl;
+          return proxyUrl;
+        }
+      } catch (bffError) {
+        print('[YouTubeMusic] BFF Proxy failed: $bffError');
+      }
+      
+      // 2. Try Piped API (Spotube technique: Reliable backend proxy that bypasses BotGuard)
       final pipedInstances = [
         'https://piped.projectsegfau.lt/api',
         'https://pipedapi.kavin.rocks',
@@ -206,39 +235,8 @@ class YouTubeMusicAdapter implements MusicSourceAdapter {
           print('[YouTubeMusic] Piped instance $instance failed.');
         }
       }
-      
-      // 2. Try BFF (Node backend) Proxy as fallback
-      try {
-        print('[YouTubeMusic] Trying BFF Proxy fallback: ${Env.bffUrl}');
-        
-        final poTokenSvc = PoTokenService();
-        await poTokenSvc.init(); // Wait for token extraction to finish (or timeout)
-        final poToken = poTokenSvc.poToken ?? '';
-        final visitorData = poTokenSvc.visitorData ?? '';
-        
-        final proxyUrl = '${Env.bffUrl}/proxy-stream/youtube_music/$nativeId?poToken=$poToken&visitorData=$visitorData';
-        
-        // Do a quick HEAD request to ensure the backend can resolve and start streaming
-        // before we hand the URL off to ExoPlayer.
-        final checkResponse = await dio.Dio().head(
-          proxyUrl,
-          options: dio.Options(
-            sendTimeout: const Duration(seconds: 5),
-            receiveTimeout: const Duration(seconds: 5),
-            validateStatus: (status) => status != null && status < 400,
-          ),
-        );
-        
-        if (checkResponse.statusCode == 200 || checkResponse.statusCode == 206) {
-          print('[YouTubeMusic] BFF Proxy extraction successful!');
-          _streamCache[nativeId] = proxyUrl;
-          return proxyUrl;
-        }
-      } catch (bffError) {
-        print('[YouTubeMusic] BFF Proxy failed: $bffError');
-      }
-      
-      // 3. Try Native youtube_explode_dart (Fallback 2)
+
+      // 3. Try Native youtube_explode_dart (Last Resort: highly likely to fail BotGuard at ExoPlayer level)
       try {
         final manifest = await _yt.videos.streamsClient.getManifest(
           nativeId,
@@ -249,24 +247,16 @@ class YouTubeMusicAdapter implements MusicSourceAdapter {
           ]
         );
         
-        final formats = manifest.audioOnly;
-        
-        if (formats.isNotEmpty) {
-          final streamInfo = formats.withHighestBitrate();
-          final url = streamInfo.url.toString();
-          final size = streamInfo.size.totalBytes;
-          
-          final encodedUrl = base64Url.encode(utf8.encode(url));
-          final proxySvc = LocalAudioProxy();
-          final proxyUrl = proxySvc.getProxyUrlForDirect(encodedUrl);
-          
-          _streamCache[nativeId] = proxyUrl;
-          return proxyUrl;
+        if (manifest.audioOnly.isNotEmpty) {
+          final streamInfo = manifest.audioOnly.withHighestBitrate();
+          print('[YouTubeMusic] Native youtube_explode_dart fallback successful!');
+          _streamCache[nativeId] = streamInfo.url.toString();
+          return streamInfo.url.toString();
         }
       } catch (e) {
-        print('[YouTubeMusic] Native stream resolution failed: $e');
+        print('[YouTubeMusic] Native fallback failed: $e');
       }
-      
+
       throw Exception('YouTube stream resolution failed completely for $nativeId');
     }
 

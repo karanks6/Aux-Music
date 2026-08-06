@@ -96,7 +96,7 @@ class InternetArchiveAdapter implements MusicSourceAdapter {
   }
 
   @override
-  Future<String> resolveStreamUrl(String trackId) async {
+  Future<String> resolveStreamUrl(String trackId, {String? title, String? artistName}) async {
     // trackId format: 'internet_archive:{identifier}:{filename}'
     final parts = trackId.replaceFirst('internet_archive:', '').split(':');
     if (parts.length < 2) {

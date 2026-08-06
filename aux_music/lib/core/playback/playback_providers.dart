@@ -36,39 +36,39 @@ final audioHandlerProvider = Provider<AuxAudioHandler>((ref) {
 
 /// Current playback state stream from audio_service.
 final playbackStateProvider = StreamProvider<PlaybackState>((ref) {
-  final handler = ref.read(audioHandlerProvider);
+  final handler = ref.watch(audioHandlerProvider);
   return handler.playbackState;
-});
+}, dependencies: [audioHandlerProvider]);
 
 /// Whether the player is currently playing.
 final isPlayingProvider = StreamProvider<bool>((ref) {
-  final handler = ref.read(audioHandlerProvider);
+  final handler = ref.watch(audioHandlerProvider);
   return handler.playbackState.map((s) => s.playing);
-});
+}, dependencies: [audioHandlerProvider]);
 
 /// Current media item (now playing track metadata).
 final currentMediaItemProvider = StreamProvider<MediaItem?>((ref) {
-  final handler = ref.read(audioHandlerProvider);
+  final handler = ref.watch(audioHandlerProvider);
   return handler.mediaItem;
-});
+}, dependencies: [audioHandlerProvider]);
 
 /// Position data (position + buffered + duration) for seek bar.
 final positionDataProvider = StreamProvider<PositionData>((ref) {
-  final handler = ref.read(audioHandlerProvider);
+  final handler = ref.watch(audioHandlerProvider);
   return handler.positionDataStream;
-});
+}, dependencies: [audioHandlerProvider]);
 
 /// The current queue as a list of MediaItems.
 final queueProvider = StreamProvider<List<MediaItem>>((ref) {
-  final handler = ref.read(audioHandlerProvider);
+  final handler = ref.watch(audioHandlerProvider);
   return handler.queue;
-});
+}, dependencies: [audioHandlerProvider]);
 
 /// The current index in the queue.
 final queueIndexProvider = StreamProvider<int?>((ref) {
-  final handler = ref.read(audioHandlerProvider);
+  final handler = ref.watch(audioHandlerProvider);
   return handler.playbackState.map((s) => s.queueIndex);
-});
+}, dependencies: [audioHandlerProvider]);
 
 // ── Shuffle & Repeat ──────────────────────────────────────────────
 
@@ -149,7 +149,7 @@ class SleepTimerNotifier extends StateNotifier<SleepTimerState> {
 }
 
 final sleepTimerProvider =
-    StateNotifierProvider<SleepTimerNotifier, SleepTimerState>((ref) => SleepTimerNotifier(ref));
+    StateNotifierProvider<SleepTimerNotifier, SleepTimerState>((ref) => SleepTimerNotifier(ref), dependencies: [audioHandlerProvider, currentMediaItemProvider]);
 
 // ── Type alias for ref parameter ─────────────────────────────────
 

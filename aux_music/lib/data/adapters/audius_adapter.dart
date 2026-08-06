@@ -160,7 +160,7 @@ class AudiusAdapter implements MusicSourceAdapter {
   // ── Stream URL Resolution ──────────────────────────────────────────
 
   @override
-  Future<String> resolveStreamUrl(String trackId) async {
+  Future<String> resolveStreamUrl(String trackId, {String? title, String? artistName}) async {
     if (!_initialized) await initialize();
     // Extract the native Audius track ID (strip 'audius:' prefix if present)
     final nativeId = trackId.replaceFirst('audius:', '');

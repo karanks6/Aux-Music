@@ -76,13 +76,16 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
 
     // Forward player's current index → audio_service mediaItem
     _player.currentIndexStream.listen((index) async {
+      print('[AudioHandler] currentIndexStream emitted: $index, queue length: ${queue.value.length}');
       if (index != null && index < queue.value.length) {
         // Only update mediaItem if we aren't currently overriding it for loading state
         if (!_isLoadingStream) {
+          print('[AudioHandler] Setting mediaItem to ${queue.value[index].title}');
           mediaItem.add(queue.value[index]);
         }
+        
         // Infinite Radio: Fetch UpNext when approaching end of queue
-        if (index >= queue.value.length - 2 && !_isFetchingUpNext) {
+        if (index >= queue.value.length - 3 && !_isFetchingUpNext) {
           _isFetchingUpNext = true;
           try {
             final currentTrackId = queue.value[index].extras?['trackId'] as String?;
@@ -111,6 +114,8 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
             _isFetchingUpNext = false;
           }
         }
+      } else {
+        print('[AudioHandler] index is null or out of bounds');
       }
     });
 
@@ -293,6 +298,11 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
 
   Future<void> _updateQueueWithIndex(List<MediaItem> queueList, {int initialIndex = 0}) async {
     this.queue.add(queueList);
+    if (initialIndex < queueList.length) {
+      if (!_isLoadingStream) {
+        mediaItem.add(queueList[initialIndex]);
+      }
+    }
     
     final audioSources = queueList.map((item) => _createAudioSource(item)).toList();
     
@@ -417,6 +427,11 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
             );
             q[idx] = newItem;
             queue.add(q);
+            
+            // If this is the currently playing item, update mediaItem so UI updates
+            if (_player.currentIndex == idx) {
+              mediaItem.add(newItem);
+            }
           }
         }
         return result.url;

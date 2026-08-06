@@ -96,7 +96,7 @@ class MusicAdapterAggregator {
     if (adapter == null) throw Exception('No adapter found for track: $trackId');
     
     try {
-      final url = await adapter.resolveStreamUrl(trackId);
+      final url = await adapter.resolveStreamUrl(trackId, title: title, artistName: artistName);
       return (url: url, fallbackTrack: null);
     } catch (e) {
       // JioSaavn Fallback for YouTube blocks

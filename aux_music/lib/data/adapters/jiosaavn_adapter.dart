@@ -323,7 +323,7 @@ class JioSaavnAdapter implements MusicSourceAdapter {
   }
 
   @override
-  Future<String> resolveStreamUrl(String trackId) async {
+  Future<String> resolveStreamUrl(String trackId, {String? title, String? artistName}) async {
     final nativeId = trackId.replaceFirst('jiosaavn:', '');
     try {
       final data = await _apiGet({
