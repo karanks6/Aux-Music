@@ -7,6 +7,37 @@ if (typeof global.Intl === 'undefined') {
   global.Intl = require('intl');
 }
 
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+
+const dns = require('dns');
+// Android 11+ restricts reading net.dns1 property, which breaks Node's c-ares DNS resolver.
+// Hardcode public DNS servers to fix ENOTFOUND and 'fetch failed' errors on Android.
+try {
+  dns.setServers(['8.8.8.8', '1.1.1.1', '8.8.4.4']);
+  
+  // Override dns.lookup because axios/http module uses getaddrinfo by default,
+  // which ignores dns.setServers and fails on Android 11+ inside nodejs-mobile.
+  const originalLookup = dns.lookup;
+  dns.lookup = function(hostname, options, callback) {
+    if (typeof options === 'function') {
+      callback = options;
+      options = {};
+    }
+    dns.resolve4(hostname, (err, addresses) => {
+      if (err) {
+        return originalLookup(hostname, options, callback);
+      }
+      if (options && options.all) {
+        callback(null, addresses.map(a => ({ address: a, family: 4 })));
+      } else {
+        callback(null, addresses[0], 4);
+      }
+    });
+  };
+} catch(e) {
+  console.error("Failed to set DNS servers:", e);
+}
+
 const Fastify = require('fastify');
 const cors = require('@fastify/cors');
 const rateLimit = require('@fastify/rate-limit');
@@ -178,27 +209,80 @@ fastify.get('/proxy-stream/:source/:trackId', async (request, reply) => {
   }
 
   try {
-    const url = await adapter.resolveStreamUrl(trackId, { poToken, visitorData });
+    let url;
+    let response;
+    let reqMethod = request.method.toLowerCase();
     
-    const headers = {
+    let headers = {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
     };
     if (request.headers.range) {
       headers['Range'] = request.headers.range;
     }
 
-    const response = await axios({
-      method: 'get',
-      url: url,
-      responseType: 'stream',
-      headers: headers,
-      validateStatus: () => true // Allow all statuses so we can forward 206 Partial Content
-    });
+    try {
+      url = await adapter.resolveStreamUrl(trackId, { poToken, visitorData });
+      response = await axios({
+        method: reqMethod,
+        url: url,
+        responseType: 'stream',
+        headers: headers,
+        validateStatus: () => true // Allow all statuses so we can forward 206 Partial Content
+      });
+    } catch (resolveErr) {
+      // If resolving the stream URL throws (e.g. BotGuard decipher failure)
+      if (source === 'youtube_music') {
+        response = { status: 403 }; // Force fallback
+      } else {
+        throw resolveErr;
+      }
+    }
+
+    // YouTube BotGuard Fallback: if 403 Forbidden or decipher failed, fallback to JioSaavn
+    if (response && response.status === 403 && source === 'youtube_music') {
+       fastify.log.warn(`[YouTube Music] 403 Forbidden (or decipher failed) for ${trackId}. Attempting JioSaavn fallback...`);
+       try {
+         let fallbackTitle = request.query.title;
+         let fallbackArtist = request.query.artist;
+         
+         if (!fallbackTitle) {
+           const trackInfo = await adapter.getTrackInfo(trackId);
+           fallbackTitle = trackInfo.title;
+           fallbackArtist = trackInfo.artistName;
+         }
+         
+         const jiosaavn = adapters.find((a) => a.sourceId === 'jiosaavn');
+         if (jiosaavn) {
+            const results = await jiosaavn.searchTracks(`${fallbackTitle} ${fallbackArtist || ''}`, { limit: 1 });
+            if (results && results.length > 0) {
+               url = await jiosaavn.resolveStreamUrl(results[0].id);
+               response = await axios({
+                 method: reqMethod,
+                 url: url,
+                 responseType: 'stream',
+                 headers: headers,
+                 validateStatus: () => true
+               });
+               fastify.log.info(`[JioSaavn Fallback] Successfully fetched stream for ${trackId}`);
+            } else {
+               fastify.log.warn(`[JioSaavn Fallback] Track not found on JioSaavn: ${fallbackTitle}`);
+               response = { status: 502, data: { error: 'JioSaavn fallback failed: Track not found', headers: {} } };
+            }
+         }
+       } catch (fallbackErr) {
+         fastify.log.error(`[JioSaavn Fallback] Failed for ${trackId}: ${fallbackErr.message}`);
+         response = { status: 502, data: { error: `JioSaavn fallback failed: ${fallbackErr.message}`, headers: {} } };
+       }
+    }
+
+    if (!response) {
+      return reply.status(502).send({ error: 'Failed to resolve stream URL and fallback failed.' });
+    }
 
     reply.status(response.status);
-    reply.header('Content-Type', response.headers['content-type']);
-    if (response.headers['content-length']) reply.header('Content-Length', response.headers['content-length']);
-    if (response.headers['content-range']) reply.header('Content-Range', response.headers['content-range']);
+    if (response.headers && response.headers['content-type']) reply.header('Content-Type', response.headers['content-type']);
+    if (response.headers && response.headers['content-length']) reply.header('Content-Length', response.headers['content-length']);
+    if (response.headers && response.headers['content-range']) reply.header('Content-Range', response.headers['content-range']);
     reply.header('Accept-Ranges', 'bytes');
     
     return reply.send(response.data);

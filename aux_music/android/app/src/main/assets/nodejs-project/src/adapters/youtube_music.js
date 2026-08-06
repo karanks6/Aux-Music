@@ -2,9 +2,12 @@
 
 const { resolveStreamUrl: _resolveStream, getInnertube } = require('./stream_resolver');
 
+// Cache to prevent needing a full API call during fallback
+const metadataCache = new Map();
+
 function parseTrack(song) {
-  if (!song || !song.id) return null;
-  
+  if (!song || (!song.id && !song.video_id)) return null;
+
   // youtubei.js returns song titles sometimes as strings, sometimes as Text object
   let title = song.title || song.name;
   if (typeof title === 'object' && title.text) {
@@ -19,32 +22,32 @@ function parseTrack(song) {
   try {
     let artworkUrl = null;
     let thumbnailUrl = null;
-    
+
     if (song.thumbnails?.length) {
-       artworkUrl = song.thumbnails[song.thumbnails.length - 1].url;
-       thumbnailUrl = song.thumbnails[0].url;
+      artworkUrl = song.thumbnails[song.thumbnails.length - 1].url;
+      thumbnailUrl = song.thumbnails[0].url;
     } else if (song.thumbnail) {
-       artworkUrl = song.thumbnail[0]?.url || song.thumbnail;
-       thumbnailUrl = artworkUrl;
+      artworkUrl = song.thumbnail[0]?.url || song.thumbnail;
+      thumbnailUrl = artworkUrl;
     }
-      
+
     if (artworkUrl && typeof artworkUrl === 'string') {
       artworkUrl = artworkUrl.replace(/w\d+-h\d+/, 'w500-h500');
     }
 
     let artistName = 'Unknown Artist';
     let artistId = null;
-    
+
     if (song.artists && song.artists.length > 0) {
       artistName = song.artists.map(a => a.name).join(', ');
       if (song.artists[0].channel_id) {
-         artistId = `youtube_music_artist:${song.artists[0].channel_id}`;
+        artistId = `youtube_music_artist:${song.artists[0].channel_id}`;
       }
     } else if (song.author) {
       artistName = typeof song.author === 'string' ? song.author : (song.author.name || 'Unknown Artist');
     }
 
-    return {
+    const parsed = {
       id: `youtube_music:${videoId}`,
       title: title,
       artistName: artistName,
@@ -56,14 +59,20 @@ function parseTrack(song) {
       licenseType: 'CUSTOM',
       attributionString: `${artistName} · YouTube Music`,
       sourceUrl: `https://music.youtube.com/watch?v=${videoId}`,
-      durationMs: song.duration?.seconds ? song.duration.seconds * 1000 : 0, 
+      durationMs: song.duration?.seconds ? song.duration.seconds * 1000 : 0,
       playCount: 0,
       offlineAllowed: false,
       streamUrl: null,
       genres: [],
       language: '',
     };
+
+    // Cache for fallback mechanism
+    metadataCache.set(videoId, { title: parsed.title, artistName: parsed.artistName });
+
+    return parsed;
   } catch (e) {
+    console.error('parseTrack error for song', song.id || song.video_id, e);
     return null;
   }
 }
@@ -87,12 +96,12 @@ module.exports = {
   async searchTracks(query, { limit = 20, genre, language } = {}) {
     try {
       const yt = await getInnertube();
-      
+
       let finalQuery = query;
       if (!query && genre) {
-          finalQuery = `${genre} top hits`;
+        finalQuery = `${genre} top hits`;
       } else if (!query && language) {
-          finalQuery = `${language} top hits`;
+        finalQuery = `${language} top hits`;
       }
 
       const results = await yt.music.search(finalQuery, { type: 'song' });
@@ -151,60 +160,89 @@ module.exports = {
   async getHomeRecommendations() {
     try {
       const yt = await getInnertube();
-      const currentYear = new Date().getFullYear();
-      const currentMonth = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][new Date().getMonth()];
-      
-      const allSeedTracks = [
-        { title: 'Global Pop Mix', videoId: 'XXYlFuWEuKI' },
-        { title: 'Bollywood Hits', videoId: '5Eqb_-j3FDA' },
-        { videoId: 'dQw4w9WgXcQ', title: 'Pop Classics' },
-        { searchQuery: 'lofi hip hop radio', title: 'Lofi & Chill' },
-        { searchQuery: 'top hits english', title: 'Top Hits' },
-        { searchQuery: 'bollywood trending', title: 'Bollywood Hits' },
-        { searchQuery: 'electronic dance music', title: 'EDM Party' },
-        { searchQuery: 'acoustic covers', title: 'Acoustic Vibes' },
-        { searchQuery: 'indie folk', title: 'Indie Vibes' },
-        { searchQuery: 'synthwave mix', title: 'Synthwave' },
-        { searchQuery: 'jazz classics', title: 'Jazz Classics' },
-        { searchQuery: 'viral hits', title: 'Viral Hits' },
-        { searchQuery: 'rap caviar', title: 'Hip Hop & Rap' },
-        { searchQuery: 'r&b soul mix', title: 'R&B Classics' },
-        { searchQuery: 'workout motivation music', title: 'Workout' },
-        { searchQuery: 'sleep ambient', title: 'Sleep & Ambient' },
-        { searchQuery: 'kpop trending', title: 'K-Pop Hits' },
-        { searchQuery: 'rock anthems', title: 'Rock Anthems' },
-        { searchQuery: 'punjabi hits', title: 'Punjabi Hits' },
-        { searchQuery: 'telugu hit songs', title: 'Tollywood Hits' },
-        { searchQuery: 'spanish pop hits', title: 'Latin Hits' },
-        { searchQuery: 'classical masterpieces', title: 'Classical' },
+
+      const categories = [
+        {
+          title: 'Bollywood Hits',
+          queries: ['New bollywood hits', 'new bollywood songs', 'top bollywood', 'trending bollywood', 'bollywood romantic']
+        },
+        {
+          title: 'Global Hits',
+          queries: ['Latest Top Global hits', 'top international songs', 'billboard hot 100', 'viral global hits']
+        },
+        {
+          title: 'Desi Hip-Hop',
+          queries: ['Emiway bantai', 'Emiway', 'Karma', 'Young Stunners', 'Divine', 'Kr$na', 'Talha anjum', 'King', 'Raftaar', 'Yo Yo Honey singh', 'Seedhe maut', 'MC Stan', 'Faris Shafi', 'top desi hip hop']
+        },
+        {
+          title: 'Lofi',
+          queries: ['Top Lofi', 'Bollywood lofi', 'lofi hip hop', 'lofi chill']
+        },
+        {
+          title: 'English Hip-Hop',
+          queries: ['NF', 'Drake', 'Khalid', 'J Cole', 'Eminem', 'Logic', 'G-Eazy', 'Travis scott', 'Kanye West', 'The Weeknd', 'Dax', 'Lil Nas X', '21 Savage']
+        },
+        {
+          title: 'Indie',
+          queries: ['indian indie music', 'indie pop', 'best indie songs', 'indie acoustic']
+        },
+        {
+          title: 'Trending Today',
+          queries: ['trending music today', 'viral hits', 'top songs right now']
+        },
+        {
+          title: 'Acoustic',
+          queries: ['acoustic covers', 'best acoustic songs', 'chill acoustic', 'unplugged versions']
+        },
+        {
+          title: 'Punjabi Hits',
+          queries: ['latest punjabi songs', 'punjabi hits', 'top punjabi music', 'punjabi party songs']
+        }
       ];
 
-      // Pick 8 random seed tracks to create 8 shelves
-      const selectedSeeds = allSeedTracks.sort(() => 0.5 - Math.random()).slice(0, 8);
-
-      const shelves = await Promise.all(selectedSeeds.map(async (seed) => {
-        try {
-          let tracks = [];
-          if (seed.videoId) {
-            const results = await yt.music.getUpNext(seed.videoId);
-            tracks = getTracksFromResult(results).slice(0, 10).map(parseTrack).filter(Boolean);
-          } else {
-            const results = await yt.music.search(seed.searchQuery, { type: 'song' });
-            tracks = getTracksFromResult(results).slice(0, 10).map(parseTrack).filter(Boolean);
+      // Fetch categories sequentially to avoid rate limits and timeouts
+      const fetchedShelves = [];
+      for (const [index, cat] of categories.entries()) {
+        // Shuffle the queries so it's random, but we can iterate through all of them as fallbacks
+        const shuffledQueries = [...cat.queries].sort(() => 0.5 - Math.random());
+        let categoryTracks = [];
+        
+        for (const query of shuffledQueries) {
+          try {
+            const results = await yt.music.search(query, { type: 'song' });
+            let tracks = getTracksFromResult(results).map(parseTrack).filter(Boolean);
+            
+            if (tracks.length >= 5) {
+              // We got a good amount of tracks, use this query
+              // Shuffle tracks and pick top 25
+              categoryTracks = tracks.sort(() => 0.5 - Math.random()).slice(0, 25);
+              break; // Stop trying other queries for this category
+            }
+          } catch (e) {
+            console.error(`Failed to fetch query "${query}" for category ${cat.title}:`, e.message);
           }
-          if (tracks.length > 0) {
-            tracks.sort(() => 0.5 - Math.random());
-            return {
-              title: seed.title,
-              tracks: tracks
-            };
-          }
-        } catch (innerError) {
-          console.error(`[YouTube Music] Failed to fetch shelf for ${seed.title}:`, innerError.message);
-          return null;
         }
-      }));
-      return shelves.filter(Boolean);
+        
+        if (categoryTracks.length > 0) {
+          fetchedShelves.push({
+            title: cat.title,
+            tracks: categoryTracks,
+            _order: index // Retain fixed order
+          });
+        } else {
+          console.error(`All queries failed for category ${cat.title}`);
+        }
+      }
+
+      // Filter nulls, sort by original order so categories don't shuffle, and clean up
+      return fetchedShelves
+        .filter(Boolean)
+        .sort((a, b) => a._order - b._order)
+        .map(shelf => {
+          delete shelf._order;
+          return shelf;
+        });
+
     } catch (e) {
       console.error('[YouTube Music] getHomeRecommendations error:', e.message);
       return [];
@@ -221,6 +259,24 @@ module.exports = {
       return await _resolveStream(nativeId, options.poToken, options.visitorData);
     } catch (e) {
       throw new Error(`[YouTube Music] Failed to resolve stream URL for ${trackId}: ${e.message}`);
+    }
+  },
+
+  async getTrackInfo(trackId) {
+    const nativeId = trackId.replace('youtube_music:', '');
+    if (metadataCache.has(nativeId)) {
+      return metadataCache.get(nativeId);
+    }
+
+    try {
+      const yt = await getInnertube();
+      const info = await yt.music.getInfo(nativeId);
+      return {
+        title: info.basic_info.title,
+        artistName: info.basic_info.author,
+      };
+    } catch (e) {
+      throw new Error(`[YouTube Music] Failed to get track info for ${trackId}: ${e.message}`);
     }
   },
 

@@ -252,7 +252,17 @@ module.exports = {
         __call: 'song.getDetails',
         pids: nativeId,
       });
-      const song = data?.[nativeId] || Object.values(data || {})[0];
+      const song = data?.songs?.[0] || data?.[nativeId] || Object.values(data || {})[0];
+      if (!song || Array.isArray(song)) {
+         // Fallback if it returned an array in the object values
+         const actualSong = Array.isArray(song) ? song[0] : song;
+         if (!actualSong) throw new Error('Song not found');
+         const url = decodeMediaUrl(
+           actualSong.more_info?.encrypted_media_url || actualSong.media_preview_url
+         );
+         if (!url) throw new Error('No stream URL in response');
+         return url;
+      }
       if (!song) throw new Error('Song not found');
       const url = decodeMediaUrl(
         song.more_info?.encrypted_media_url || song.media_preview_url

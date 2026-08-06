@@ -30,16 +30,10 @@ async function getInnertube(poToken, visitorData, retrievePlayer = false) {
   }
 
   const config = {
-    generate_session_locally: true,
+    generate_session_locally: false, // Not needed for Android clients
     retrieve_player: retrievePlayer,
-    clientType: "YTMUSIC",
+    clientType: "ANDROID_MUSIC", // Bypasses BotGuard requirements entirely!
   };
-
-  if (poToken && visitorData) {
-    config.po_token = poToken;
-    config.visitor_data = visitorData;
-    config.generate_session_locally = false;
-  }
 
   try {
     const yt = await Innertube.create(config);
