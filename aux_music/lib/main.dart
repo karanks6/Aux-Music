@@ -7,7 +7,8 @@ import 'app.dart';
 import 'core/di/providers.dart';
 import 'core/playback/playback_providers.dart';
 import 'core/node_server/node_server_service.dart';
-import 'services/po_token_service.dart';
+import 'features/splash/splash_screen.dart';
+import 'services/audio_handler.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,51 +26,82 @@ Future<void> main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // ── Embedded Node.js BFF ─────────────────────────────────────────
-  // Boots the local Fastify server inside the app process.
-  // The server listens on 127.0.0.1:3000 — no external server needed.
-  final nodeServer = NodeServerService();
-  await nodeServer.start();
+  runApp(const Bootstrapper());
+}
 
-  // ── Riverpod container ───────────────────────────────────────────
-  final container = ProviderContainer();
+class Bootstrapper extends StatefulWidget {
+  const Bootstrapper({super.key});
 
-  // Trigger adapter initialization in the background
-  container.read(aggregatorInitProvider.future).catchError((_) {});
+  @override
+  State<Bootstrapper> createState() => _BootstrapperState();
+}
 
-  // Initialize PoTokenService to extract YouTube PoToken in the background
-  PoTokenService().init().catchError((e) {
-    debugPrint("PoTokenService initialization failed: \$e");
-  });
+class _BootstrapperState extends State<Bootstrapper> {
+  bool _isReady = false;
+  late final ProviderContainer _container;
+  late final AuxAudioHandler _audioHandler;
+  String _status = 'Starting up...';
+  String? _error;
 
-  // ── Audio Service & RunApp ───────────────────────────────────────
-  try {
-    final handler = await initAudioHandler(container);
+  @override
+  void initState() {
+    super.initState();
+    _init();
+  }
 
-    runApp(
-      ProviderScope(
-        overrides: [
-          audioHandlerProvider.overrideWithValue(handler),
-        ],
-        child: const AuxApp(),
-      ),
-    );
-  } catch (e, st) {
-    runApp(
-      MaterialApp(
+  Future<void> _init() async {
+    try {
+      if (mounted) setState(() => _status = 'Booting Node.js backend...');
+      final nodeServer = NodeServerService();
+      await nodeServer.start();
+
+      if (mounted) setState(() => _status = 'Loading audio engine...');
+      _container = ProviderContainer();
+      _container.read(aggregatorInitProvider.future).catchError((_) {});
+      _audioHandler = await initAudioHandler(_container);
+
+      if (mounted) setState(() => _isReady = true);
+    } catch (e, st) {
+      if (mounted) {
+        setState(() {
+          _error = 'CRASH DURING INIT:\n$e\n$st';
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_error != null) {
+      return MaterialApp(
         home: Scaffold(
           backgroundColor: Colors.red,
           body: Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(20),
               child: Text(
-                'CRASH DURING INIT:\n$e\n$st',
+                _error!,
                 style: const TextStyle(color: Colors.white, fontSize: 12),
               ),
             ),
           ),
         ),
-      ),
+      );
+    }
+
+    if (!_isReady) {
+      return MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: SplashScreen(status: _status),
+      );
+    }
+
+    return ProviderScope(
+      parent: _container,
+      overrides: [
+        audioHandlerProvider.overrideWithValue(_audioHandler),
+      ],
+      child: const AuxApp(),
     );
   }
 }

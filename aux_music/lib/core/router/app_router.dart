@@ -132,7 +132,22 @@ final appRouter = GoRouter(
     GoRoute(
       path: AppRoutes.queue,
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) => const QueueScreen(),
+      pageBuilder: (context, state) => CustomTransitionPage(
+        opaque: false,
+        child: const QueueScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          const begin = Offset(0, 1);
+          const end = Offset.zero;
+          final tween = Tween(begin: begin, end: end).chain(
+            CurveTween(curve: const Cubic(0.2, 0.0, 0.0, 1.0)),
+          );
+          return SlideTransition(
+            position: animation.drive(tween),
+            child: child,
+          );
+        },
+        transitionDuration: const Duration(milliseconds: 300),
+      ),
     ),
     GoRoute(
       path: AppRoutes.settings,

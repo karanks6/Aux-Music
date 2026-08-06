@@ -6,39 +6,90 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/playback/playback_providers.dart';
 import 'package:go_router/go_router.dart';
 
-class QueueScreen extends ConsumerWidget {
+class QueueScreen extends ConsumerStatefulWidget {
   const QueueScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<QueueScreen> createState() => _QueueScreenState();
+}
+
+class _QueueScreenState extends ConsumerState<QueueScreen> {
+  bool _isDismissing = false;
+  late ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    // Estimate item height at ~72px. Offset by -1 so the current song is slightly below the top.
+    final currentIndex = ref.read(queueIndexProvider).valueOrNull ?? 0;
+    final initialOffset = (currentIndex > 1 ? currentIndex - 1 : 0) * 72.0;
+    _scrollController = ScrollController(initialScrollOffset: initialOffset);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final queue = ref.watch(queueProvider).valueOrNull ?? [];
     final currentIndex = ref.watch(queueIndexProvider).valueOrNull ?? -1;
 
-    return Scaffold(
-      backgroundColor: AuxColors.ink,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-        title: Text(
-          'Up Next',
-          style: AuxTypography.titleMd.copyWith(color: AuxColors.paper),
-        ),
-        leading: IconButton(
-          icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AuxColors.paper),
-          onPressed: () => context.pop(),
-        ),
-      ),
-      body: queue.isEmpty
-          ? Center(
-              child: Text(
-                'No tracks in queue',
-                style: AuxTypography.body.copyWith(color: AuxColors.paperMuted),
-              ),
-            )
-          : ReorderableListView.builder(
-              padding: const EdgeInsets.all(AuxSpacing.md),
-              itemCount: queue.length,
+    return Dismissible(
+      key: const Key('queue_screen_dismissible'),
+      direction: DismissDirection.down,
+      onDismissed: (_) {
+        if (!_isDismissing && context.canPop()) {
+          _isDismissing = true;
+          context.pop();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AuxColors.ink,
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: AuxColors.nowPlayingRadialGradient(AuxColors.ember),
+          ),
+          child: SafeArea(
+            child: Column(
+              children: [
+                AppBar(
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  centerTitle: true,
+                  title: Text(
+                    'Up Next',
+                    style: AuxTypography.titleMd.copyWith(color: AuxColors.paper),
+                  ),
+                  leading: IconButton(
+                    icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AuxColors.paper),
+                    onPressed: () => context.pop(),
+                  ),
+                ),
+                Expanded(
+                  child: queue.isEmpty
+                    ? Center(
+                        child: Text(
+                          'No tracks in queue',
+                          style: AuxTypography.body.copyWith(color: AuxColors.paperMuted),
+                        ),
+                      )
+                    : NotificationListener<ScrollUpdateNotification>(
+                        onNotification: (notification) {
+                          if (notification.metrics.pixels < -80 && !_isDismissing) {
+                            _isDismissing = true;
+                            context.pop();
+                            return true;
+                          }
+                          return false;
+                        },
+              child: ReorderableListView.builder(
+                scrollController: _scrollController,
+                physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+                padding: const EdgeInsets.all(AuxSpacing.md),
+                itemCount: queue.length,
               onReorder: (oldIndex, newIndex) {
                 ref.read(audioHandlerProvider).moveQueueItem(oldIndex, newIndex);
               },
@@ -63,6 +114,8 @@ class QueueScreen extends ConsumerWidget {
                             item.artUri!.toString(),
                             width: 48,
                             height: 48,
+                            cacheWidth: 150,
+                            cacheHeight: 150,
                             fit: BoxFit.cover,
                             errorBuilder: (_, __, ___) => _buildPlaceholder(),
                           )
@@ -101,6 +154,13 @@ class QueueScreen extends ConsumerWidget {
                 );
               },
             ),
+          ),
+        ),
+      ],
+    ),
+  ),
+),
+      ),
     );
   }
 
