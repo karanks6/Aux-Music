@@ -108,6 +108,15 @@ class LibraryRepository {
         );
   }
 
+  Future<void> renamePlaylist(int playlistId, String newName) async {
+    await (_db.update(_db.playlists)..where((p) => p.id.equals(playlistId))).write(
+      PlaylistsCompanion(
+        name: Value(newName),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+  }
+
   Future<void> deletePlaylist(int playlistId) async {
     await (_db.delete(_db.playlists)..where((p) => p.id.equals(playlistId))).go();
   }
@@ -155,6 +164,28 @@ class LibraryRepository {
     await (_db.delete(_db.playlistTracks)
           ..where((pt) => pt.playlistId.equals(playlistId) & pt.trackId.equals(trackId)))
         .go();
+  }
+
+  Future<void> reorderPlaylistTracks(int playlistId, int oldIndex, int newIndex) async {
+    final tracks = await (_db.select(_db.playlistTracks)
+          ..where((pt) => pt.playlistId.equals(playlistId))
+          ..orderBy([(pt) => OrderingTerm(expression: pt.sortOrder, mode: OrderingMode.asc)]))
+        .get();
+
+    if (oldIndex < newIndex) {
+      newIndex -= 1;
+    }
+    
+    final track = tracks.removeAt(oldIndex);
+    tracks.insert(newIndex, track);
+    
+    await _db.transaction(() async {
+      for (var i = 0; i < tracks.length; i++) {
+        await (_db.update(_db.playlistTracks)
+              ..where((pt) => pt.playlistId.equals(playlistId) & pt.trackId.equals(tracks[i].trackId)))
+            .write(PlaylistTracksCompanion(sortOrder: Value(i + 1)));
+      }
+    });
   }
 
   // ── Recent Searches ──────────────────────────────────────────────
