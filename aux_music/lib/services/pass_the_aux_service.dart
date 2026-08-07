@@ -158,6 +158,8 @@ class PassTheAuxNotifier extends StateNotifier<PassTheAuxState> {
       if (response['success'] == true) {
         final newQueue = (response['queue'] as List?)?.map((json) => Track.fromJson(json)).toList() ?? [];
         final nowPlaying = response['nowPlaying'] != null ? Track.fromJson(response['nowPlaying']) : null;
+        final position = response['position'] as int?;
+        final timestamp = response['timestamp'] as int?;
         
         state = state.copyWith(
           roomId: roomId,
@@ -165,6 +167,8 @@ class PassTheAuxNotifier extends StateNotifier<PassTheAuxState> {
           sharedQueue: newQueue,
           nowPlaying: nowPlaying,
           isPlaying: response['isPlaying'] == true,
+          position: position,
+          timestamp: timestamp,
           error: null,
         );
       } else {
@@ -177,7 +181,7 @@ class PassTheAuxNotifier extends StateNotifier<PassTheAuxState> {
     if (state.roomId != null) {
       _socket?.emit('leave_room', state.roomId); // Optional, server cleans up on disconnect anyway
     }
-    state = state.copyWith(roomId: null, isHost: false, sharedQueue: [], nowPlaying: null);
+    state = state.copyWith(roomId: null, isHost: false, sharedQueue: [], nowPlaying: null, isSyncModeEnabled: false);
   }
 
   void addTrack(Track track) {
