@@ -55,10 +55,9 @@ io.on('connection', (socket) => {
   // ── Add Track to Queue ──
   socket.on('add_track', ({ roomId, track }) => {
     const room = rooms[roomId];
-    if (room) {
-      room.queue.push(track);
-      io.to(roomId).emit('queue_updated', room.queue);
-      console.log(`[Queue] Track added in ${roomId}`);
+    if (room && room.host) {
+      io.to(room.host).emit('guest_added_track', track);
+      console.log(`[Queue] Track forwarded to host in ${roomId}`);
     }
   });
 

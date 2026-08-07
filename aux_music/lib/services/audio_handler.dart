@@ -140,6 +140,14 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
     _player.playingStream.listen((_) => _syncToPassTheAux());
 
     // Listen to PassTheAuxState to mirror Host playback if Sync Mode is on
+    final passTheAuxNotifier = _ref.read(passTheAuxProvider.notifier);
+    
+    passTheAuxNotifier.onGuestAddedTrack.listen((track) {
+      if (passTheAuxNotifier.state.isHost) {
+        addToQueue(track);
+      }
+    });
+
     _ref.listen<PassTheAuxState>(passTheAuxProvider, (previous, next) {
       if (!next.isHost && next.roomId != null && next.isSyncModeEnabled) {
         
@@ -148,7 +156,7 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
         final nextTrackId = next.nowPlaying?.id;
         
         if (nextTrackId != null && currentTrackId != nextTrackId) {
-          _guestForcePlay(next.nowPlaying!);
+          _guestForcePlay(next.nowPlaying!, next.isPlaying, next.position, next.timestamp);
         }
         
         // 2. Sync Play/Pause state
@@ -180,10 +188,24 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
     });
   }
 
-  Future<void> _guestForcePlay(Track track) async {
+  Future<void> _guestForcePlay(Track track, bool shouldPlay, int? positionMs, int? timestamp) async {
     final mediaItem = track.toMediaItem();
     await updateQueue([mediaItem]);
-    await _resolveAndPlay(track, index: 0);
+    
+    // Seek to zero to trigger lazy loading
+    await _player.seek(Duration.zero, index: 0);
+    
+    // Recalculate position after loading delay
+    if (positionMs != null && timestamp != null) {
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final elapsed = now - timestamp;
+      final expectedPositionMs = positionMs + elapsed;
+      await _player.seek(Duration(milliseconds: expectedPositionMs));
+    }
+    
+    if (shouldPlay) {
+      await _player.play();
+    }
   }
 
   void _syncToPassTheAux() {

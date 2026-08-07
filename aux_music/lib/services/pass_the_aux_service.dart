@@ -69,22 +69,27 @@ class PassTheAuxNotifier extends StateNotifier<PassTheAuxState> {
   // (Note: use 10.0.2.2 for Android emulator to host machine localhost)
   final String _serverUrl = 'https://aux-music-bff.onrender.com';
 
+  final _guestTrackController = StreamController<Track>.broadcast();
+  Stream<Track> get onGuestAddedTrack => _guestTrackController.stream;
+
   void connect() {
-    if (_socket != null && _socket!.connected) return;
+    if (_socket != null) return;
+    state = state.copyWith(error: null);
 
     _socket = IO.io(_serverUrl, IO.OptionBuilder()
-        .setTransports(['websocket'])
-        .disableAutoConnect()
-        .build());
+      .setTransports(['websocket'])
+      .disableAutoConnect()
+      .build()
+    );
 
     _socket!.onConnect((_) {
-      print('[PassTheAux] Connected to relay server');
+      print('[PassTheAux] Connected to Relay Server');
       state = state.copyWith(isConnected: true, error: null);
     });
 
     _socket!.onDisconnect((_) {
-      print('[PassTheAux] Disconnected from relay server');
-      state = state.copyWith(isConnected: false, roomId: null, sharedQueue: []);
+      print('[PassTheAux] Disconnected from Relay Server');
+      state = state.copyWith(isConnected: false, roomId: null, isHost: false);
     });
 
     _socket!.onConnectError((err) {
@@ -94,17 +99,12 @@ class PassTheAuxNotifier extends StateNotifier<PassTheAuxState> {
 
     // ── Listeners ──
 
-    _socket!.on('queue_updated', (data) {
-      if (data is List) {
-        final newQueue = data.map((json) => Track.fromJson(json)).toList();
-        state = state.copyWith(sharedQueue: newQueue);
-        
-        // If I am the Host, update the actual audio player queue
-        if (state.isHost) {
-          // We must be careful not to create a circular dependency here,
-          // but we can invoke methods on the audioHandler directly if we have access to it.
-          // Since we are the Host, the sharedQueue IS our queue.
-        }
+    _socket!.on('guest_added_track', (data) {
+      if (data is Map) {
+        try {
+          final track = Track.fromJson(data.cast<String, dynamic>());
+          _guestTrackController.add(track);
+        } catch (_) {}
       }
     });
 
