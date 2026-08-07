@@ -138,6 +138,52 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
     queue.listen((_) => _syncToPassTheAux());
     mediaItem.listen((_) => _syncToPassTheAux());
     _player.playingStream.listen((_) => _syncToPassTheAux());
+
+    // Listen to PassTheAuxState to mirror Host playback if Sync Mode is on
+    _ref.listen<PassTheAuxState>(passTheAuxProvider, (previous, next) {
+      if (!next.isHost && next.roomId != null && next.isSyncModeEnabled) {
+        
+        // 1. Sync Track Changes
+        final currentTrackId = mediaItem.valueOrNull?.id;
+        final nextTrackId = next.nowPlaying?.id;
+        
+        if (nextTrackId != null && currentTrackId != nextTrackId) {
+          _guestForcePlay(next.nowPlaying!);
+        }
+        
+        // 2. Sync Play/Pause state
+        // Only if we already have the track loaded
+        if (currentTrackId == nextTrackId) {
+          if (next.isPlaying != _player.playing) {
+            if (next.isPlaying) {
+              _player.play();
+            } else {
+              _player.pause();
+            }
+          }
+          
+          // 3. Sync Position (if drift > 2 seconds)
+          if (next.position != null && next.timestamp != null) {
+            final now = DateTime.now().millisecondsSinceEpoch;
+            final elapsed = now - next.timestamp!;
+            final expectedPositionMs = next.position! + elapsed;
+            
+            final localPositionMs = _player.position.inMilliseconds;
+            final diff = (expectedPositionMs - localPositionMs).abs();
+            
+            if (diff > 2000) { // 2 seconds tolerance
+              _player.seek(Duration(milliseconds: expectedPositionMs));
+            }
+          }
+        }
+      }
+    });
+  }
+
+  Future<void> _guestForcePlay(Track track) async {
+    final mediaItem = track.toMediaItem();
+    await updateQueue([mediaItem]);
+    await _resolveAndPlay(track, index: 0);
   }
 
   void _syncToPassTheAux() {
@@ -152,6 +198,8 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
               : null,
           isPlaying: _player.playing,
           queue: queue.value.map((m) => m.toTrack()).toList(),
+          position: _player.position.inMilliseconds,
+          timestamp: DateTime.now().millisecondsSinceEpoch,
         );
       }
     } catch (_) {}
@@ -233,7 +281,10 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
   }
 
   @override
-  Future<void> seek(Duration position) => _player.seek(position);
+  Future<void> seek(Duration position) async {
+    await _player.seek(position);
+    _syncToPassTheAux();
+  }
 
   @override
   Future<void> skipToNext() async {

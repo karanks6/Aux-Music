@@ -42,7 +42,9 @@ io.on('connection', (socket) => {
           success: true,
           queue: rooms[roomId].queue,
           nowPlaying: rooms[roomId].nowPlaying,
-          isPlaying: rooms[roomId].isPlaying
+          isPlaying: rooms[roomId].isPlaying,
+          position: rooms[roomId].position,
+          timestamp: rooms[roomId].timestamp
         });
       }
     } else {
@@ -62,18 +64,22 @@ io.on('connection', (socket) => {
 
   // ── Host Syncs Current State ──
   // The host periodically (or on change) tells the room what's currently playing
-  socket.on('host_sync_state', ({ roomId, nowPlaying, isPlaying, queue }) => {
+  socket.on('host_sync_state', ({ roomId, nowPlaying, isPlaying, queue, position, timestamp }) => {
     const room = rooms[roomId];
     if (room && room.host === socket.id) {
       room.nowPlaying = nowPlaying !== undefined ? nowPlaying : room.nowPlaying;
       room.isPlaying = isPlaying !== undefined ? isPlaying : room.isPlaying;
       room.queue = queue !== undefined ? queue : room.queue;
+      room.position = position !== undefined ? position : room.position;
+      room.timestamp = timestamp !== undefined ? timestamp : room.timestamp;
       
       // Broadcast to all guests (exclude host)
       socket.to(roomId).emit('state_synced', {
         nowPlaying: room.nowPlaying,
         isPlaying: room.isPlaying,
-        queue: room.queue
+        queue: room.queue,
+        position: room.position,
+        timestamp: room.timestamp
       });
     }
   });

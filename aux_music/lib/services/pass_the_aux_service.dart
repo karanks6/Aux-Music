@@ -12,6 +12,11 @@ class PassTheAuxState {
   final Track? nowPlaying;
   final bool isPlaying;
   final String? error;
+  
+  // Synced Audio Fields
+  final int? position;
+  final int? timestamp;
+  final bool isSyncModeEnabled;
 
   PassTheAuxState({
     this.isConnected = false,
@@ -21,6 +26,9 @@ class PassTheAuxState {
     this.nowPlaying,
     this.isPlaying = false,
     this.error,
+    this.position,
+    this.timestamp,
+    this.isSyncModeEnabled = false,
   });
 
   PassTheAuxState copyWith({
@@ -31,6 +39,9 @@ class PassTheAuxState {
     Track? nowPlaying,
     bool? isPlaying,
     String? error,
+    int? position,
+    int? timestamp,
+    bool? isSyncModeEnabled,
   }) {
     return PassTheAuxState(
       isConnected: isConnected ?? this.isConnected,
@@ -40,6 +51,9 @@ class PassTheAuxState {
       nowPlaying: nowPlaying ?? this.nowPlaying,
       isPlaying: isPlaying ?? this.isPlaying,
       error: error, // Can be set to null intentionally
+      position: position ?? this.position,
+      timestamp: timestamp ?? this.timestamp,
+      isSyncModeEnabled: isSyncModeEnabled ?? this.isSyncModeEnabled,
     );
   }
 }
@@ -99,11 +113,15 @@ class PassTheAuxNotifier extends StateNotifier<PassTheAuxState> {
         final nowPlaying = data['nowPlaying'] != null ? Track.fromJson(data['nowPlaying']) : null;
         final isPlaying = data['isPlaying'] as bool? ?? false;
         final newQueue = (data['queue'] as List?)?.map((json) => Track.fromJson(json)).toList() ?? state.sharedQueue;
+        final position = data['position'] as int?;
+        final timestamp = data['timestamp'] as int?;
         
         state = state.copyWith(
           nowPlaying: nowPlaying,
           isPlaying: isPlaying,
           sharedQueue: newQueue,
+          position: position,
+          timestamp: timestamp,
         );
       }
     });
@@ -114,6 +132,10 @@ class PassTheAuxNotifier extends StateNotifier<PassTheAuxState> {
     });
 
     _socket!.connect();
+  }
+
+  void toggleSyncMode(bool enabled) {
+    state = state.copyWith(isSyncModeEnabled: enabled);
   }
 
   void createRoom() {
@@ -167,7 +189,7 @@ class PassTheAuxNotifier extends StateNotifier<PassTheAuxState> {
     });
   }
 
-  void hostSyncState({Track? nowPlaying, bool? isPlaying, List<Track>? queue}) {
+  void hostSyncState({Track? nowPlaying, bool? isPlaying, List<Track>? queue, int? position, int? timestamp}) {
     if (!state.isHost || state.roomId == null || _socket == null) return;
 
     _socket!.emit('host_sync_state', {
@@ -175,6 +197,8 @@ class PassTheAuxNotifier extends StateNotifier<PassTheAuxState> {
       'nowPlaying': nowPlaying?.toJson(),
       'isPlaying': isPlaying,
       'queue': queue?.map((t) => t.toJson()).toList(),
+      'position': position,
+      'timestamp': timestamp,
     });
   }
 

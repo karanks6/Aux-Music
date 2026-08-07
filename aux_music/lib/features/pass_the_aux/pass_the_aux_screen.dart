@@ -168,6 +168,26 @@ class _PassTheAuxScreenState extends ConsumerState<PassTheAuxScreen> {
                   style: AuxTypography.bodyMedium,
                   textAlign: TextAlign.center,
                 ),
+                const SizedBox(height: 16),
+                if (!state.isHost)
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AuxColors.surfaceHighlight,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: SwitchListTile(
+                      title: Text('Listen Along (Synced Audio)', style: AuxTypography.bodyLarge),
+                      subtitle: Text(
+                        'Automatically play what the host is playing in real-time.',
+                        style: AuxTypography.caption.copyWith(color: AuxColors.textSecondary),
+                      ),
+                      activeColor: AuxColors.ember,
+                      value: state.isSyncModeEnabled,
+                      onChanged: (val) {
+                        notifier.toggleSyncMode(val);
+                      },
+                    ),
+                  ),
                 const SizedBox(height: 24),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
