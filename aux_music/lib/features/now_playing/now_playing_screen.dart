@@ -9,9 +9,11 @@ import '../../core/playback/playback_providers.dart';
 import '../../core/di/providers.dart';
 import '../../core/providers/library_providers.dart';
 import '../../services/audio_handler.dart';
+import '../../services/download_manager.dart';
 import '../../data/models/track.dart';
 import '../../data/models/license_type.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/router/app_router.dart';
 
 class NowPlayingScreen extends ConsumerStatefulWidget {
   const NowPlayingScreen({super.key});
@@ -107,7 +109,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
               const SizedBox(height: AuxSpacing.md),
 
               // ── Extra controls (Volume, EQ, Sleep Timer) ─────────────
-              _ExtraControls(handler: handler, ref: ref),
+              _ExtraControls(handler: handler, ref: ref, mediaItem: mediaItem),
 
               const SizedBox(height: AuxSpacing.md),
 
@@ -681,13 +683,14 @@ class _InfoRow extends StatelessWidget {
   }
 }
 
-class _ExtraControls extends StatelessWidget {
-  const _ExtraControls({required this.handler, required this.ref});
+class _ExtraControls extends ConsumerWidget {
+  const _ExtraControls({required this.handler, required this.ref, required this.mediaItem});
   final AuxAudioHandler handler;
   final WidgetRef ref;
+  final MediaItem? mediaItem;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final volume = ref.watch(volumeProvider);
     final eqPreset = ref.watch(eqPresetProvider);
     final sleepTimer = ref.watch(sleepTimerProvider);
@@ -721,6 +724,14 @@ class _ExtraControls extends StatelessWidget {
             ),
           ),
           IconButton(
+            icon: const Icon(Icons.speaker_group_rounded),
+            color: AuxColors.paperMuted,
+            iconSize: 22,
+            onPressed: () {
+              context.push(AppRoutes.passTheAux);
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.equalizer_rounded),
             color: eqPreset != EqPreset.flat
                 ? AuxColors.signalTeal
@@ -728,34 +739,81 @@ class _ExtraControls extends StatelessWidget {
             iconSize: 22,
             onPressed: () => _showEqSheet(context, ref, eqPreset),
           ),
-          IconButton(
-            icon: const Icon(Icons.speed_rounded),
-            color: ref.watch(playbackSpeedProvider) != 1.0
-                ? AuxColors.signalTeal
-                : AuxColors.paperMuted,
-            iconSize: 22,
-            onPressed: () {
-              final currentSpeed = ref.read(playbackSpeedProvider);
-              double nextSpeed = 1.0;
-              if (currentSpeed == 1.0) {
-                nextSpeed = 1.25;
-              } else if (currentSpeed == 1.25) {
-                nextSpeed = 1.5;
-              } else if (currentSpeed == 1.5) {
-                nextSpeed = 2.0;
-              } else {
-                nextSpeed = 1.0;
+          Consumer(
+            builder: (context, ref, child) {
+              if (mediaItem == null) {
+                return IconButton(
+                  icon: const Icon(Icons.download_rounded),
+                  color: AuxColors.paperMuted,
+                  iconSize: 22,
+                  onPressed: null,
+                );
               }
               
-              ref.read(playbackSpeedProvider.notifier).state = nextSpeed;
-              handler.setSpeed(nextSpeed);
+              final trackId = mediaItem!.extras?['trackId'] as String? ?? mediaItem!.id;
+              final downloadedFilesAsync = ref.watch(downloadedFilesProvider);
+              final isDownloaded = downloadedFilesAsync.valueOrNull?.any((d) => d.trackId == trackId) ?? false;
+              final downloadManager = ref.read(downloadManagerProvider);
               
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('${nextSpeed}x Speed'),
-                  duration: const Duration(seconds: 1),
-                  behavior: SnackBarBehavior.floating,
-                ),
+              // We don't watch the download manager because it's not a notifier,
+              // but we show the state when it finishes via the downloadedFilesProvider.
+              
+              return IconButton(
+                icon: Icon(isDownloaded ? Icons.download_done_rounded : Icons.download_rounded),
+                color: isDownloaded ? AuxColors.signalTeal : AuxColors.paperMuted,
+                iconSize: 22,
+                onPressed: isDownloaded ? null : () async {
+                  try {
+                    final track = Track(
+                      id: trackId,
+                      title: mediaItem!.title,
+                      artistName: mediaItem!.artist ?? 'Unknown Artist',
+                      artworkUrl: mediaItem!.artUri?.toString(),
+                      sourceId: mediaItem!.extras?['sourceId'] as String? ?? '',
+                      artistId: '',
+                      albumName: mediaItem!.album ?? '',
+                      albumId: '',
+                      thumbnailUrl: mediaItem!.artUri?.toString(),
+                      licenseType: LicenseType.unknown,
+                      attributionString: mediaItem!.extras?['attributionString'] as String? ?? '',
+                      sourceUrl: mediaItem!.extras?['sourceUrl'] as String? ?? '',
+                      language: '',
+                      durationMs: mediaItem!.duration?.inMilliseconds ?? 0,
+                      playCount: 0,
+                      offlineAllowed: mediaItem!.extras?['offlineAllowed'] as bool? ?? true,
+                    );
+                    
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Downloading ${track.title}...'),
+                        duration: const Duration(seconds: 2),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                    
+                    await downloadManager.downloadTrack(track);
+                    
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Download complete'),
+                          duration: Duration(seconds: 2),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Download failed: $e'),
+                          duration: const Duration(seconds: 3),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  }
+                },
               );
             },
           ),

@@ -10,6 +10,8 @@ import '../core/proxy/youtube_stream_audio_source.dart';
 import '../core/proxy/lazy_audio_source.dart';
 import 'dart:io';
 import 'dart:convert';
+import 'pass_the_aux_service.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// The central AudioHandler — bridges just_audio with audio_service for
 /// lock-screen controls, notification, and background playback.
@@ -131,12 +133,53 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
     } catch (_) {
       // Empty playlist on init — ok
     }
+
+    // Sync state to PassTheAux whenever these change
+    queue.listen((_) => _syncToPassTheAux());
+    mediaItem.listen((_) => _syncToPassTheAux());
+    _player.playingStream.listen((_) => _syncToPassTheAux());
+  }
+
+  void _syncToPassTheAux() {
+    // Only attempt to sync if we have access to the ref (it might be null during very early init)
+    try {
+      // Inline import to avoid circular dependency issues at the top level
+      final passTheAuxNotifier = _ref.read(passTheAuxProvider.notifier);
+      if (passTheAuxNotifier.state.isHost) {
+        passTheAuxNotifier.hostSyncState(
+          nowPlaying: mediaItem.valueOrNull != null 
+              ? mediaItem.valueOrNull!.toTrack()
+              : null,
+          isPlaying: _player.playing,
+          queue: queue.value.map((m) => m.toTrack()).toList(),
+        );
+      }
+    } catch (_) {}
   }
 
   // ── Queue management ──────────────────────────────────────────────
 
+  bool _isGuest() {
+    try {
+      final state = _ref.read(passTheAuxProvider);
+      return state.roomId != null && !state.isHost;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  void _guestAddTrack(Track track) {
+    try {
+      _ref.read(passTheAuxProvider.notifier).addTrack(track);
+    } catch (_) {}
+  }
+
   /// Play a single track immediately (replaces queue).
   Future<void> playTrack(Track track) async {
+    if (_isGuest()) {
+      _guestAddTrack(track);
+      return;
+    }
     final mediaItem = track.toMediaItem();
     await updateQueue([mediaItem]);
     await _resolveAndPlay(track, index: 0);
@@ -144,6 +187,12 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
 
   /// Play a list of tracks starting at [startIndex].
   Future<void> playTracks(List<Track> tracks, {int startIndex = 0}) async {
+    if (_isGuest()) {
+      for (final t in tracks) {
+        _guestAddTrack(t);
+      }
+      return;
+    }
     await _player.pause(); // Pause immediately to prevent auto-skipping silent tracks
     final items = tracks.map((t) => t.toMediaItem()).toList();
     await _updateQueueWithIndex(items, initialIndex: startIndex);
@@ -152,12 +201,20 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
 
   /// Add a track to the end of the queue.
   Future<void> addToQueue(Track track) async {
+    if (_isGuest()) {
+      _guestAddTrack(track);
+      return;
+    }
     final item = track.toMediaItem();
     await addQueueItem(item);
   }
 
   /// Add a track immediately after the current track.
   Future<void> playNext(Track track) async {
+    if (_isGuest()) {
+      _guestAddTrack(track);
+      return;
+    }
     final currentIndex = _player.currentIndex ?? -1;
     final item = track.toMediaItem();
     await insertQueueItem(currentIndex + 1, item);
@@ -513,4 +570,28 @@ extension TrackToMediaItem on Track {
           'albumId': albumId,
         },
       );
+}
+
+extension MediaItemToTrack on MediaItem {
+  Track toTrack() {
+    final licenseStr = extras?['licenseType'] as String? ?? 'unknown';
+    return Track(
+      id: extras?['trackId'] as String? ?? id,
+      title: title,
+      artistName: artist ?? 'Unknown Artist',
+      albumName: album ?? '',
+      artworkUrl: artUri?.toString(),
+      durationMs: duration?.inMilliseconds ?? 0,
+      sourceId: extras?['sourceId'] as String? ?? 'unknown',
+      licenseType: LicenseType.values.firstWhere(
+        (e) => e.name == licenseStr,
+        orElse: () => LicenseType.unknown,
+      ),
+      attributionString: extras?['attributionString'] as String? ?? '',
+      offlineAllowed: extras?['offlineAllowed'] as bool? ?? true,
+      streamUrl: extras?['streamUrl'] as String?,
+      artistId: extras?['artistId'] as String? ?? '',
+      albumId: extras?['albumId'] as String? ?? '',
+    );
+  }
 }

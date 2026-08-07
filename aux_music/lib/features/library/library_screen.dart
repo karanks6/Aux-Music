@@ -57,6 +57,16 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                   ),
                   IconButton(
                     icon: const Icon(
+                      Icons.speaker_group_rounded,
+                      color: AuxColors.textSecondary,
+                    ),
+                    onPressed: () {
+                      context.push(AppRoutes.passTheAux);
+                    },
+                    tooltip: 'Pass the Aux',
+                  ),
+                  IconButton(
+                    icon: const Icon(
                       Icons.add_rounded,
                       color: AuxColors.ember,
                     ),

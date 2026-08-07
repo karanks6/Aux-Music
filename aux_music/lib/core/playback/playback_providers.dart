@@ -13,6 +13,7 @@ import '../providers/library_providers.dart';
 Future<AuxAudioHandler> initAudioHandler(ProviderContainer ref) {
   return AudioService.init(
     builder: () => AuxAudioHandler(
+      ref,
       ref.read(aggregatorProvider),
       ref.read(libraryRepositoryProvider),
     ),

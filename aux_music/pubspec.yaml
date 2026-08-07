@@ -71,6 +71,7 @@ dependencies:
     git:
       url: https://github.com/Hexer10/youtube_explode_dart.git
   encrypt: ^5.0.3
+  socket_io_client: ^3.1.6
   # NOTE: RSS/podcast parsing (dart_rss or similar) will be added in Phase 1
   # when the podcast adapter is implemented. Deferred to avoid intl conflicts.
 

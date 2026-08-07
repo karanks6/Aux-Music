@@ -13,6 +13,7 @@ import '../../features/social/social_screen.dart';
 import '../../features/podcasts/podcasts_screen.dart';
 import '../../features/podcasts/podcast_detail_screen.dart';
 import '../../features/player_mini/mini_player_widget.dart';
+import '../../features/pass_the_aux/pass_the_aux_screen.dart';
 import '../../data/models/podcast.dart';
 
 // Route path constants
@@ -30,6 +31,7 @@ abstract final class AppRoutes {
   static const podcastDetail = '/podcast/:id';
   static const settings = '/settings';
   static const socialSession = '/social/session/:code';
+  static const passTheAux = '/pass-the-aux';
 }
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -98,14 +100,26 @@ final appRouter = GoRouter(
         ),
         GoRoute(
           path: AppRoutes.podcastDetail,
-          builder: (context, state) => PodcastDetailScreen(
-            podcast: state.extra as Podcast,
-          ),
+          builder: (context, state) {
+            final podcast = state.extra as Podcast?;
+            return PodcastDetailScreen(
+              podcastId: state.pathParameters['id']!,
+              podcast: podcast,
+            );
+          },
+        ),
+        GoRoute(
+          path: AppRoutes.settings,
+          builder: (context, state) => const SettingsScreen(),
+        ),
+        GoRoute(
+          path: AppRoutes.passTheAux,
+          builder: (context, state) => const PassTheAuxScreen(),
         ),
       ],
     ),
 
-    // ── Full-screen routes (no shell nav) ──────────────────────────
+    // ── Full-screen routes (no bottom nav) ─────────────────────────
     GoRoute(
       path: AppRoutes.nowPlaying,
       parentNavigatorKey: _rootNavigatorKey,
