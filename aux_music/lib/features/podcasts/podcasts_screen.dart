@@ -24,20 +24,25 @@ class PodcastShelfData {
 final _podcastShelvesProvider = FutureProvider<List<PodcastShelfData>>((ref) async {
   final repo = ref.read(podcastRepositoryProvider);
   final shelves = <PodcastShelfData>[];
-  final seenEpisodeUrls = <String>{};
+  final globalSeenUrls = <String>{};
 
   // Helper to fetch latest episodes for a query
-  Future<List<Track>> getEpisodesForQuery(String query, {int limit = 4}) async {
+  Future<List<Track>> getEpisodesForQuery(String query, {int limit = 4, int episodesPerPodcast = 1, bool useGlobalSeen = true}) async {
     final pods = await repo.searchPodcasts(query, limit: limit);
     final tracks = <Track>[];
     for (final pod in pods) {
       try {
         final eps = await repo.fetchEpisodes(pod);
+        int added = 0;
         for (final ep in eps) {
-          if (ep.streamUrl != null && !seenEpisodeUrls.contains(ep.streamUrl)) {
-            seenEpisodeUrls.add(ep.streamUrl!);
+          if (ep.streamUrl != null) {
+            if (useGlobalSeen) {
+              if (globalSeenUrls.contains(ep.streamUrl)) continue;
+              globalSeenUrls.add(ep.streamUrl!);
+            }
             tracks.add(ep.toTrack(podcastTitle: pod.title, podcastAuthor: pod.author));
-            break; // Just one episode per podcast
+            added++;
+            if (added >= episodesPerPodcast) break;
           }
         }
       } catch (e) {
@@ -63,21 +68,16 @@ final _podcastShelvesProvider = FutureProvider<List<PodcastShelfData>>((ref) asy
   ];
   hindiNames.shuffle();
   
-  final latestTracks = <Track>[];
-  for (final name in hindiNames.take(6)) {
-     final eps = await getEpisodesForQuery(name, limit: 1);
-     latestTracks.addAll(eps);
-  }
-  
-  if (latestTracks.isNotEmpty) {
-    shelves.add(PodcastShelfData(
-      title: 'Latest Episodes (Hindi)',
-      isEpisodes: true,
-      items: latestTracks..shuffle(),
-    ));
-  }
+  // 2. Requested Popular Channels as individual categories
+  final popularChannels = [
+    'Prakhar Ke Pravachan',
+    'The Ranveer Show',
+    'Figuring Out Raj Shamani',
+    'WTF is Nikhil Kamath',
+    'The Joe Rogan Experience'
+  ];
 
-  // 2. Some Dynamic Podcast Album Shelves
+  // 3. Some Dynamic Podcast Album Shelves
   final categories = [
     {'title': 'Top Tech Podcasts', 'query': 'technology'},
     {'title': 'Comedy Specials', 'query': 'comedy'},
@@ -86,49 +86,76 @@ final _podcastShelvesProvider = FutureProvider<List<PodcastShelfData>>((ref) asy
     {'title': 'True Crime', 'query': 'true crime'},
     {'title': 'Business & Finance', 'query': 'business'},
   ];
-  
   categories.shuffle();
-  final selectedCategories = categories.take(3); // Pick 3 random categories for Albums
+  final selectedCategories = categories.take(2).toList(); 
   
-  for (final cat in selectedCategories) {
-    final pods = await repo.searchPodcasts(cat['query']!, limit: 10);
-    if (pods.isNotEmpty) {
-      shelves.add(PodcastShelfData(
-        title: cat['title']!,
-        isEpisodes: false,
-        items: pods,
-      ));
-    }
-  }
-
-  // 3. More Single Episodes
+  // 4. More Single Episodes
   final epCategories = [
     {'title': 'Trending Tech Episodes', 'query': 'technology'},
     {'title': 'Popular Comedy Episodes', 'query': 'comedy'},
     {'title': 'New in Science', 'query': 'science'},
     {'title': 'Business Insights', 'query': 'startup business'},
   ];
-  
   epCategories.shuffle();
-  final selectedEpCategories = epCategories.take(2); // Pick 2 random categories for Episodes
-  
-  for (final cat in selectedEpCategories) {
-    final eps = await getEpisodesForQuery(cat['query']!, limit: 6);
+  final selectedEpCategories = epCategories.take(1).toList(); 
+
+  // Fire ALL requests concurrently!
+  final results = await Future.wait([
+    Future.wait(hindiNames.map((name) => getEpisodesForQuery(name, limit: 1, episodesPerPodcast: 2, useGlobalSeen: false))),
+    Future.wait(popularChannels.map((channel) async {
+      final eps = await getEpisodesForQuery(channel, limit: 1, episodesPerPodcast: 15, useGlobalSeen: false);
+      return {'title': channel, 'eps': eps};
+    })),
+    Future.wait(selectedCategories.map((cat) async {
+      final pods = await repo.searchPodcasts(cat['query']!, limit: 10);
+      return {'title': cat['title']!, 'pods': pods};
+    })),
+    Future.wait(selectedEpCategories.map((cat) async {
+      final eps = await getEpisodesForQuery(cat['query']!, limit: 6, useGlobalSeen: true);
+      return {'title': cat['title']!, 'eps': eps};
+    })),
+  ]);
+
+  // Process Hindi Results
+  final hindiResults = results[0] as List<List<Track>>;
+  final latestTracks = hindiResults.expand((eps) => eps).toList();
+  if (latestTracks.isNotEmpty) {
+    latestTracks.shuffle();
+    shelves.add(PodcastShelfData(
+      title: 'Latest Episodes (Hindi)',
+      isEpisodes: true,
+      items: latestTracks.take(20).toList(),
+    ));
+  }
+
+  // Process Popular Channel Results
+  final popularResults = results[1] as List<Map<String, dynamic>>;
+  for (final res in popularResults) {
+    final eps = res['eps'] as List<Track>;
     if (eps.isNotEmpty) {
-      shelves.add(PodcastShelfData(
-        title: cat['title']!,
-        isEpisodes: true,
-        items: eps,
-      ));
+      shelves.add(PodcastShelfData(title: res['title'] as String, isEpisodes: true, items: eps));
     }
   }
 
-  if (shelves.isEmpty) return [];
-  if (shelves.length == 1) return shelves;
-  
-  // Shuffle the final shelves slightly to feel dynamic, but keep "Latest Episodes (Hindi)" on top
-  final otherShelves = shelves.sublist(1)..shuffle();
-  return [shelves.first, ...otherShelves];
+  // Process Album Results
+  final albumResults = results[2] as List<Map<String, dynamic>>;
+  for (final res in albumResults) {
+    final pods = res['pods'] as List<Podcast>;
+    if (pods.isNotEmpty) {
+      shelves.add(PodcastShelfData(title: res['title'] as String, isEpisodes: false, items: pods));
+    }
+  }
+
+  // Process Single Ep Results
+  final singleEpResults = results[3] as List<Map<String, dynamic>>;
+  for (final res in singleEpResults) {
+    final eps = res['eps'] as List<Track>;
+    if (eps.isNotEmpty) {
+      shelves.add(PodcastShelfData(title: res['title'] as String, isEpisodes: true, items: eps));
+    }
+  }
+
+  return shelves;
 });
 
 class PodcastsScreen extends ConsumerWidget {

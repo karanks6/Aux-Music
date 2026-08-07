@@ -69,65 +69,18 @@ class PodcastRepository {
     );
   }
 
-  Future<List<PodcastEpisode>> fetchEpisodes(Podcast podcast) async {
-    final response = await _dio.get(podcast.feedUrl);
-    final document = XmlDocument.parse(response.data.toString());
-    final items = document.findAllElements('item');
-
-    final episodes = <PodcastEpisode>[];
-    for (final item in items) {
-      final title = item.findElements('title').firstOrNull?.innerText ?? 'Unknown Episode';
-      final description = item.findElements('description').firstOrNull?.innerText ?? '';
-      final enclosure = item.findElements('enclosure').firstOrNull;
-      final streamUrl = enclosure?.getAttribute('url');
-      
-      if (streamUrl == null) continue;
-
-      final guid = item.findElements('guid').firstOrNull?.innerText ?? streamUrl;
-      final pubDateStr = item.findElements('pubDate').firstOrNull?.innerText;
-      DateTime? pubDate;
-      if (pubDateStr != null) {
-        // Very basic pubdate parser, RFC 2822 or RFC 1123, could fail, fallback to now
-        try {
-          pubDate = DateTime.parse(pubDateStr); // May not parse RSS dates natively
-        } catch (_) {}
-      }
-
-      final itunesDuration = item.findElements('itunes:duration').firstOrNull?.innerText;
-      int durationMs = 0;
-      if (itunesDuration != null) {
-        if (itunesDuration.contains(':')) {
-          final parts = itunesDuration.split(':');
-          if (parts.length == 3) {
-            durationMs = (int.parse(parts[0]) * 3600 + int.parse(parts[1]) * 60 + int.parse(parts[2])) * 1000;
-          } else if (parts.length == 2) {
-            durationMs = (int.parse(parts[0]) * 60 + int.parse(parts[1])) * 1000;
-          }
-        } else {
-          durationMs = (int.tryParse(itunesDuration) ?? 0) * 1000;
-        }
-      }
-
-      final image = item.findElements('itunes:image').firstOrNull?.getAttribute('href');
-
-      episodes.add(PodcastEpisode(
-        id: guid,
-        podcastId: podcast.id,
-        title: title,
-        description: description,
-        streamUrl: streamUrl,
-        publishedAt: pubDate ?? DateTime.now(),
-        durationMs: durationMs,
-        artworkUrl: image ?? podcast.artworkUrl,
-      ));
-    }
-    
-    return episodes;
-  }
+  // ── Cache ────────────────────────────────────────────────────────
+  final Map<String, List<Podcast>> _searchCache = {};
+  final Map<String, List<PodcastEpisode>> _episodeCache = {};
 
   // ── iTunes API Search ────────────────────────────────────────────
 
   Future<List<Podcast>> searchPodcasts(String term, {int limit = 10}) async {
+    final cacheKey = '$term-$limit';
+    if (_searchCache.containsKey(cacheKey)) {
+      return _searchCache[cacheKey]!;
+    }
+
     try {
       final url = 'https://itunes.apple.com/search?term=${Uri.encodeComponent(term)}&entity=podcast&limit=$limit';
       final response = await _dio.get(url);
@@ -158,9 +111,75 @@ class PodcastRepository {
           artworkUrl: r['artworkUrl600'] as String? ?? r['artworkUrl100'] as String?,
         ));
       }
+      _searchCache[cacheKey] = podcasts;
       return podcasts;
     } catch (e) {
       print('iTunes search error for $term: $e');
+      return [];
+    }
+  }
+
+  Future<List<PodcastEpisode>> fetchEpisodes(Podcast podcast) async {
+    if (_episodeCache.containsKey(podcast.id)) {
+      return _episodeCache[podcast.id]!;
+    }
+
+    try {
+      final response = await _dio.get(podcast.feedUrl);
+      final document = XmlDocument.parse(response.data.toString());
+      final items = document.findAllElements('item');
+
+      final episodes = <PodcastEpisode>[];
+      for (final item in items) {
+        final title = item.findElements('title').firstOrNull?.innerText ?? 'Unknown Episode';
+        final description = item.findElements('description').firstOrNull?.innerText ?? '';
+        final enclosure = item.findElements('enclosure').firstOrNull;
+        final streamUrl = enclosure?.getAttribute('url');
+        
+        if (streamUrl == null) continue;
+
+        final guid = item.findElements('guid').firstOrNull?.innerText ?? streamUrl;
+        final pubDateStr = item.findElements('pubDate').firstOrNull?.innerText;
+        DateTime? pubDate;
+        if (pubDateStr != null) {
+          try {
+            pubDate = DateTime.parse(pubDateStr);
+          } catch (_) {}
+        }
+
+        final itunesDuration = item.findElements('itunes:duration').firstOrNull?.innerText;
+        int durationMs = 0;
+        if (itunesDuration != null) {
+          if (itunesDuration.contains(':')) {
+            final parts = itunesDuration.split(':');
+            if (parts.length == 3) {
+              durationMs = (int.parse(parts[0]) * 3600 + int.parse(parts[1]) * 60 + int.parse(parts[2])) * 1000;
+            } else if (parts.length == 2) {
+              durationMs = (int.parse(parts[0]) * 60 + int.parse(parts[1])) * 1000;
+            }
+          } else {
+            durationMs = (int.tryParse(itunesDuration) ?? 0) * 1000;
+          }
+        }
+
+        final image = item.findElements('itunes:image').firstOrNull?.getAttribute('href');
+
+        episodes.add(PodcastEpisode(
+          id: guid,
+          podcastId: podcast.id,
+          title: title,
+          description: description,
+          streamUrl: streamUrl,
+          publishedAt: pubDate ?? DateTime.now(),
+          durationMs: durationMs,
+          artworkUrl: image ?? podcast.artworkUrl,
+        ));
+      }
+      
+      _episodeCache[podcast.id] = episodes;
+      return episodes;
+    } catch (e) {
+      print('Fetch episodes error for ${podcast.title}: $e');
       return [];
     }
   }
