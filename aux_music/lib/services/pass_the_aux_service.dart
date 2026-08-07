@@ -53,7 +53,7 @@ class PassTheAuxNotifier extends StateNotifier<PassTheAuxState> {
   // The deployed Render URL goes here eventually!
   // For now, using localhost for simulator testing. 
   // (Note: use 10.0.2.2 for Android emulator to host machine localhost)
-  final String _serverUrl = 'http://localhost:3000'; 
+  final String _serverUrl = 'https://aux-music-bff.onrender.com';
 
   void connect() {
     if (_socket != null && _socket!.connected) return;
