@@ -214,5 +214,5 @@ class PassTheAuxNotifier extends StateNotifier<PassTheAuxState> {
 }
 
 final passTheAuxProvider = StateNotifierProvider<PassTheAuxNotifier, PassTheAuxState>((ref) {
-  return PassTheAuxNotifier();
+  return PassTheAuxNotifier(ref);
 });

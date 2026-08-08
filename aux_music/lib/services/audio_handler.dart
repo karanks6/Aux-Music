@@ -3,6 +3,7 @@ import 'package:audio_service/audio_service.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:rxdart/rxdart.dart';
 import '../../data/models/track.dart';
+import '../../data/models/license_type.dart';
 import '../../data/adapters/adapter_aggregator.dart';
 import '../../data/repositories/library_repository.dart';
 import '../core/proxy/local_audio_proxy.dart';
@@ -25,7 +26,11 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
   late final AndroidEqualizer _equalizer;
   late final AudioPlayer _player;
 
-  AuxAudioHandler(this._aggregator, this._library) {
+  final ProviderContainer _ref;
+  final MusicAdapterAggregator _aggregator;
+  final LibraryRepository _library;
+
+  AuxAudioHandler(this._ref, this._aggregator, this._library) {
     _equalizer = AndroidEqualizer();
     _player = AudioPlayer(
       audioLoadConfiguration: const AudioLoadConfiguration(
@@ -40,9 +45,6 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
     );
     _init();
   }
-
-  final MusicAdapterAggregator _aggregator;
-  final LibraryRepository _library;
   ConcatenatingAudioSource _playlist = ConcatenatingAudioSource(
     children: [],
     useLazyPreparation: true,
