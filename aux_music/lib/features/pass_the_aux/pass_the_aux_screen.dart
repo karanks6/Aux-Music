@@ -169,7 +169,7 @@ class _LandingView extends ConsumerWidget {
               icon: Icons.wifi_tethering_rounded,
               iconColor: AuxColors.ember,
               title: 'Host a Party',
-              subtitle: 'Create a room. Friends join with your code and add songs to your queue.',
+              subtitle: 'Open a room and share your code. Friends add songs to your queue from their phones.',
               onTap: () => notifier.createRoom(),
               accentColor: AuxColors.ember,
             ),
@@ -239,21 +239,62 @@ class _LandingView extends ConsumerWidget {
             ),
           ],
 
-          const SizedBox(height: AuxSpacing.xxxl),
+          const SizedBox(height: AuxSpacing.xl),
 
           // ── Feature explainer ──
-          _FeatureRow(
+          const _FeatureDivider(label: 'HOW IT WORKS'),
+          const SizedBox(height: AuxSpacing.lg),
+
+          _FeatureCard(
             icon: Icons.queue_music_rounded,
             color: AuxColors.ember,
             title: 'Party Mode',
-            desc: 'Guests tap songs to add them to the host\'s queue. Full democratic jukebox vibes.',
+            subtitle: 'Democratic Jukebox',
+            steps: const [
+              _Step(
+                icon: Icons.wifi_tethering_rounded,
+                text: 'One person taps "Host a Party" — they control playback on their phone.',
+              ),
+              _Step(
+                icon: Icons.share_rounded,
+                text: 'Share the 6-character room code with friends. They tap "Join a Party" and enter it.',
+              ),
+              _Step(
+                icon: Icons.touch_app_rounded,
+                text: 'Friends search any song in the app and tap it — it goes straight into the host\'s queue.',
+              ),
+              _Step(
+                icon: Icons.queue_rounded,
+                text: 'The host sees all added songs in the Shared Queue and can swipe to remove any.',
+              ),
+            ],
           ),
+
           const SizedBox(height: AuxSpacing.md),
-          _FeatureRow(
-            icon: Icons.sync_rounded,
+
+          _FeatureCard(
+            icon: Icons.headphones_rounded,
             color: AuxColors.signalTeal,
             title: 'Synced Audio',
-            desc: 'Enable Listen Along to hear exactly what the host is playing, in real time.',
+            subtitle: 'Listen Together',
+            steps: const [
+              _Step(
+                icon: Icons.group_rounded,
+                text: 'Join a room as a guest. You\'ll see what the host is playing.',
+              ),
+              _Step(
+                icon: Icons.sync_rounded,
+                text: 'Toggle "Listen Along" — your audio will instantly sync to the host\'s track, position, and play state.',
+              ),
+              _Step(
+                icon: Icons.speed_rounded,
+                text: 'If you drift more than 2 seconds, the app silently re-syncs every 5 seconds.',
+              ),
+              _Step(
+                icon: Icons.headset_mic_rounded,
+                text: 'Everyone hears the same song at the same moment — perfect for rooms, drives, or hangouts.',
+              ),
+            ],
           ),
         ],
       ),
@@ -1164,3 +1205,139 @@ class _EmptyQueuePlaceholder extends StatelessWidget {
     );
   }
 }
+
+// ── Feature Explainer Widgets ─────────────────────────────────────────────────
+
+class _Step {
+  const _Step({required this.icon, required this.text});
+  final IconData icon;
+  final String text;
+}
+
+class _FeatureDivider extends StatelessWidget {
+  const _FeatureDivider({required this.label});
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(child: Container(height: 1, color: AuxColors.hairline)),
+        const SizedBox(width: AuxSpacing.sm),
+        Text(
+          label,
+          style: AuxTypography.buttonSm.copyWith(
+            color: AuxColors.paperMuted,
+            letterSpacing: 2,
+          ),
+        ),
+        const SizedBox(width: AuxSpacing.sm),
+        Expanded(child: Container(height: 1, color: AuxColors.hairline)),
+      ],
+    );
+  }
+}
+
+class _FeatureCard extends StatelessWidget {
+  const _FeatureCard({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.subtitle,
+    required this.steps,
+  });
+
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String subtitle;
+  final List<_Step> steps;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AuxSpacing.lg),
+      decoration: BoxDecoration(
+        color: AuxColors.inkRaised,
+        borderRadius: BorderRadius.circular(AuxSpacing.radiusCard),
+        border: Border.all(color: color.withValues(alpha: 0.15)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: color, size: 18),
+              ),
+              const SizedBox(width: AuxSpacing.md),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: AuxTypography.bodySemiBold.copyWith(color: AuxColors.paper),
+                  ),
+                  Text(
+                    subtitle,
+                    style: AuxTypography.caption.copyWith(color: color),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: AuxSpacing.md),
+          // Steps
+          ...steps.asMap().entries.map((entry) {
+            final i = entry.key;
+            final step = entry.value;
+            return Padding(
+              padding: EdgeInsets.only(top: i == 0 ? 0 : AuxSpacing.sm),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Step number bubble
+                  Container(
+                    width: 22,
+                    height: 22,
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Text(
+                        '${i + 1}',
+                        style: AuxTypography.buttonSm.copyWith(
+                          color: color,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: AuxSpacing.sm),
+                  Expanded(
+                    child: Text(
+                      step.text,
+                      style: AuxTypography.caption.copyWith(
+                        color: AuxColors.paperMuted,
+                        height: 1.5,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+}
+

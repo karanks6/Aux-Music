@@ -181,12 +181,17 @@ class PassTheAuxNotifier extends StateNotifier<PassTheAuxState> {
   // ── Room Management ──────────────────────────────────────────────
 
   void createRoom() {
-    if (_socket == null || !_socket!.connected) return;
+    if (!state.isConnected || _socket == null) {
+      state = state.copyWith(error: 'Not connected. Please wait or retry.');
+      return;
+    }
 
     // Let the server generate the room code to avoid collisions
     _socket!.emitWithAck('create_room', null, ack: (response) {
-      if (response is Map && response['success'] == true) {
-        final roomId = response['roomId'] as String;
+      // socket_io_client Dart wraps ack args in a List — unwrap it
+      final data = _unwrapAck(response);
+      if (data != null && data['success'] == true) {
+        final roomId = data['roomId'] as String;
         state = state.copyWith(roomId: roomId, isHost: true, guestCount: 0, error: null);
         _startHostSyncTimer();
       } else {
@@ -196,17 +201,22 @@ class PassTheAuxNotifier extends StateNotifier<PassTheAuxState> {
   }
 
   void joinRoom(String roomId) {
-    if (_socket == null || !_socket!.connected) return;
+    if (!state.isConnected || _socket == null) {
+      state = state.copyWith(error: 'Not connected. Please wait or retry.');
+      return;
+    }
     final code = roomId.trim().toUpperCase();
 
     _socket!.emitWithAck('join_room', code, ack: (response) {
-      if (response is Map && response['success'] == true) {
-        final newQueue = (response['queue'] as List?)
+      // socket_io_client Dart wraps ack args in a List — unwrap it
+      final data = _unwrapAck(response);
+      if (data != null && data['success'] == true) {
+        final newQueue = (data['queue'] as List?)
                 ?.map((json) => Track.fromJson((json as Map).cast<String, dynamic>()))
                 .toList() ??
             [];
-        final nowPlaying = response['nowPlaying'] != null
-            ? Track.fromJson((response['nowPlaying'] as Map).cast<String, dynamic>())
+        final nowPlaying = data['nowPlaying'] != null
+            ? Track.fromJson((data['nowPlaying'] as Map).cast<String, dynamic>())
             : null;
 
         state = state.copyWith(
@@ -214,21 +224,34 @@ class PassTheAuxNotifier extends StateNotifier<PassTheAuxState> {
           isHost: false,
           sharedQueue: newQueue,
           nowPlaying: nowPlaying,
-          isPlaying: response['isPlaying'] == true,
-          position: response['position'] as int?,
-          timestamp: response['timestamp'] as int?,
-          guestCount: response['guestCount'] as int? ?? 0,
+          isPlaying: data['isPlaying'] == true,
+          position: data['position'] as int?,
+          timestamp: data['timestamp'] as int?,
+          guestCount: data['guestCount'] as int? ?? 0,
           error: null,
         );
         // Request immediate re-sync so we jump to the right position
         requestSync();
       } else {
         state = state.copyWith(
-          error: (response is Map ? response['error'] as String? : null) ??
-              'Room not found. Check the code and try again.',
+          error: data?['error'] as String? ?? 'Room not found. Check the code and try again.',
         );
       }
     });
+  }
+
+  /// socket_io_client Dart's emitWithAck passes ack args as a List.
+  /// The actual response object is the first element.
+  /// This helper safely unwraps both [Map] and [List<Map>] responses.
+  Map<String, dynamic>? _unwrapAck(dynamic response) {
+    if (response is Map<String, dynamic>) return response;
+    if (response is Map) return response.cast<String, dynamic>();
+    if (response is List && response.isNotEmpty) {
+      final first = response.first;
+      if (first is Map<String, dynamic>) return first;
+      if (first is Map) return first.cast<String, dynamic>();
+    }
+    return null;
   }
 
   void leaveRoom() {
