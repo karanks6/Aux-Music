@@ -194,15 +194,26 @@ class _AppShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: child,
-      bottomNavigationBar: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Mini-player sits directly above the bottom nav bar
-          const MiniPlayerWidget(),
-          _BottomNav(),
-        ],
+    final location = GoRouterState.of(context).matchedLocation;
+    final isHome = location == AppRoutes.home;
+
+    return PopScope(
+      canPop: isHome,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          context.go(AppRoutes.home);
+        }
+      },
+      child: Scaffold(
+        body: child,
+        bottomNavigationBar: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Mini-player sits directly above the bottom nav bar
+            const MiniPlayerWidget(),
+            _BottomNav(),
+          ],
+        ),
       ),
     );
   }

@@ -27,17 +27,22 @@ class _PassTheAuxScreenState extends ConsumerState<PassTheAuxScreen> {
 
     return Scaffold(
       backgroundColor: AuxColors.ink,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: Text('Pass the Aux', style: AuxTypography.titleLg),
-      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0, bottom: 16.0),
+                child: Text(
+                  'Pass the Aux',
+                  style: AuxTypography.display.copyWith(
+                    color: AuxColors.paper,
+                    fontSize: 26,
+                  ),
+                ),
+              ),
               if (!state.isConnected) ...[
                 const Spacer(),
                 const Icon(Icons.speaker_group, size: 80, color: AuxColors.ember),
