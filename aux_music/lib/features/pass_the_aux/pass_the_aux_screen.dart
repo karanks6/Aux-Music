@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/pass_the_aux_service.dart';
-import '../../core/theme/colors.dart';
-import '../../core/theme/typography.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_typography.dart';
 import '../search/widgets/track_list_tile.dart';
 
 class PassTheAuxScreen extends ConsumerStatefulWidget {
@@ -27,15 +27,15 @@ class _PassTheAuxScreenState extends ConsumerState<PassTheAuxScreen> {
     final notifier = ref.read(passTheAuxProvider.notifier);
 
     return Scaffold(
-      backgroundColor: AuxColors.background,
+      backgroundColor: AuxColors.ink,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: AuxColors.textPrimary),
+          icon: const Icon(Icons.arrow_back_ios, color: AuxColors.paper),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text('Pass the Aux', style: AuxTypography.titleLarge),
+        title: Text('Pass the Aux', style: AuxTypography.titleLg),
       ),
       body: SafeArea(
         child: Padding(
@@ -49,13 +49,13 @@ class _PassTheAuxScreenState extends ConsumerState<PassTheAuxScreen> {
                 const SizedBox(height: 24),
                 Text(
                   'Connect to Cloud Relay',
-                  style: AuxTypography.titleLarge,
+                  style: AuxTypography.titleLg,
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 12),
                 Text(
                   'To use Pass the Aux, you need to connect to the cloud server.',
-                  style: AuxTypography.bodyMedium,
+                  style: AuxTypography.body,
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 40),
@@ -66,7 +66,7 @@ class _PassTheAuxScreenState extends ConsumerState<PassTheAuxScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                   ),
-                  child: Text('Connect', style: AuxTypography.titleMedium),
+                  child: Text('Connect', style: AuxTypography.titleMd),
                 ),
                 if (state.error != null) ...[
                   const SizedBox(height: 16),
@@ -79,7 +79,7 @@ class _PassTheAuxScreenState extends ConsumerState<PassTheAuxScreen> {
                 const SizedBox(height: 24),
                 Text(
                   'Start a Party',
-                  style: AuxTypography.titleLarge,
+                  style: AuxTypography.titleLg,
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 40),
@@ -90,29 +90,29 @@ class _PassTheAuxScreenState extends ConsumerState<PassTheAuxScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                   ),
-                  child: Text('Create Room (Host)', style: AuxTypography.titleMedium),
+                  child: Text('Create Room (Host)', style: AuxTypography.titleMd),
                 ),
                 const SizedBox(height: 40),
                 Row(
                   children: [
-                    const Expanded(child: Divider(color: AuxColors.textSecondary)),
+                    const Expanded(child: Divider(color: AuxColors.paperMuted)),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      child: Text('OR', style: AuxTypography.labelMedium),
+                      child: Text('OR', style: AuxTypography.buttonSm),
                     ),
-                    const Expanded(child: Divider(color: AuxColors.textSecondary)),
+                    const Expanded(child: Divider(color: AuxColors.paperMuted)),
                   ],
                 ),
                 const SizedBox(height: 40),
                 TextField(
                   controller: _roomController,
-                  style: AuxTypography.bodyLarge,
+                  style: AuxTypography.bodyLg,
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(
                     hintText: 'Enter Room Code',
-                    hintStyle: AuxTypography.bodyLarge.copyWith(color: AuxColors.textSecondary),
+                    hintStyle: AuxTypography.bodyLg.copyWith(color: AuxColors.paperMuted),
                     filled: true,
-                    fillColor: AuxColors.surface,
+                    fillColor: AuxColors.inkRaised,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide.none,
@@ -127,11 +127,11 @@ class _PassTheAuxScreenState extends ConsumerState<PassTheAuxScreen> {
                     }
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AuxColors.surfaceHighlight,
+                    backgroundColor: AuxColors.hairline,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                   ),
-                  child: Text('Join Room (Guest)', style: AuxTypography.titleMedium),
+                  child: Text('Join Room (Guest)', style: AuxTypography.titleMd),
                 ),
                 if (state.error != null) ...[
                   const SizedBox(height: 16),
@@ -142,7 +142,7 @@ class _PassTheAuxScreenState extends ConsumerState<PassTheAuxScreen> {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: AuxColors.surface,
+                    color: AuxColors.inkRaised,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: AuxColors.ember.withOpacity(0.3), width: 2),
                   ),
@@ -150,7 +150,7 @@ class _PassTheAuxScreenState extends ConsumerState<PassTheAuxScreen> {
                     children: [
                       Text(
                         'ROOM CODE',
-                        style: AuxTypography.labelMedium.copyWith(letterSpacing: 2, color: AuxColors.textSecondary),
+                        style: AuxTypography.buttonSm.copyWith(letterSpacing: 2, color: AuxColors.paperMuted),
                       ),
                       const SizedBox(height: 8),
                       Text(
@@ -165,21 +165,21 @@ class _PassTheAuxScreenState extends ConsumerState<PassTheAuxScreen> {
                   state.isHost 
                     ? 'You are the Host. Guests can add songs to your queue.'
                     : 'You are a Guest. Songs you tap anywhere in the app will be added to the Host\'s queue.',
-                  style: AuxTypography.bodyMedium,
+                  style: AuxTypography.body,
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
                 if (!state.isHost)
                   Container(
                     decoration: BoxDecoration(
-                      color: AuxColors.surfaceHighlight,
+                      color: AuxColors.hairline,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: SwitchListTile(
-                      title: Text('Listen Along (Synced Audio)', style: AuxTypography.bodyLarge),
+                      title: Text('Listen Along (Synced Audio)', style: AuxTypography.bodyLg),
                       subtitle: Text(
                         'Automatically play what the host is playing in real-time.',
-                        style: AuxTypography.caption.copyWith(color: AuxColors.textSecondary),
+                        style: AuxTypography.caption.copyWith(color: AuxColors.paperMuted),
                       ),
                       activeColor: AuxColors.ember,
                       value: state.isSyncModeEnabled,
@@ -192,7 +192,7 @@ class _PassTheAuxScreenState extends ConsumerState<PassTheAuxScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Shared Queue', style: AuxTypography.titleLarge),
+                    Text('Shared Queue', style: AuxTypography.titleLg),
                     TextButton(
                       onPressed: () => notifier.leaveRoom(),
                       child: const Text('Leave', style: TextStyle(color: Colors.redAccent)),
@@ -205,7 +205,7 @@ class _PassTheAuxScreenState extends ConsumerState<PassTheAuxScreen> {
                     ? Center(
                         child: Text(
                           'Queue is empty.\nGo search for some songs!',
-                          style: AuxTypography.bodyLarge.copyWith(color: AuxColors.textSecondary),
+                          style: AuxTypography.bodyLg.copyWith(color: AuxColors.paperMuted),
                           textAlign: TextAlign.center,
                         ),
                       )
@@ -223,13 +223,13 @@ class _PassTheAuxScreenState extends ConsumerState<PassTheAuxScreen> {
                                 height: 48,
                                 fit: BoxFit.cover,
                                 errorBuilder: (_,__,___) => Container(
-                                  width: 48, height: 48, color: AuxColors.surfaceHighlight,
-                                  child: const Icon(Icons.music_note, color: AuxColors.textSecondary),
+                                  width: 48, height: 48, color: AuxColors.hairline,
+                                  child: const Icon(Icons.music_note, color: AuxColors.paperMuted),
                                 ),
                               ),
                             ),
-                            title: Text(track.title, style: AuxTypography.bodyLarge, maxLines: 1, overflow: TextOverflow.ellipsis),
-                            subtitle: Text(track.artistName, style: AuxTypography.bodyMedium.copyWith(color: AuxColors.textSecondary)),
+                            title: Text(track.title, style: AuxTypography.bodyLg, maxLines: 1, overflow: TextOverflow.ellipsis),
+                            subtitle: Text(track.artistName, style: AuxTypography.body.copyWith(color: AuxColors.paperMuted)),
                           );
                         },
                       ),
