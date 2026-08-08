@@ -7,6 +7,7 @@ import '../../data/models/license_type.dart';
 import '../../data/adapters/adapter_aggregator.dart';
 import '../../data/repositories/library_repository.dart';
 import '../core/proxy/local_audio_proxy.dart';
+import '../core/proxy/lazy_audio_source.dart';
 import 'dart:io';
 import 'pass_the_aux_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
