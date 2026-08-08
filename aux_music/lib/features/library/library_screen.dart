@@ -58,7 +58,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                   IconButton(
                     icon: const Icon(
                       Icons.speaker_group_rounded,
-                      color: AuxColors.textSecondary,
+                      color: AuxColors.paperMuted,
                     ),
                     onPressed: () {
                       context.push(AppRoutes.passTheAux);

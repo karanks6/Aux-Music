@@ -101,9 +101,8 @@ final appRouter = GoRouter(
         GoRoute(
           path: AppRoutes.podcastDetail,
           builder: (context, state) {
-            final podcast = state.extra as Podcast?;
+            final podcast = state.extra as Podcast;
             return PodcastDetailScreen(
-              podcastId: state.pathParameters['id']!,
               podcast: podcast,
             );
           },
