@@ -61,7 +61,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                       color: AuxColors.paperMuted,
                     ),
                     onPressed: () {
-                      context.push(AppRoutes.passTheAux);
+                      context.go(AppRoutes.passTheAux);
                     },
                     tooltip: 'Pass the Aux',
                   ),

@@ -51,32 +51,37 @@ final appRouter = GoRouter(
       routes: [
         GoRoute(
           path: AppRoutes.home,
-          pageBuilder: (context, state) => const NoTransitionPage(
-            child: HomeScreen(),
+          pageBuilder: (context, state) => NoTransitionPage(
+            key: state.pageKey,
+            child: const HomeScreen(),
           ),
         ),
         GoRoute(
           path: AppRoutes.search,
-          pageBuilder: (context, state) => const NoTransitionPage(
-            child: SearchScreen(),
+          pageBuilder: (context, state) => NoTransitionPage(
+            key: state.pageKey,
+            child: const SearchScreen(),
           ),
         ),
         GoRoute(
           path: AppRoutes.library,
-          pageBuilder: (context, state) => const NoTransitionPage(
-            child: LibraryScreen(),
+          pageBuilder: (context, state) => NoTransitionPage(
+            key: state.pageKey,
+            child: const LibraryScreen(),
           ),
         ),
         GoRoute(
           path: AppRoutes.podcasts,
-          pageBuilder: (context, state) => const NoTransitionPage(
-            child: PodcastsScreen(),
+          pageBuilder: (context, state) => NoTransitionPage(
+            key: state.pageKey,
+            child: const PodcastsScreen(),
           ),
         ),
         GoRoute(
           path: AppRoutes.social,
-          pageBuilder: (context, state) => const NoTransitionPage(
-            child: SocialScreen(),
+          pageBuilder: (context, state) => NoTransitionPage(
+            key: state.pageKey,
+            child: const SocialScreen(),
           ),
         ),
         // Artist / album / playlist — stay inside the shell (back = pop)
@@ -113,7 +118,10 @@ final appRouter = GoRouter(
         ),
         GoRoute(
           path: AppRoutes.passTheAux,
-          builder: (context, state) => const PassTheAuxScreen(),
+          pageBuilder: (context, state) => NoTransitionPage(
+            key: state.pageKey,
+            child: const PassTheAuxScreen(),
+          ),
         ),
       ],
     ),

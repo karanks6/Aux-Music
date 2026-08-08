@@ -724,11 +724,10 @@ class _ExtraControls extends ConsumerWidget {
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.speaker_group_rounded),
+            icon: const Icon(Icons.people_rounded),
             color: AuxColors.paperMuted,
-            iconSize: 22,
             onPressed: () {
-              context.push(AppRoutes.passTheAux);
+              context.go(AppRoutes.passTheAux);
             },
           ),
           IconButton(
