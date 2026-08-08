@@ -212,7 +212,7 @@ class _BottomNav extends StatelessWidget {
       selectedIndex = 2;
     } else if (location.startsWith('/podcasts')) {
       selectedIndex = 3;
-    } else if (location.startsWith('/social')) {
+    } else if (location.startsWith('/pass-the-aux') || location.startsWith('/social')) {
       selectedIndex = 4;
     }
 
@@ -229,7 +229,7 @@ class _BottomNav extends StatelessWidget {
           case 3:
             context.go(AppRoutes.podcasts);
           case 4:
-            context.go(AppRoutes.social);
+            context.go(AppRoutes.passTheAux);
         }
       },
       destinations: const [

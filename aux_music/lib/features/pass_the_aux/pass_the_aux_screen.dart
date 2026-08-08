@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/pass_the_aux_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
-import '../search/widgets/track_list_tile.dart';
 
 class PassTheAuxScreen extends ConsumerStatefulWidget {
   const PassTheAuxScreen({Key? key}) : super(key: key);
@@ -31,10 +30,6 @@ class _PassTheAuxScreenState extends ConsumerState<PassTheAuxScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: AuxColors.paper),
-          onPressed: () => Navigator.pop(context),
-        ),
         title: Text('Pass the Aux', style: AuxTypography.titleLg),
       ),
       body: SafeArea(
