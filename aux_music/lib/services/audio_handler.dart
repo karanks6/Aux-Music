@@ -7,10 +7,7 @@ import '../../data/models/license_type.dart';
 import '../../data/adapters/adapter_aggregator.dart';
 import '../../data/repositories/library_repository.dart';
 import '../core/proxy/local_audio_proxy.dart';
-import '../core/proxy/youtube_stream_audio_source.dart';
-import '../core/proxy/lazy_audio_source.dart';
 import 'dart:io';
-import 'dart:convert';
 import 'pass_the_aux_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -136,33 +133,35 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
       // Empty playlist on init — ok
     }
 
-    // Sync state to PassTheAux whenever these change
+    // Sync state to PassTheAux whenever these change (immediate events)
     queue.listen((_) => _syncToPassTheAux());
     mediaItem.listen((_) => _syncToPassTheAux());
     _player.playingStream.listen((_) => _syncToPassTheAux());
 
+    // Bug Fix #4: Periodic host sync every 5 seconds to correct guest position drift.
+    // State-change listeners alone are not enough — guests need fresh position timestamps.
+    Timer.periodic(const Duration(seconds: 5), (_) => _syncToPassTheAux());
+
     // Listen to PassTheAuxState to mirror Host playback if Sync Mode is on
     final passTheAuxNotifier = _ref.read(passTheAuxProvider.notifier);
-    
+
     passTheAuxNotifier.onGuestAddedTrack.listen((track) {
-      if (passTheAuxNotifier.state.isHost) {
+      if (_ref.read(passTheAuxProvider).isHost) {
         addToQueue(track);
       }
     });
 
     _ref.listen<PassTheAuxState>(passTheAuxProvider, (previous, next) {
       if (!next.isHost && next.roomId != null && next.isSyncModeEnabled) {
-        
         // 1. Sync Track Changes
         final currentTrackId = mediaItem.valueOrNull?.id;
         final nextTrackId = next.nowPlaying?.id;
-        
+
         if (nextTrackId != null && currentTrackId != nextTrackId) {
           _guestForcePlay(next.nowPlaying!, next.isPlaying, next.position, next.timestamp);
         }
-        
-        // 2. Sync Play/Pause state
-        // Only if we already have the track loaded
+
+        // 2. Sync Play/Pause state (only when same track is already loaded)
         if (currentTrackId == nextTrackId) {
           if (next.isPlaying != _player.playing) {
             if (next.isPlaying) {
@@ -171,17 +170,16 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
               _player.pause();
             }
           }
-          
-          // 3. Sync Position (if drift > 2 seconds)
+
+          // 3. Sync position if drift > 2 seconds
           if (next.position != null && next.timestamp != null) {
             final now = DateTime.now().millisecondsSinceEpoch;
             final elapsed = now - next.timestamp!;
             final expectedPositionMs = next.position! + elapsed;
-            
             final localPositionMs = _player.position.inMilliseconds;
             final diff = (expectedPositionMs - localPositionMs).abs();
-            
-            if (diff > 2000) { // 2 seconds tolerance
+
+            if (diff > 2000) {
               _player.seek(Duration(milliseconds: expectedPositionMs));
             }
           }
@@ -190,36 +188,49 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
     });
   }
 
-  Future<void> _guestForcePlay(Track track, bool shouldPlay, int? positionMs, int? timestamp) async {
-    final mediaItem = track.toMediaItem();
-    await updateQueue([mediaItem]);
-    
-    // Seek to zero to trigger lazy loading
+  /// Bug Fix #5: Wait for the audio source to be ready before seeking.
+  /// Previously we called seek() immediately after setAudioSource which failed silently.
+  Future<void> _guestForcePlay(
+    Track track,
+    bool shouldPlay,
+    int? positionMs,
+    int? timestamp,
+  ) async {
+    final item = track.toMediaItem();
+    await updateQueue([item]);
+
+    // Trigger lazy loading by seeking to zero
     await _player.seek(Duration.zero, index: 0);
-    
-    // Recalculate position after loading delay
+
+    // Wait until the player has buffered enough to seek accurately
+    await _player.processingStateStream
+        .firstWhere((s) =>
+            s == ProcessingState.ready ||
+            s == ProcessingState.buffering ||
+            s == ProcessingState.completed)
+        .timeout(const Duration(seconds: 10), onTimeout: () => ProcessingState.idle);
+
+    // Recalculate position accounting for network latency elapsed since host broadcast
     if (positionMs != null && timestamp != null) {
       final now = DateTime.now().millisecondsSinceEpoch;
       final elapsed = now - timestamp;
       final expectedPositionMs = positionMs + elapsed;
-      await _player.seek(Duration(milliseconds: expectedPositionMs));
+      try {
+        await _player.seek(Duration(milliseconds: expectedPositionMs));
+      } catch (_) {}
     }
-    
+
     if (shouldPlay) {
       await _player.play();
     }
   }
 
   void _syncToPassTheAux() {
-    // Only attempt to sync if we have access to the ref (it might be null during very early init)
     try {
-      // Inline import to avoid circular dependency issues at the top level
-      final passTheAuxNotifier = _ref.read(passTheAuxProvider.notifier);
-      if (passTheAuxNotifier.state.isHost) {
-        passTheAuxNotifier.hostSyncState(
-          nowPlaying: mediaItem.valueOrNull != null 
-              ? mediaItem.valueOrNull!.toTrack()
-              : null,
+      final auxState = _ref.read(passTheAuxProvider);
+      if (auxState.isHost) {
+        _ref.read(passTheAuxProvider.notifier).hostSyncState(
+          nowPlaying: mediaItem.valueOrNull?.toTrack(),
           isPlaying: _player.playing,
           queue: queue.value.map((m) => m.toTrack()).toList(),
           position: _player.position.inMilliseconds,
@@ -260,9 +271,8 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
   /// Play a list of tracks starting at [startIndex].
   Future<void> playTracks(List<Track> tracks, {int startIndex = 0}) async {
     if (_isGuest()) {
-      for (final t in tracks) {
-        _guestAddTrack(t);
-      }
+      // Bug Fix #1: Only send the tapped track — not the entire shelf/list.
+      _guestAddTrack(tracks[startIndex]);
       return;
     }
     await _player.pause(); // Pause immediately to prevent auto-skipping silent tracks
@@ -489,14 +499,6 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
   // ── Private helpers ───────────────────────────────────────────────
 
   bool _isLoadingStream = false;
-
-  void _setLoadingState(bool isLoading, {int? forceIndex}) {
-    _isLoadingStream = isLoading;
-    if (forceIndex != null && forceIndex < queue.value.length) {
-      mediaItem.add(queue.value[forceIndex]);
-    }
-    playbackState.add(_transformEvent(_player.playbackEvent));
-  }
 
   Future<void> _resolveAndPlay(Track track, {required int index}) async {
     await _player.seek(Duration.zero, index: index);
