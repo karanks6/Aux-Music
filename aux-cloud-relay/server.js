@@ -39,9 +39,9 @@ io.on('connection', (socket) => {
   console.log(`[+] Connected: ${socket.id}`);
 
   // ── Host Creates a Room ──────────────────────────────────────────
-  socket.on('create_room', (_, callback) => {
-    const roomId = generateRoomCode();
-    rooms[roomId] = {
+  socket.on('create_room', (roomId, callback) => {
+    const code = typeof roomId === 'string' ? roomId.trim().toUpperCase() : generateRoomCode();
+    rooms[code] = {
       host: socket.id,
       guests: new Set(),
       queue: [],
@@ -50,11 +50,11 @@ io.on('connection', (socket) => {
       position: 0,
       timestamp: Date.now(),
     };
-    socket.join(roomId);
-    socket.data.roomId = roomId;
+    socket.join(code);
+    socket.data.roomId = code;
     socket.data.isHost = true;
-    console.log(`[Host] ${socket.id} created room: ${roomId}`);
-    if (callback) callback({ success: true, roomId });
+    console.log(`[Host] ${socket.id} created room: ${code}`);
+    if (typeof callback === 'function') callback({ success: true, roomId: code });
   });
 
   // ── Guest Joins a Room ───────────────────────────────────────────
