@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../../services/pass_the_aux_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
@@ -161,50 +163,61 @@ class _LandingView extends ConsumerWidget {
                       ),
           ),
 
-          if (state.isConnected) ...[
-            const SizedBox(height: 8),
+          // ── Action Cards (always visible) ──
+          const SizedBox(height: 8),
 
-            // ── Host Card ──
-            _ActionCard(
-              icon: Icons.wifi_tethering_rounded,
-              iconColor: AuxColors.ember,
-              title: 'Host a Party',
-              subtitle: 'Open a room and share your code. Friends add songs to your queue from their phones.',
-              onTap: () => notifier.createRoom(),
-              accentColor: AuxColors.ember,
-            ),
+          // ── Host Card ──
+          _ActionCard(
+            icon: Icons.wifi_tethering_rounded,
+            iconColor: AuxColors.ember,
+            title: 'Host a Party',
+            subtitle: 'Create a room instantly. Share the code with friends so they can add songs.',
+            onTap: () => notifier.createRoom(),
+            accentColor: AuxColors.ember,
+          ),
 
-            const SizedBox(height: AuxSpacing.md),
+          const SizedBox(height: AuxSpacing.md),
 
-            // ── Join Card ──
-            AnimatedSize(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeOut,
-              child: Column(
-                children: [
-                  _ActionCard(
-                    icon: Icons.group_add_rounded,
-                    iconColor: AuxColors.signalTeal,
-                    title: 'Join a Party',
-                    subtitle: 'Enter a room code to join a friend\'s session and listen along.',
-                    onTap: onToggleJoin,
-                    accentColor: AuxColors.signalTeal,
-                    trailing: Icon(
-                      showJoinInput ? Icons.expand_less : Icons.expand_more,
-                      color: AuxColors.paperMuted,
-                    ),
+          // ── Join Card ──
+          AnimatedSize(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+            child: Column(
+              children: [
+                _ActionCard(
+                  icon: Icons.group_add_rounded,
+                  iconColor: AuxColors.signalTeal,
+                  title: 'Join a Party',
+                  subtitle: state.isConnected
+                      ? 'Enter a room code to join a friend\'s session.'
+                      : 'Connecting to server…',
+                  onTap: state.isConnected ? onToggleJoin : null,
+                  accentColor: AuxColors.signalTeal,
+                  trailing: state.isConnected
+                      ? Icon(
+                          showJoinInput ? Icons.expand_less : Icons.expand_more,
+                          color: AuxColors.paperMuted,
+                        )
+                      : const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AuxColors.signalTeal,
+                          ),
+                        ),
+                ),
+                if (showJoinInput) ...[
+                  const SizedBox(height: AuxSpacing.sm),
+                  _JoinInputCard(
+                    controller: joinCodeController,
+                    onJoin: (code) => notifier.joinRoom(code),
                   ),
-                  if (showJoinInput) ...[
-                    const SizedBox(height: AuxSpacing.sm),
-                    _JoinInputCard(
-                      controller: joinCodeController,
-                      onJoin: (code) => notifier.joinRoom(code),
-                    ),
-                  ],
                 ],
-              ),
+              ],
             ),
-          ],
+          ),
+
 
           if (!state.isConnected && !state.isConnecting) ...[
             const SizedBox(height: AuxSpacing.xl),
@@ -644,58 +657,88 @@ class _ActionCard extends StatelessWidget {
   final Color iconColor;
   final String title;
   final String subtitle;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;  // nullable — null disables the card
   final Color accentColor;
   final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
+    final disabled = onTap == null;
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(AuxSpacing.lg),
-        decoration: BoxDecoration(
-          color: AuxColors.inkRaised,
-          borderRadius: BorderRadius.circular(AuxSpacing.radiusCard),
-          border: Border.all(color: accentColor.withValues(alpha: 0.2)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: iconColor.withValues(alpha: 0.15),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: iconColor, size: 24),
+      child: AnimatedOpacity(
+        opacity: disabled ? 0.5 : 1.0,
+        duration: const Duration(milliseconds: 200),
+        child: Container(
+          padding: const EdgeInsets.all(AuxSpacing.lg),
+          decoration: BoxDecoration(
+            color: AuxColors.inkRaised,
+            borderRadius: BorderRadius.circular(AuxSpacing.radiusCard),
+            border: Border.all(
+              color: disabled
+                  ? AuxColors.hairline
+                  : accentColor.withValues(alpha: 0.2),
             ),
-            const SizedBox(width: AuxSpacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: AuxTypography.titleMd.copyWith(color: AuxColors.paper)),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: AuxTypography.caption.copyWith(color: AuxColors.paperMuted),
-                  ),
-                ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: iconColor.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: iconColor, size: 24),
               ),
-            ),
-            if (trailing != null) trailing!,
-          ],
+              const SizedBox(width: AuxSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: AuxTypography.titleMd.copyWith(color: AuxColors.paper)),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: AuxTypography.caption.copyWith(color: AuxColors.paperMuted),
+                    ),
+                  ],
+                ),
+              ),
+              if (trailing != null) trailing!,
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _JoinInputCard extends StatelessWidget {
+class _JoinInputCard extends StatefulWidget {
   const _JoinInputCard({required this.controller, required this.onJoin});
   final TextEditingController controller;
   final Function(String) onJoin;
+
+  @override
+  State<_JoinInputCard> createState() => _JoinInputCardState();
+}
+
+class _JoinInputCardState extends State<_JoinInputCard>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabCtrl = TabController(length: 2, vsync: this);
+    _tabCtrl.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _tabCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -708,54 +751,156 @@ class _JoinInputCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          TextField(
-            controller: controller,
-            style: AuxTypography.titleMd.copyWith(
-              color: AuxColors.paper,
-              letterSpacing: 4,
+          // ── Tab bar ──
+          Container(
+            height: 38,
+            decoration: BoxDecoration(
+              color: AuxColors.ink,
+              borderRadius: BorderRadius.circular(10),
             ),
-            keyboardType: TextInputType.text,
-            textCapitalization: TextCapitalization.characters,
-            textAlign: TextAlign.center,
-            decoration: InputDecoration(
-              hintText: 'A3F91C',
-              hintStyle: AuxTypography.titleMd.copyWith(
-                color: AuxColors.paperMuted.withValues(alpha: 0.4),
-                letterSpacing: 4,
+            child: TabBar(
+              controller: _tabCtrl,
+              indicator: BoxDecoration(
+                color: AuxColors.signalTeal,
+                borderRadius: BorderRadius.circular(8),
               ),
-              filled: true,
-              fillColor: AuxColors.ink,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: AuxSpacing.md, vertical: 14),
+              indicatorSize: TabBarIndicatorSize.tab,
+              labelColor: AuxColors.ink,
+              unselectedLabelColor: AuxColors.paperMuted,
+              labelStyle: AuxTypography.captionMedium,
+              dividerColor: Colors.transparent,
+              tabs: const [
+                Tab(text: 'Enter Code'),
+                Tab(text: 'Scan QR'),
+              ],
             ),
           ),
+
           const SizedBox(height: AuxSpacing.sm),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {
-                if (controller.text.trim().isNotEmpty) {
-                  onJoin(controller.text.trim());
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AuxColors.signalTeal,
-                foregroundColor: AuxColors.ink,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                elevation: 0,
-              ),
-              child: Text('Join Room', style: AuxTypography.button.copyWith(color: AuxColors.ink)),
-            ),
+
+          // ── Tab content ──
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            child: _tabCtrl.index == 0
+                ? _EnterCodeTab(
+                    key: const ValueKey('enter'),
+                    controller: widget.controller,
+                    onJoin: widget.onJoin,
+                  )
+                : _ScanQrTab(
+                    key: const ValueKey('scan'),
+                    onJoin: widget.onJoin,
+                  ),
           ),
         ],
       ),
     );
   }
 }
+
+// ── Enter Code tab ──
+class _EnterCodeTab extends StatelessWidget {
+  const _EnterCodeTab({super.key, required this.controller, required this.onJoin});
+  final TextEditingController controller;
+  final Function(String) onJoin;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        TextField(
+          controller: controller,
+          style: AuxTypography.titleMd.copyWith(
+            color: AuxColors.paper,
+            letterSpacing: 4,
+          ),
+          keyboardType: TextInputType.text,
+          textCapitalization: TextCapitalization.characters,
+          textAlign: TextAlign.center,
+          decoration: InputDecoration(
+            hintText: 'A3F91C',
+            hintStyle: AuxTypography.titleMd.copyWith(
+              color: AuxColors.paperMuted.withValues(alpha: 0.4),
+              letterSpacing: 4,
+            ),
+            filled: true,
+            fillColor: AuxColors.ink,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: AuxSpacing.md, vertical: 14),
+          ),
+        ),
+        const SizedBox(height: AuxSpacing.sm),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: () {
+              if (controller.text.trim().isNotEmpty) {
+                onJoin(controller.text.trim());
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AuxColors.signalTeal,
+              foregroundColor: AuxColors.ink,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              elevation: 0,
+            ),
+            child:
+                Text('Join Room', style: AuxTypography.button.copyWith(color: AuxColors.ink)),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Scan QR tab ──
+class _ScanQrTab extends StatelessWidget {
+  const _ScanQrTab({super.key, required this.onJoin});
+  final Function(String) onJoin;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: () => _openScanner(context),
+        icon: const Icon(Icons.qr_code_scanner_rounded, size: 20),
+        label: Text('Open Camera Scanner',
+            style: AuxTypography.button.copyWith(color: AuxColors.ink)),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AuxColors.signalTeal,
+          foregroundColor: AuxColors.ink,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          elevation: 0,
+        ),
+      ),
+    );
+  }
+
+  void _openScanner(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AuxColors.inkRaised,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => _QrScannerSheet(
+        onScanned: (code) {
+          Navigator.pop(context);
+          onJoin(code);
+        },
+      ),
+    );
+  }
+}
+
 
 class _PrimaryButton extends StatelessWidget {
   const _PrimaryButton({required this.label, required this.icon, required this.onTap});
@@ -783,103 +928,180 @@ class _PrimaryButton extends StatelessWidget {
   }
 }
 
-class _FeatureRow extends StatelessWidget {
-  const _FeatureRow({
-    required this.icon,
-    required this.color,
-    required this.title,
-    required this.desc,
-  });
 
-  final IconData icon;
-  final Color color;
-  final String title;
-  final String desc;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, color: color, size: 22),
-        const SizedBox(width: AuxSpacing.sm),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: AuxTypography.bodySemiBold.copyWith(color: AuxColors.paper)),
-              const SizedBox(height: 2),
-              Text(desc, style: AuxTypography.caption.copyWith(color: AuxColors.paperMuted)),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _RoomCodeCard extends StatelessWidget {
+class _RoomCodeCard extends StatefulWidget {
   const _RoomCodeCard({required this.roomId});
   final String roomId;
 
   @override
+  State<_RoomCodeCard> createState() => _RoomCodeCardState();
+}
+
+class _RoomCodeCardState extends State<_RoomCodeCard> {
+  bool _showQr = false;
+
+  @override
   Widget build(BuildContext context) {
+    // QR data: AUX-XXXXXX — scanned by guests to auto-fill the code
+    final qrData = 'AUX-${widget.roomId}';
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AuxSpacing.lg, vertical: AuxSpacing.md),
+      padding: const EdgeInsets.all(AuxSpacing.lg),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AuxColors.ember.withValues(alpha: 0.15),
-            AuxColors.ember.withValues(alpha: 0.05),
+            AuxColors.ember.withValues(alpha: 0.18),
+            AuxColors.ember.withValues(alpha: 0.06),
           ],
         ),
         borderRadius: BorderRadius.circular(AuxSpacing.radiusCard),
-        border: Border.all(color: AuxColors.ember.withValues(alpha: 0.35), width: 1.5),
+        border: Border.all(color: AuxColors.ember.withValues(alpha: 0.4), width: 1.5),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          // ── Code + Buttons row ──
+          Row(
             children: [
-              Text(
-                'ROOM CODE',
-                style: AuxTypography.buttonSm.copyWith(
-                  letterSpacing: 2,
-                  color: AuxColors.paperMuted,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'ROOM CODE',
+                      style: AuxTypography.buttonSm.copyWith(
+                        letterSpacing: 2.5,
+                        color: AuxColors.paperMuted,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      widget.roomId,
+                      style: AuxTypography.display.copyWith(
+                        letterSpacing: 8,
+                        fontSize: 30,
+                        color: AuxColors.ember,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Share this code with friends',
+                      style: AuxTypography.caption.copyWith(color: AuxColors.paperMuted),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                roomId,
-                style: AuxTypography.display.copyWith(
-                  letterSpacing: 6,
-                  color: AuxColors.ember,
-                ),
+              const SizedBox(width: AuxSpacing.sm),
+              // Copy button
+              _IconBtn(
+                icon: Icons.copy_rounded,
+                color: AuxColors.ember,
+                tooltip: 'Copy code',
+                onTap: () {
+                  Clipboard.setData(ClipboardData(text: widget.roomId));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Room code copied!',
+                          style: AuxTypography.body.copyWith(color: AuxColors.paper)),
+                      backgroundColor: AuxColors.inkRaised,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(width: AuxSpacing.xs),
+              // QR toggle button
+              _IconBtn(
+                icon: _showQr ? Icons.qr_code_2_rounded : Icons.qr_code_rounded,
+                color: AuxColors.ember,
+                tooltip: _showQr ? 'Hide QR code' : 'Show QR code',
+                onTap: () => setState(() => _showQr = !_showQr),
               ),
             ],
           ),
-          const Spacer(),
-          IconButton.filled(
-            onPressed: () {
-              Clipboard.setData(ClipboardData(text: roomId));
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Room code copied!',
-                      style: AuxTypography.body.copyWith(color: AuxColors.paper)),
-                  backgroundColor: AuxColors.inkRaised,
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  duration: const Duration(seconds: 2),
-                ),
-              );
-            },
-            icon: const Icon(Icons.copy_rounded, size: 18),
-            style: IconButton.styleFrom(
-              backgroundColor: AuxColors.ember.withValues(alpha: 0.2),
-              foregroundColor: AuxColors.ember,
-            ),
+
+          // ── QR Code (animated expand) ──
+          AnimatedSize(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+            child: _showQr
+                ? Padding(
+                    padding: const EdgeInsets.only(top: AuxSpacing.lg),
+                    child: Center(
+                      child: Column(
+                        children: [
+                          // QrImageView generates QR locally — no internet needed
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.all(8),
+                            child: QrImageView(
+                              data: qrData,
+                              version: QrVersions.auto,
+                              size: 180,
+                              gapless: false,
+                              eyeStyle: const QrEyeStyle(
+                                eyeShape: QrEyeShape.square,
+                                color: Colors.black,
+                              ),
+                              dataModuleStyle: const QrDataModuleStyle(
+                                dataModuleShape: QrDataModuleShape.square,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: AuxSpacing.sm),
+                          Text(
+                            'Friends scan this to join',
+                            style: AuxTypography.caption
+                                .copyWith(color: AuxColors.paperMuted),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : const SizedBox.shrink(),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// Small icon button helper
+class _IconBtn extends StatelessWidget {
+  const _IconBtn({
+    required this.icon,
+    required this.color,
+    required this.onTap,
+    this.tooltip = '',
+  });
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+  final String tooltip;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.15),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: color, size: 18),
+        ),
       ),
     );
   }
@@ -1178,29 +1400,34 @@ class _EmptyQueuePlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AuxSpacing.xxxl),
-      child: Column(
-        children: [
-          Icon(
-            isHost ? Icons.queue_music_rounded : Icons.music_note_rounded,
-            color: AuxColors.hairline,
-            size: 48,
-          ),
-          const SizedBox(height: AuxSpacing.md),
-          Text(
-            isHost ? 'Queue is empty' : 'Nothing queued yet',
-            style: AuxTypography.bodyLg.copyWith(color: AuxColors.paperMuted),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            isHost
-                ? 'Guests can add songs from anywhere in the app.'
-                : 'Tap "Add a Song" above to suggest one.',
-            style: AuxTypography.caption.copyWith(color: AuxColors.paperMuted),
-            textAlign: TextAlign.center,
-          ),
-        ],
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AuxSpacing.xl),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Icon(
+              isHost ? Icons.queue_music_rounded : Icons.music_note_rounded,
+              color: AuxColors.hairline,
+              size: 56,
+            ),
+            const SizedBox(height: AuxSpacing.md),
+            Text(
+              isHost ? 'Queue is empty' : 'Nothing queued yet',
+              style: AuxTypography.titleMd.copyWith(color: AuxColors.paperMuted),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              isHost
+                  ? 'Guests can add songs from anywhere in the app.'
+                  : 'Tap "Add a Song" above to suggest one.',
+              style: AuxTypography.caption.copyWith(color: AuxColors.paperMuted),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1341,3 +1568,135 @@ class _FeatureCard extends StatelessWidget {
   }
 }
 
+// ── QR Code Scanner Sheet ──────────────────────────────────────────────────────
+
+class _QrScannerSheet extends StatefulWidget {
+  const _QrScannerSheet({required this.onScanned});
+  final Function(String code) onScanned;
+
+  @override
+  State<_QrScannerSheet> createState() => _QrScannerSheetState();
+}
+
+class _QrScannerSheetState extends State<_QrScannerSheet> {
+  late final MobileScannerController _ctrl;
+  bool _scanned = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = MobileScannerController(
+      detectionSpeed: DetectionSpeed.noDuplicates,
+    );
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  void _onDetect(BarcodeCapture capture) {
+    if (_scanned) return;
+    for (final barcode in capture.barcodes) {
+      final raw = barcode.rawValue;
+      if (raw != null) {
+        // Accept "AUX-XXXXXX" (our QR format) or plain "XXXXXX"
+        final code = raw.startsWith('AUX-') ? raw.substring(4) : raw;
+        if (code.trim().length == 6) {
+          _scanned = true;
+          widget.onScanned(code.trim().toUpperCase());
+          return;
+        }
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: MediaQuery.of(context).size.height * 0.62,
+      child: Column(
+        children: [
+          // Handle bar
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AuxColors.hairline,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+
+          Padding(
+            padding: const EdgeInsets.fromLTRB(AuxSpacing.lg, 0, AuxSpacing.sm, 0),
+            child: Row(
+              children: [
+                Text('Scan QR Code',
+                    style: AuxTypography.titleMd.copyWith(color: AuxColors.paper)),
+                const Spacer(),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close_rounded, color: AuxColors.paperMuted),
+                ),
+              ],
+            ),
+          ),
+
+          Padding(
+            padding: const EdgeInsets.only(bottom: AuxSpacing.md),
+            child: Text(
+              'Point at the host\'s QR code to join instantly',
+              style: AuxTypography.caption.copyWith(color: AuxColors.paperMuted),
+            ),
+          ),
+
+          // Camera view with teal aim overlay
+          Expanded(
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
+              child: Stack(
+                children: [
+                  MobileScanner(controller: _ctrl, onDetect: _onDetect),
+                  Center(
+                    child: Container(
+                      width: 220,
+                      height: 220,
+                      decoration: BoxDecoration(
+                        border: Border.all(color: AuxColors.signalTeal, width: 2.5),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: AuxSpacing.xl,
+                    left: 0,
+                    right: 0,
+                    child: Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: AuxSpacing.md, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: AuxColors.inkRaised.withValues(alpha: 0.85),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          'Searching for QR code…',
+                          style: AuxTypography.caption
+                              .copyWith(color: AuxColors.signalTeal),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
