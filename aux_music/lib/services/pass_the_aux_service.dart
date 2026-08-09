@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import '../../data/models/track.dart';
@@ -16,6 +17,7 @@ class PassTheAuxState {
   final bool isPlaying;
   final String? error;
   final bool isSyncModeEnabled;
+  final bool isCreatingRoom; // loading state for host button
 
   // Synced Audio position fields
   final int? position;
@@ -32,6 +34,7 @@ class PassTheAuxState {
     this.isPlaying = false,
     this.error,
     this.isSyncModeEnabled = false,
+    this.isCreatingRoom = false,
     this.position,
     this.timestamp,
   });
@@ -47,6 +50,7 @@ class PassTheAuxState {
     bool? isPlaying,
     Object? error = _sentinel,
     bool? isSyncModeEnabled,
+    bool? isCreatingRoom,
     int? position,
     int? timestamp,
     bool clearNowPlaying = false,
@@ -62,6 +66,7 @@ class PassTheAuxState {
       isPlaying: isPlaying ?? this.isPlaying,
       error: identical(error, _sentinel) ? this.error : error as String?,
       isSyncModeEnabled: isSyncModeEnabled ?? this.isSyncModeEnabled,
+      isCreatingRoom: isCreatingRoom ?? this.isCreatingRoom,
       position: position ?? this.position,
       timestamp: timestamp ?? this.timestamp,
     );
@@ -181,23 +186,31 @@ class PassTheAuxNotifier extends StateNotifier<PassTheAuxState> {
   // ── Room Management ──────────────────────────────────────────────
 
   void createRoom() {
-    if (!state.isConnected || _socket == null) {
-      state = state.copyWith(error: 'Not connected. Please wait or retry.');
-      return;
-    }
+    // Generate code client-side immediately so the UI responds instantly.
+    // We do NOT wait for a server round-trip — that way the button always works
+    // even on Render cold starts where emitWithAck ack might be delayed.
+    final code = _generateRoomCode();
+    state = state.copyWith(
+      roomId: code,
+      isHost: true,
+      guestCount: 0,
+      isCreatingRoom: false,
+      error: null,
+    );
+    _startHostSyncTimer();
 
-    // Let the server generate the room code to avoid collisions
-    _socket!.emitWithAck('create_room', null, ack: (response) {
-      // socket_io_client Dart wraps ack args in a List — unwrap it
-      final data = _unwrapAck(response);
-      if (data != null && data['success'] == true) {
-        final roomId = data['roomId'] as String;
-        state = state.copyWith(roomId: roomId, isHost: true, guestCount: 0, error: null);
-        _startHostSyncTimer();
-      } else {
-        state = state.copyWith(error: 'Failed to create room. Please try again.');
-      }
-    });
+    // Register room with server in the background (best-effort)
+    if (_socket != null && _socket!.connected) {
+      _socket!.emit('create_room', code);
+    }
+  }
+
+  /// Generate a 6-character alphanumeric room code.
+  /// Uses [Random.secure()] for good randomness — no timestamp bias.
+  String _generateRoomCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no ambiguous chars (0,O,1,I)
+    final rng = Random.secure();
+    return List.generate(6, (_) => chars[rng.nextInt(chars.length)]).join();
   }
 
   void joinRoom(String roomId) {
