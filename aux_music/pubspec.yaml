@@ -74,6 +74,7 @@ dependencies:
   socket_io_client: ^3.1.6
   qr_flutter: ^4.1.0
   mobile_scanner: ^5.2.3
+  google_sign_in: ^6.2.2
   # NOTE: RSS/podcast parsing (dart_rss or similar) will be added in Phase 1
 
   # when the podcast adapter is implemented. Deferred to avoid intl conflicts.

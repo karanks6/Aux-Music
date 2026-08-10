@@ -4,6 +4,8 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/di/providers.dart';
+import 'services/auth_service.dart';
+
 /// Root application widget.
 class AuxApp extends ConsumerWidget {
   const AuxApp({super.key});
@@ -11,6 +13,9 @@ class AuxApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeModeProvider);
+    // Watch auth state so we rebuild when user signs in/out
+    ref.watch(authStateProvider);
+    final router = ref.watch(appRouterProvider);
 
     return MaterialApp.router(
       title: 'Aux',
@@ -22,9 +27,7 @@ class AuxApp extends ConsumerWidget {
       themeMode: themeMode,
 
       // ── Router ──────────────────────────────────────────────────
-      routerConfig: appRouter,
-      
-
+      routerConfig: router,
 
       // ── Localization ────────────────────────────────────────────
       localizationsDelegates: const [
@@ -40,13 +43,11 @@ class AuxApp extends ConsumerWidget {
         Locale('ar'), Locale('ja'), Locale('ko'), Locale('zh'),
       ],
 
-      // ── Builder (media query overrides, system chrome) ──────────
+      // ── Builder (media query overrides) ─────────────────────────
       builder: (context, child) {
-        // Respect system-level text scaling
         final mediaQuery = MediaQuery.of(context);
         return MediaQuery(
           data: mediaQuery.copyWith(
-            // Cap text scale to prevent layout breaks beyond 1.5×
             textScaler: mediaQuery.textScaler.clamp(
               minScaleFactor: 0.85,
               maxScaleFactor: 1.5,
