@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/library_providers.dart';
 import '../../services/download_manager.dart';
+import '../providers/aux_session_provider.dart';
 
 class TrackListTile extends ConsumerWidget {
   const TrackListTile({
@@ -83,7 +84,14 @@ class TrackListTile extends ConsumerWidget {
           ),
         ],
       ),
-      onTap: onTap,
+      onTap: () {
+        final inSession = ref.read(inAuxSessionProvider);
+        if (inSession) {
+          addTrackToAuxSession(ref, track);
+        } else if (onTap != null) {
+          onTap!();
+        }
+      },
     );
   }
 
@@ -101,6 +109,15 @@ class TrackListTile extends ConsumerWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  if (ref.watch(inAuxSessionProvider))
+                    ListTile(
+                      leading: const Icon(Icons.queue_music_rounded, color: AuxColors.ember),
+                      title: Text('Add to Aux Queue', style: AuxTypography.body.copyWith(color: AuxColors.ember)),
+                      onTap: () {
+                        context.pop();
+                        addTrackToAuxSession(ref, track);
+                      },
+                    ),
                   if (onRemove != null)
                     ListTile(
                       leading: const Icon(Icons.remove_circle_outline_rounded, color: AuxColors.danger),

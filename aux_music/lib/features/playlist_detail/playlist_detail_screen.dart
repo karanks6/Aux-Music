@@ -8,6 +8,7 @@ import '../../core/widgets/track_list_tile.dart';
 import '../../core/playback/playback_providers.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/router/app_router.dart';
+import '../../core/providers/aux_session_provider.dart';
 
 class PlaylistDetailScreen extends ConsumerWidget {
   const PlaylistDetailScreen({super.key, required this.playlistId});
@@ -108,10 +109,32 @@ class PlaylistDetailScreen extends ConsumerWidget {
                                   ],
                                 ),
                               );
-                            }
-                          },
-                          itemBuilder: (context) => [
-                            PopupMenuItem(
+                              } else if (val == 'add_to_aux') {
+                                if (asyncTracks.hasValue) {
+                                  for (final track in asyncTracks.value!) {
+                                    addTrackToAuxSession(ref, track);
+                                  }
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Added ${asyncTracks.value!.length} tracks to party queue')),
+                                  );
+                                }
+                              }
+                            },
+                            itemBuilder: (context) {
+                              final inSession = ref.watch(inAuxSessionProvider);
+                              return [
+                                if (inSession)
+                                  PopupMenuItem(
+                                    value: 'add_to_aux',
+                                    child: Row(
+                                      children: [
+                                        const Icon(Icons.queue_music_rounded, color: AuxColors.ember, size: 20),
+                                        const SizedBox(width: AuxSpacing.sm),
+                                        Text('Add to Aux Queue', style: AuxTypography.body.copyWith(color: AuxColors.ember)),
+                                      ],
+                                    ),
+                                  ),
+                                PopupMenuItem(
                               value: 'rename',
                               child: Row(
                                 children: [

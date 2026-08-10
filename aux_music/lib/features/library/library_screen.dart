@@ -8,6 +8,7 @@ import '../../core/widgets/track_list_tile.dart';
 import '../../core/playback/playback_providers.dart';
 import '../../services/download_manager.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/providers/aux_session_provider.dart';
 import '../../core/router/app_router.dart';
 import '../../data/models/track.dart';
 import '../../data/models/license_type.dart';
@@ -254,6 +255,11 @@ class _PlaylistsView extends ConsumerWidget {
               title: Text(p.name, style: AuxTypography.body.copyWith(color: AuxColors.paper)),
               subtitle: Text(p.description ?? '', maxLines: 1, overflow: TextOverflow.ellipsis, style: AuxTypography.caption.copyWith(color: AuxColors.paperMuted)),
               onTap: () => context.push('/playlist/${p.id}'),
+              onLongPress: () {
+                if (ref.read(inAuxSessionProvider)) {
+                  _showPlaylistOptions(context, ref, int.parse(p.id));
+                }
+              },
             );
           },
         );
@@ -262,16 +268,50 @@ class _PlaylistsView extends ConsumerWidget {
       error: (e, _) => Center(child: Text('Error: $e', style: const TextStyle(color: AuxColors.danger))),
     );
   }
+
+void _showPlaylistOptions(BuildContext context, WidgetRef ref, int playlistId) async {
+  final tracks = await ref.read(libraryRepositoryProvider).getPlaylistTracks(playlistId);
+  if (!context.mounted) return;
+  
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: AuxColors.inkRaised,
+    builder: (_) => SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.queue_music_rounded, color: AuxColors.ember),
+            title: Text('Add playlist to Aux Queue', style: AuxTypography.body.copyWith(color: AuxColors.ember)),
+            onTap: () {
+              for (final track in tracks) {
+                addTrackToAuxSession(ref, track);
+              }
+              context.pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Added ${tracks.length} tracks to party queue')),
+              );
+            },
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
-class _PlaylistCard extends StatelessWidget {
+class _PlaylistCard extends ConsumerWidget {
   final dynamic playlist;
   const _PlaylistCard({required this.playlist});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
       onTap: () => context.push('/playlist/${playlist.id}'),
+      onLongPress: () {
+        if (ref.read(inAuxSessionProvider)) {
+          _showPlaylistOptions(context, ref, int.parse(playlist.id));
+        }
+      },
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
