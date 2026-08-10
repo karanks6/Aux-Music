@@ -154,10 +154,11 @@ class PlaylistDetailScreen extends ConsumerWidget {
                                 ],
                               ),
                             ),
-                          ],
-                        ),
-                      ],
-                    ),
+                          ];
+                        },
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: AuxSpacing.xl),
                   if (asyncTracks.hasValue && asyncTracks.value!.isNotEmpty)
                     Row(

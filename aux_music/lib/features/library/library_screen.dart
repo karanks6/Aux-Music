@@ -268,6 +268,7 @@ class _PlaylistsView extends ConsumerWidget {
       error: (e, _) => Center(child: Text('Error: $e', style: const TextStyle(color: AuxColors.danger))),
     );
   }
+}
 
 void _showPlaylistOptions(BuildContext context, WidgetRef ref, int playlistId) async {
   final tracks = await ref.read(libraryRepositoryProvider).getPlaylistTracks(playlistId);
@@ -301,7 +302,7 @@ void _showPlaylistOptions(BuildContext context, WidgetRef ref, int playlistId) a
 
 class _PlaylistCard extends ConsumerWidget {
   final dynamic playlist;
-  const _PlaylistCard({required this.playlist});
+  const _PlaylistCard({super.key, required this.playlist});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

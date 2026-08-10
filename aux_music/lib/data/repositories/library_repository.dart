@@ -129,6 +129,14 @@ class LibraryRepository {
         .map((rows) => rows.map((r) => Track.fromJson(jsonDecode(r.trackJson) as Map<String, dynamic>)).toList());
   }
 
+  Future<List<Track>> getPlaylistTracks(int playlistId) async {
+    final rows = await (_db.select(_db.playlistTracks)
+          ..where((pt) => pt.playlistId.equals(playlistId))
+          ..orderBy([(pt) => OrderingTerm(expression: pt.sortOrder, mode: OrderingMode.asc)]))
+        .get();
+    return rows.map((r) => Track.fromJson(jsonDecode(r.trackJson) as Map<String, dynamic>)).toList();
+  }
+
   Future<void> addTrackToPlaylist(int playlistId, Track track) async {
     // Get max sort order
     final maxSort = _db.playlistTracks.sortOrder.max();
