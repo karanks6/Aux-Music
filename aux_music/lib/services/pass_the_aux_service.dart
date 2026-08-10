@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import '../../data/models/track.dart';
+import 'auth_service.dart';
 
 // ── State ──────────────────────────────────────────────────────────────────
 
@@ -12,12 +13,13 @@ class PassTheAuxState {
   final String? roomId;
   final bool isHost;
   final int guestCount;
+  final List<String> guestNames; // NEW: display names of connected guests
   final List<Track> sharedQueue;
   final Track? nowPlaying;
   final bool isPlaying;
   final String? error;
   final bool isSyncModeEnabled;
-  final bool isCreatingRoom; // loading state for host button
+  final bool isCreatingRoom;
 
   // Synced Audio position fields
   final int? position;
@@ -29,6 +31,7 @@ class PassTheAuxState {
     this.roomId,
     this.isHost = false,
     this.guestCount = 0,
+    this.guestNames = const [],
     this.sharedQueue = const [],
     this.nowPlaying,
     this.isPlaying = false,
@@ -45,6 +48,7 @@ class PassTheAuxState {
     String? roomId,
     bool? isHost,
     int? guestCount,
+    List<String>? guestNames,
     List<Track>? sharedQueue,
     Track? nowPlaying,
     bool? isPlaying,
@@ -61,6 +65,7 @@ class PassTheAuxState {
       roomId: roomId ?? this.roomId,
       isHost: isHost ?? this.isHost,
       guestCount: guestCount ?? this.guestCount,
+      guestNames: guestNames ?? this.guestNames,
       sharedQueue: sharedQueue ?? this.sharedQueue,
       nowPlaying: clearNowPlaying ? null : (nowPlaying ?? this.nowPlaying),
       isPlaying: isPlaying ?? this.isPlaying,
@@ -90,9 +95,11 @@ class PassTheAuxNotifier extends StateNotifier<PassTheAuxState> {
   final _guestTrackController = StreamController<Track>.broadcast();
   Stream<Track> get onGuestAddedTrack => _guestTrackController.stream;
 
-  // Stream: guest track added confirmation (for snackbar etc.)
+  // Stream: confirmation messages (for snackbar etc.)
   final _trackAddedController = StreamController<String>.broadcast();
   Stream<String> get onTrackAddedConfirmation => _trackAddedController.stream;
+
+  String get _displayName => ref.read(authServiceProvider).displayName;
 
   // ── Connect ──────────────────────────────────────────────────────
 
@@ -125,7 +132,7 @@ class PassTheAuxNotifier extends StateNotifier<PassTheAuxState> {
       );
     });
 
-    // ── Event Listeners ──────────────────────────────────────────
+    // ── Event Listeners ────────────────────────────────────────
 
     _socket!.on('guest_added_track', (data) {
       if (data is Map) {
@@ -160,6 +167,18 @@ class PassTheAuxNotifier extends StateNotifier<PassTheAuxState> {
       }
     });
 
+    // NEW: guest_list_changed replaces guest_count_changed
+    _socket!.on('guest_list_changed', (data) {
+      if (data is Map) {
+        final names = (data['guests'] as List?)?.map((e) => e.toString()).toList() ?? [];
+        state = state.copyWith(
+          guestCount: data['count'] as int? ?? names.length,
+          guestNames: names,
+        );
+      }
+    });
+
+    // Fallback for old servers that still send guest_count_changed
     _socket!.on('guest_count_changed', (data) {
       if (data is Map) {
         state = state.copyWith(guestCount: data['count'] as int? ?? state.guestCount);
@@ -175,7 +194,6 @@ class PassTheAuxNotifier extends StateNotifier<PassTheAuxState> {
       );
     });
 
-    // Server asks us (as host) to re-broadcast state immediately
     _socket!.on('sync_requested', (_) {
       _broadcastHostState();
     });
@@ -186,29 +204,27 @@ class PassTheAuxNotifier extends StateNotifier<PassTheAuxState> {
   // ── Room Management ──────────────────────────────────────────────
 
   void createRoom() {
-    // Generate code client-side immediately so the UI responds instantly.
-    // We do NOT wait for a server round-trip — that way the button always works
-    // even on Render cold starts where emitWithAck ack might be delayed.
     final code = _generateRoomCode();
     state = state.copyWith(
       roomId: code,
       isHost: true,
       guestCount: 0,
+      guestNames: const [],
       isCreatingRoom: false,
       error: null,
     );
     _startHostSyncTimer();
 
-    // Register room with server in the background (best-effort)
     if (_socket != null && _socket!.connected) {
-      _socket!.emit('create_room', code);
+      _socket!.emit('create_room', {
+        'roomId': code,
+        'hostName': _displayName,
+      });
     }
   }
 
-  /// Generate a 6-character alphanumeric room code.
-  /// Uses [Random.secure()] for good randomness — no timestamp bias.
   String _generateRoomCode() {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no ambiguous chars (0,O,1,I)
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     final rng = Random.secure();
     return List.generate(6, (_) => chars[rng.nextInt(chars.length)]).join();
   }
@@ -220,42 +236,44 @@ class PassTheAuxNotifier extends StateNotifier<PassTheAuxState> {
     }
     final code = roomId.trim().toUpperCase();
 
-    _socket!.emitWithAck('join_room', code, ack: (response) {
-      // socket_io_client Dart wraps ack args in a List — unwrap it
-      final data = _unwrapAck(response);
-      if (data != null && data['success'] == true) {
-        final newQueue = (data['queue'] as List?)
-                ?.map((json) => Track.fromJson((json as Map).cast<String, dynamic>()))
-                .toList() ??
-            [];
-        final nowPlaying = data['nowPlaying'] != null
-            ? Track.fromJson((data['nowPlaying'] as Map).cast<String, dynamic>())
-            : null;
+    _socket!.emitWithAck(
+      'join_room',
+      {'roomId': code, 'displayName': _displayName},
+      ack: (response) {
+        final data = _unwrapAck(response);
+        if (data != null && data['success'] == true) {
+          final newQueue = (data['queue'] as List?)
+                  ?.map((json) =>
+                      Track.fromJson((json as Map).cast<String, dynamic>()))
+                  .toList() ??
+              [];
+          final nowPlaying = data['nowPlaying'] != null
+              ? Track.fromJson(
+                  (data['nowPlaying'] as Map).cast<String, dynamic>())
+              : null;
 
-        state = state.copyWith(
-          roomId: code,
-          isHost: false,
-          sharedQueue: newQueue,
-          nowPlaying: nowPlaying,
-          isPlaying: data['isPlaying'] == true,
-          position: data['position'] as int?,
-          timestamp: data['timestamp'] as int?,
-          guestCount: data['guestCount'] as int? ?? 0,
-          error: null,
-        );
-        // Request immediate re-sync so we jump to the right position
-        requestSync();
-      } else {
-        state = state.copyWith(
-          error: data?['error'] as String? ?? 'Room not found. Check the code and try again.',
-        );
-      }
-    });
+          state = state.copyWith(
+            roomId: code,
+            isHost: false,
+            sharedQueue: newQueue,
+            nowPlaying: nowPlaying,
+            isPlaying: data['isPlaying'] == true,
+            position: data['position'] as int?,
+            timestamp: data['timestamp'] as int?,
+            guestCount: data['guestCount'] as int? ?? 0,
+            error: null,
+          );
+          requestSync();
+        } else {
+          state = state.copyWith(
+            error: data?['error'] as String? ??
+                'Room not found. Check the code and try again.',
+          );
+        }
+      },
+    );
   }
 
-  /// socket_io_client Dart's emitWithAck passes ack args as a List.
-  /// The actual response object is the first element.
-  /// This helper safely unwraps both [Map] and [List<Map>] responses.
   Map<String, dynamic>? _unwrapAck(dynamic response) {
     if (response is Map<String, dynamic>) return response;
     if (response is Map) return response.cast<String, dynamic>();
@@ -277,17 +295,33 @@ class PassTheAuxNotifier extends StateNotifier<PassTheAuxState> {
 
   // ── Track Management ─────────────────────────────────────────────
 
+  /// Guest adds a track to the shared queue.
   void addTrack(Track track) {
     if (state.roomId == null || _socket == null) return;
     _socket!.emit('add_track', {
       'roomId': state.roomId,
       'track': track.toJson(),
-      'guestName': 'Guest',
+      'guestName': _displayName,
     });
-    // Optimistic confirmation for guest
+    // Optimistic update for guest (so queue updates instantly)
     if (!state.isHost) {
-      _trackAddedController.add('Added "${track.title}" to the host\'s queue!');
+      final newQueue = [...state.sharedQueue, track];
+      state = state.copyWith(sharedQueue: newQueue);
+      _trackAddedController.add('Added "${track.title}" to the party queue!');
     }
+  }
+
+  /// Host adds a track directly to the room queue.
+  void addTrackAsHost(Track track) {
+    if (!state.isHost || state.roomId == null || _socket == null) return;
+    _socket!.emit('add_track_by_host', {
+      'roomId': state.roomId,
+      'track': track.toJson(),
+    });
+    // Optimistic update
+    final newQueue = [...state.sharedQueue, track];
+    state = state.copyWith(sharedQueue: newQueue);
+    _trackAddedController.add('Added "${track.title}" to the queue!');
   }
 
   void kickTrack(int index) {
@@ -330,16 +364,13 @@ class PassTheAuxNotifier extends StateNotifier<PassTheAuxState> {
   }
 
   void _broadcastHostState() {
-    // Called by audio_handler to push current state
-    // This method is intentionally a no-op here; the audio handler calls hostSyncState directly
+    // No-op: audio_handler calls hostSyncState directly
   }
 
   void _startHostSyncTimer() {
     _hostSyncTimer?.cancel();
-    // Host broadcasts position every 5 seconds so guests can correct drift
     _hostSyncTimer = Timer.periodic(const Duration(seconds: 5), (_) {
-      // audio_handler will call hostSyncState — we just need to trigger it
-      // The timer itself is managed in audio_handler via listening to passTheAuxProvider
+      // audio_handler drives the actual sync
     });
   }
 

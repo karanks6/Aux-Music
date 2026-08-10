@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../../services/pass_the_aux_service.dart';
+import '../../services/auth_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_spacing.dart';
@@ -339,13 +340,14 @@ class _InRoomView extends StatelessWidget {
 
 // ── Host Room View ────────────────────────────────────────────────────────────
 
-class _HostRoomView extends StatelessWidget {
+class _HostRoomView extends ConsumerWidget {
   const _HostRoomView({required this.state, required this.notifier});
   final PassTheAuxState state;
   final PassTheAuxNotifier notifier;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final displayName = ref.watch(authServiceProvider).displayName;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -355,12 +357,24 @@ class _HostRoomView extends StatelessWidget {
           child: Row(
             children: [
               Expanded(
-                child: Text(
-                  'Pass the Aux',
-                  style: AuxTypography.display.copyWith(color: AuxColors.paper, fontSize: 26),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Pass the Aux',
+                      style: AuxTypography.display.copyWith(color: AuxColors.paper, fontSize: 26),
+                    ),
+                    Text(
+                      'Hosting as $displayName',
+                      style: AuxTypography.caption.copyWith(color: AuxColors.paperMuted),
+                    ),
+                  ],
                 ),
               ),
-              _GuestCountBadge(count: state.guestCount),
+              _GuestCountBadge(
+                count: state.guestCount,
+                guestNames: state.guestNames,
+              ),
               const SizedBox(width: AuxSpacing.sm),
               TextButton.icon(
                 onPressed: () => notifier.leaveRoom(),
@@ -415,9 +429,17 @@ class _HostRoomView extends StatelessWidget {
                 ),
               ],
               const Spacer(),
-              Text(
-                'Swipe to remove',
-                style: AuxTypography.caption.copyWith(color: AuxColors.paperMuted),
+              // ── Add Song button for host ──
+              TextButton.icon(
+                onPressed: () => context.push(AppRoutes.search),
+                icon: const Icon(Icons.add_rounded, size: 16, color: AuxColors.ember),
+                label: Text('Add Song',
+                    style: AuxTypography.buttonSm.copyWith(color: AuxColors.ember)),
+                style: TextButton.styleFrom(
+                  backgroundColor: AuxColors.ember.withValues(alpha: 0.1),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                ),
               ),
             ],
           ),
@@ -456,7 +478,7 @@ class _HostRoomView extends StatelessWidget {
 
 // ── Guest Room View ───────────────────────────────────────────────────────────
 
-class _GuestRoomView extends StatelessWidget {
+class _GuestRoomView extends ConsumerWidget {
   const _GuestRoomView({
     required this.state,
     required this.notifier,
@@ -467,8 +489,36 @@ class _GuestRoomView extends StatelessWidget {
   final PassTheAuxNotifier notifier;
   final Animation<double> pulseAnimation;
 
+  Future<void> _confirmLeave(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AuxColors.inkRaised,
+        title: Text('Leave the room?',
+            style: AuxTypography.titleMd.copyWith(color: AuxColors.paper)),
+        content: Text(
+          'You\'ll need the room code to rejoin.',
+          style: AuxTypography.body.copyWith(color: AuxColors.paperMuted),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child:
+                Text('Cancel', style: AuxTypography.button.copyWith(color: AuxColors.paperMuted)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('Leave', style: AuxTypography.button.copyWith(color: AuxColors.danger)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) notifier.leaveRoom();
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final displayName = ref.watch(authServiceProvider).displayName;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -487,14 +537,14 @@ class _GuestRoomView extends StatelessWidget {
                           AuxTypography.display.copyWith(color: AuxColors.paper, fontSize: 26),
                     ),
                     Text(
-                      'Room ${state.roomId}',
+                      'Room ${state.roomId}  ·  $displayName',
                       style: AuxTypography.caption.copyWith(color: AuxColors.paperMuted),
                     ),
                   ],
                 ),
               ),
               TextButton.icon(
-                onPressed: () => notifier.leaveRoom(),
+                onPressed: () => _confirmLeave(context),
                 icon: const Icon(Icons.exit_to_app_rounded, size: 16, color: AuxColors.danger),
                 label:
                     Text('Leave', style: AuxTypography.buttonSm.copyWith(color: AuxColors.danger)),
@@ -1108,28 +1158,103 @@ class _IconBtn extends StatelessWidget {
 }
 
 class _GuestCountBadge extends StatelessWidget {
-  const _GuestCountBadge({required this.count});
+  const _GuestCountBadge({required this.count, required this.guestNames});
   final int count;
+  final List<String> guestNames;
+
+  void _showGuestList(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AuxColors.inkRaised,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: AuxSpacing.md),
+            Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AuxColors.hairline,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: AuxSpacing.lg),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AuxSpacing.lg),
+              child: Row(
+                children: [
+                  const Icon(Icons.people_rounded, color: AuxColors.signalTeal, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    '$count ${count == 1 ? 'Guest' : 'Guests'} in the room',
+                    style: AuxTypography.titleMd.copyWith(color: AuxColors.paper),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AuxSpacing.md),
+            if (guestNames.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(AuxSpacing.xl),
+                child: Text(
+                  'No guests have joined yet.',
+                  style: AuxTypography.body.copyWith(color: AuxColors.paperMuted),
+                  textAlign: TextAlign.center,
+                ),
+              )
+            else
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: AuxSpacing.lg),
+                itemCount: guestNames.length,
+                separatorBuilder: (_, __) => const Divider(color: AuxColors.hairline, height: 1),
+                itemBuilder: (_, i) => ListTile(
+                  contentPadding: const EdgeInsets.symmetric(vertical: 4),
+                  leading: CircleAvatar(
+                    backgroundColor: AuxColors.signalTeal.withValues(alpha: 0.15),
+                    child: Text(
+                      guestNames[i].isNotEmpty ? guestNames[i][0].toUpperCase() : '?',
+                      style: AuxTypography.bodySemiBold.copyWith(color: AuxColors.signalTeal),
+                    ),
+                  ),
+                  title: Text(guestNames[i],
+                      style: AuxTypography.body.copyWith(color: AuxColors.paper)),
+                ),
+              ),
+            const SizedBox(height: AuxSpacing.xl),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: AuxColors.signalTeal.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AuxColors.signalTeal.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.people_rounded, size: 14, color: AuxColors.signalTeal),
-          const SizedBox(width: 4),
-          Text(
-            '$count',
-            style: AuxTypography.captionMedium.copyWith(color: AuxColors.signalTeal),
-          ),
-        ],
+    return GestureDetector(
+      onTap: () => _showGuestList(context),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: AuxColors.signalTeal.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AuxColors.signalTeal.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.people_rounded, size: 14, color: AuxColors.signalTeal),
+            const SizedBox(width: 4),
+            Text(
+              '$count',
+              style: AuxTypography.captionMedium.copyWith(color: AuxColors.signalTeal),
+            ),
+          ],
+        ),
       ),
     );
   }
