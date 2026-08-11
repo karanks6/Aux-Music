@@ -47,25 +47,16 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                     ),
                   ),
                   const Spacer(),
-                  // Grid/list toggle
-                  IconButton(
-                    icon: Icon(
-                      _isGrid ? Icons.list_rounded : Icons.grid_view_rounded,
-                      color: AuxColors.paperMuted,
+                  // Grid/list toggle (only for Playlists)
+                  if (_filterIndex == 1)
+                    IconButton(
+                      icon: Icon(
+                        _isGrid ? Icons.list_rounded : Icons.grid_view_rounded,
+                        color: AuxColors.paperMuted,
+                      ),
+                      onPressed: () => setState(() => _isGrid = !_isGrid),
+                      tooltip: _isGrid ? 'List view' : 'Grid view',
                     ),
-                    onPressed: () => setState(() => _isGrid = !_isGrid),
-                    tooltip: _isGrid ? 'List view' : 'Grid view',
-                  ),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.speaker_group_rounded,
-                      color: AuxColors.paperMuted,
-                    ),
-                    onPressed: () {
-                      context.go(AppRoutes.passTheAux);
-                    },
-                    tooltip: 'Pass the Aux',
-                  ),
                   IconButton(
                     icon: const Icon(
                       Icons.add_rounded,

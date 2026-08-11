@@ -353,6 +353,14 @@ class PassTheAuxNotifier extends StateNotifier<PassTheAuxState> {
   }) {
     if (!state.isHost || state.roomId == null || _socket == null) return;
 
+    // Update local state so host UI reflects current playback
+    state = state.copyWith(
+      nowPlaying: nowPlaying,
+      isPlaying: isPlaying,
+      position: position,
+      timestamp: timestamp,
+    );
+
     _socket!.emit('host_sync_state', {
       'roomId': state.roomId,
       'nowPlaying': nowPlaying?.toJson(),

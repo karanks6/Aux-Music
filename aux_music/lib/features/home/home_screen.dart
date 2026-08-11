@@ -36,27 +36,26 @@ class HomeScreen extends ConsumerWidget {
             SliverAppBar(
               floating: true,
               snap: true,
-              expandedHeight: 80,
-              flexibleSpace: FlexibleSpaceBar(
-                titlePadding: const EdgeInsets.only(
-                  left: AuxSpacing.lg,
-                  bottom: AuxSpacing.md,
-                ),
-                title: Text(
-                  'Aux',
-                  style: AuxTypography.display.copyWith(
-                    color: AuxColors.ember,
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: -1.0,
-                  ),
+              toolbarHeight: 80,
+              titleSpacing: AuxSpacing.lg,
+              title: Text(
+                'Aux',
+                style: AuxTypography.display.copyWith(
+                  color: AuxColors.ember,
+                  fontSize: 56,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: -1.0,
                 ),
               ),
               actions: [
-                IconButton(
-                  icon: const Icon(Icons.settings_outlined),
-                  tooltip: 'Settings',
-                  onPressed: () => context.push(AppRoutes.settings),
+                Padding(
+                  padding: const EdgeInsets.only(right: AuxSpacing.sm),
+                  child: IconButton(
+                    iconSize: 30,
+                    icon: const Icon(Icons.person_outline_rounded),
+                    tooltip: 'My Profile',
+                    onPressed: () => context.push(AppRoutes.profile),
+                  ),
                 ),
               ],
             ),

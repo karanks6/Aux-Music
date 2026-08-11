@@ -4,6 +4,8 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/playback/playback_providers.dart';
+import '../../services/pass_the_aux_service.dart';
+import '../../services/audio_handler.dart';
 import 'package:go_router/go_router.dart';
 
 class QueueScreen extends ConsumerStatefulWidget {
@@ -34,7 +36,12 @@ class _QueueScreenState extends ConsumerState<QueueScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final queue = ref.watch(queueProvider).valueOrNull ?? [];
+    final auxState = ref.watch(passTheAuxProvider);
+    final isPartyMode = auxState.roomId != null;
+    final queue = isPartyMode 
+        ? auxState.sharedQueue.map((t) => t.toMediaItem()).toList()
+        : (ref.watch(queueProvider).valueOrNull ?? []);
+        
     final currentIndex = ref.watch(queueIndexProvider).valueOrNull ?? -1;
 
     return Dismissible(
@@ -142,10 +149,11 @@ class _QueueScreenState extends ConsumerState<QueueScreen> {
                       if (isPlaying)
                         const Icon(Icons.volume_up_rounded, color: AuxColors.ember, size: 20),
                       const SizedBox(width: AuxSpacing.sm),
-                      ReorderableDragStartListener(
-                        index: index,
-                        child: const Icon(Icons.drag_handle_rounded, color: AuxColors.paperMuted),
-                      ),
+                      if (!isPartyMode)
+                        ReorderableDragStartListener(
+                          index: index,
+                          child: const Icon(Icons.drag_handle_rounded, color: AuxColors.paperMuted),
+                        ),
                     ],
                   ),
                   onTap: () {

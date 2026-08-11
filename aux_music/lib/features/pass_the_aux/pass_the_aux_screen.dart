@@ -10,6 +10,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/router/app_router.dart';
+import '../../core/playback/playback_providers.dart';
 
 class PassTheAuxScreen extends ConsumerStatefulWidget {
   const PassTheAuxScreen({super.key});
@@ -345,6 +346,33 @@ class _HostRoomView extends ConsumerWidget {
   final PassTheAuxState state;
   final PassTheAuxNotifier notifier;
 
+  Future<void> _confirmEndSession(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AuxColors.inkRaised,
+        title: Text('End Session?',
+            style: AuxTypography.titleMd.copyWith(color: AuxColors.paper)),
+        content: Text(
+          'This will end the party for all guests. Are you sure?',
+          style: AuxTypography.body.copyWith(color: AuxColors.paperMuted),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child:
+                Text('Cancel', style: AuxTypography.button.copyWith(color: AuxColors.paperMuted)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('End', style: AuxTypography.button.copyWith(color: AuxColors.danger)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) notifier.leaveRoom();
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final displayName = ref.watch(authServiceProvider).displayName;
@@ -377,7 +405,7 @@ class _HostRoomView extends ConsumerWidget {
               ),
               const SizedBox(width: AuxSpacing.sm),
               TextButton.icon(
-                onPressed: () => notifier.leaveRoom(),
+                onPressed: () => _confirmEndSession(context),
                 icon: const Icon(Icons.close_rounded, size: 16, color: AuxColors.danger),
                 label: Text('End', style: AuxTypography.buttonSm.copyWith(color: AuxColors.danger)),
                 style: TextButton.styleFrom(
@@ -466,7 +494,13 @@ class _HostRoomView extends ConsumerWidget {
                         color: AuxColors.danger.withValues(alpha: 0.2),
                         child: const Icon(Icons.delete_outline, color: AuxColors.danger),
                       ),
-                      child: _QueueTrackTile(track: track, index: index),
+                      child: InkWell(
+                        onTap: () {
+                          // Play the track immediately when tapped by the host
+                          ref.read(audioHandlerProvider).skipToQueueItem(index);
+                        },
+                        child: _QueueTrackTile(track: track, index: index),
+                      ),
                     );
                   },
                 ),
@@ -611,7 +645,10 @@ class _GuestRoomView extends ConsumerWidget {
 
               // ── Queue List (read-only for guests) ──
               if (state.sharedQueue.isEmpty)
-                const _EmptyQueuePlaceholder(isHost: false)
+                const SizedBox(
+                  height: 200,
+                  child: _EmptyQueuePlaceholder(isHost: false),
+                )
               else
                 ...state.sharedQueue.asMap().entries.map(
                       (e) => _QueueTrackTile(track: e.value, index: e.key),
@@ -1173,16 +1210,6 @@ class _GuestCountBadge extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const SizedBox(height: AuxSpacing.md),
-            Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AuxColors.hairline,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: AuxSpacing.lg),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AuxSpacing.lg),
               child: Row(
@@ -1743,19 +1770,6 @@ class _QrScannerSheetState extends State<_QrScannerSheet> {
       height: MediaQuery.of(context).size.height * 0.62,
       child: Column(
         children: [
-          // Handle bar
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AuxColors.hairline,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-
           Padding(
             padding: const EdgeInsets.fromLTRB(AuxSpacing.lg, 0, AuxSpacing.sm, 0),
             child: Row(
@@ -1785,7 +1799,27 @@ class _QrScannerSheetState extends State<_QrScannerSheet> {
               borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
               child: Stack(
                 children: [
-                  MobileScanner(controller: _ctrl, onDetect: _onDetect),
+                  MobileScanner(
+                    controller: _ctrl,
+                    onDetect: _onDetect,
+                    errorBuilder: (context, error, child) {
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Text(
+                            'Camera error: ${error.errorCode.name}\nPlease ensure camera permissions are granted.',
+                            style: AuxTypography.body.copyWith(color: AuxColors.danger),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      );
+                    },
+                    placeholderBuilder: (context, child) {
+                      return const Center(
+                        child: CircularProgressIndicator(color: AuxColors.signalTeal),
+                      );
+                    },
+                  ),
                   Center(
                     child: Container(
                       width: 220,
