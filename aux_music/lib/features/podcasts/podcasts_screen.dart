@@ -193,9 +193,9 @@ class PodcastsScreen extends ConsumerWidget {
                       ),
                       const Spacer(),
                       IconButton(
-                        icon: const Icon(Icons.add_rounded),
-                        tooltip: 'Add via RSS',
-                        onPressed: () => _showAddPodcastDialog(context, ref),
+                        icon: const Icon(Icons.search_rounded),
+                        tooltip: 'Search Podcasts',
+                        onPressed: () => context.push(AppRoutes.podcastSearch),
                       ),
                     ],
                   ),
@@ -484,49 +484,6 @@ class PodcastsScreen extends ConsumerWidget {
     );
   }
 
-  void _showAddPodcastDialog(BuildContext context, WidgetRef ref) {
-    final controller = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AuxColors.ink,
-        title: Text('Add Podcast', style: AuxTypography.titleMd.copyWith(color: AuxColors.paper)),
-        content: TextField(
-          controller: controller,
-          decoration: InputDecoration(
-            hintText: 'https://example.com/rss',
-            hintStyle: TextStyle(color: AuxColors.paperMuted.withValues(alpha: 0.5)),
-          ),
-          style: const TextStyle(color: AuxColors.paper),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel', style: TextStyle(color: AuxColors.paperMuted)),
-          ),
-          TextButton(
-            onPressed: () async {
-              final url = controller.text.trim();
-              if (url.isNotEmpty) {
-                try {
-                  final pod = await ref.read(podcastRepositoryProvider).parseFeedUrl(url);
-                  await ref.read(podcastRepositoryProvider).subscribe(pod);
-                  if (context.mounted) Navigator.pop(context);
-                } catch (e) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Failed to parse feed: $e')),
-                    );
-                  }
-                }
-              }
-            },
-            child: const Text('Add', style: TextStyle(color: AuxColors.signalTeal)),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 // ── Track Shelf ───────────────────────────────────────────────────────────

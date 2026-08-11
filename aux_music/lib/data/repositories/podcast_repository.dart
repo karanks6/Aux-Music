@@ -3,6 +3,8 @@ import 'package:xml/xml.dart';
 import 'package:dio/dio.dart';
 import 'dart:convert';
 import '../../data/models/podcast.dart';
+import '../../data/models/track.dart';
+import '../../core/config/env.dart';
 import '../local/database.dart';
 
 class PodcastRepository {
@@ -115,6 +117,25 @@ class PodcastRepository {
       return podcasts;
     } catch (e) {
       print('iTunes search error for $term: $e');
+      return [];
+    }
+  }
+
+  Future<List<Track>> searchYoutubePodcasts(String term, {int limit = 20}) async {
+    try {
+      // Use Env.bffUrl to hit the local node server
+      final url = '${Env.bffUrl}/search/podcasts?q=${Uri.encodeComponent(term)}&limit=$limit';
+      final response = await _dio.get(url);
+      
+      final data = response.data['data'] as List<dynamic>? ?? [];
+      
+      // Parse the JSON array into Track objects
+      return data.map((json) {
+        // Because BFF uses youtube_music.js parseTrack format, we map it directly
+        return Track.fromJson(json as Map<String, dynamic>);
+      }).toList();
+    } catch (e) {
+      print('YouTube podcast search error for $term: $e');
       return [];
     }
   }

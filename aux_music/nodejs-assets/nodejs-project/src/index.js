@@ -143,6 +143,28 @@ fastify.get('/search', async (request, reply) => {
 });
 
 /**
+ * GET /search/podcasts?q=&limit=20
+ * Searches for podcast episodes specifically from YouTube Music.
+ */
+fastify.get('/search/podcasts', async (request, reply) => {
+  const { q, limit = '20' } = request.query;
+
+  if (!q || q.trim().length < 1) {
+    return reply.status(400).send({ error: 'Query parameter "q" is required.' });
+  }
+
+  const limitNum = Math.min(parseInt(limit, 10) || 20, 50);
+
+  try {
+    const results = await youtubeMusicAdapter.searchPodcasts(q.trim(), { limit: limitNum });
+    return { data: deduplicateTracks(results), count: results.length };
+  } catch (err) {
+    fastify.log.error(err);
+    return reply.status(502).send({ error: 'Failed to search podcasts.' });
+  }
+});
+
+/**
  * GET /recommendations/home
  * Returns personalized / curated shelves (like "Radio") using YouTube Music's UpNext algorithm.
  */

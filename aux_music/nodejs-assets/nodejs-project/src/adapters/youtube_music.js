@@ -36,15 +36,23 @@ function parseTrack(song) {
     }
 
     let artistName = 'Unknown Artist';
-    let artistId = null;
+    let artistId = '';
 
     if (song.artists && song.artists.length > 0) {
       artistName = song.artists.map(a => a.name).join(', ');
       if (song.artists[0].channel_id) {
         artistId = `youtube_music_artist:${song.artists[0].channel_id}`;
       }
+    } else if (song.authors && song.authors.length > 0) {
+      artistName = song.authors.map(a => a.name).join(', ');
+      if (song.authors[0].channel_id) {
+        artistId = `youtube_music_artist:${song.authors[0].channel_id}`;
+      }
     } else if (song.author) {
       artistName = typeof song.author === 'string' ? song.author : (song.author.name || 'Unknown Artist');
+      if (song.author && song.author.channel_id) {
+        artistId = `youtube_music_artist:${song.author.channel_id}`;
+      }
     }
 
     const parsed = {
@@ -112,6 +120,24 @@ module.exports = {
       return [];
     }
   },
+
+  async searchPodcasts(query, { limit = 20 } = {}) {
+    try {
+      const yt = await getInnertube();
+      // youtubei.js doesn't reliably support type: 'episodes' for Music search (returns empty/errors)
+      // We fall back to searching for videos and appending "podcast" to ensure we get podcast episodes
+      // rather than normal songs.
+      const finalQuery = query.toLowerCase().includes('podcast') ? query : `${query} podcast`;
+      const results = await yt.music.search(finalQuery, { type: 'video' });
+      
+      const tracks = getTracksFromResult(results);
+      return tracks.slice(0, limit).map(parseTrack).filter(Boolean);
+    } catch (e) {
+      console.error('[YouTubeMusic] Podcast search failed', e);
+      return [];
+    }
+  },
+
 
   async trending({ genre, language, limit = 20 } = {}) {
     try {
