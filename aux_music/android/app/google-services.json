@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "61027027144-2url16vcabg0bchfjkbg5cmijgu51d3g.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.auxmusic.aux_music",
+            "certificate_hash": "c9dbcabd20eff702ace595399039603a731850c6"
+          }
+        },
+        {
           "client_id": "61027027144-0p4sjp3l2l6beqg4nq0opp2qm5fr9pj3.apps.googleusercontent.com",
           "client_type": 3
         }
@@ -29,6 +37,13 @@
             {
               "client_id": "61027027144-0p4sjp3l2l6beqg4nq0opp2qm5fr9pj3.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "61027027144-bkcl42dn2u6uk0haf0rumshf0jurk9tu.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.auxmusic.auxMusic"
+              }
             }
           ]
         }
