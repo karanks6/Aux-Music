@@ -15,6 +15,8 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen>
     with SingleTickerProviderStateMixin {
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   bool _isLoading = false;
   String? _error;
   late final AnimationController _fadeCtrl;
@@ -32,8 +34,45 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
   @override
   void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
     _fadeCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _signInWithEmail() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    if (email.isEmpty || password.isEmpty) {
+      setState(() => _error = 'Please enter both email and password.');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final user = await ref.read(authServiceProvider).signInWithEmail(email, password);
+      if (user != null && mounted) {
+        if (!user.emailVerified) {
+          context.go('/verify-email');
+        } else {
+          context.go('/');
+        }
+      } else {
+        setState(() => _isLoading = false);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _error = e.toString().replaceAll('Exception: ', '');
+        });
+      }
+    }
   }
 
   Future<void> _signInWithGoogle() async {
@@ -52,14 +91,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _error = 'Sign in failed. Please try again.';
+          _error = 'Google Sign-in failed. Please ensure your SHA-1 key is registered in Firebase.\nError: ${e.toString().split('\n').first}';
         });
       }
     }
-  }
-
-  void _continueAsGuest() {
-    context.push('/nickname');
   }
 
   @override
@@ -69,11 +104,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       body: FadeTransition(
         opacity: _fadeAnim,
         child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AuxSpacing.xl),
-            child: Column(
-              children: [
-                const Spacer(flex: 2),
+          child: CustomScrollView(
+            slivers: [
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: AuxSpacing.xl),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                const SizedBox(height: AuxSpacing.xxl),
 
                 // ── Logo / Wordmark ──
                 _AuxLogo(),
@@ -88,41 +128,90 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                   ),
                 ),
 
-                const Spacer(flex: 2),
+                const SizedBox(height: AuxSpacing.xxl),
 
-                // ── Sign in with Google ──
+                // ── Email Field ──
+                TextField(
+                  controller: _emailController,
+                  style: AuxTypography.body.copyWith(color: AuxColors.paper),
+                  decoration: InputDecoration(
+                    hintText: 'Email',
+                    hintStyle: AuxTypography.body.copyWith(color: AuxColors.paperMuted),
+                    filled: true,
+                    fillColor: AuxColors.inkRaised,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  ),
+                  keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
+                ),
+
+                const SizedBox(height: AuxSpacing.md),
+
+                // ── Password Field ──
+                TextField(
+                  controller: _passwordController,
+                  style: AuxTypography.body.copyWith(color: AuxColors.paper),
+                  decoration: InputDecoration(
+                    hintText: 'Password',
+                    hintStyle: AuxTypography.body.copyWith(color: AuxColors.paperMuted),
+                    filled: true,
+                    fillColor: AuxColors.inkRaised,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  ),
+                  obscureText: true,
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) => _signInWithEmail(),
+                ),
+
+                const SizedBox(height: AuxSpacing.lg),
+
+                // ── Login Button ──
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : _signInWithEmail,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AuxColors.ember,
+                      foregroundColor: AuxColors.ink,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: _isLoading
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2.5, color: AuxColors.ink),
+                          )
+                        : Text('Log in',
+                            style: AuxTypography.button
+                                .copyWith(fontWeight: FontWeight.w600)),
+                  ),
+                ),
+
+                const SizedBox(height: AuxSpacing.md),
+
+                // ── Google Sign in ──
                 _GoogleSignInButton(
                   isLoading: _isLoading,
                   onTap: _isLoading ? null : _signInWithGoogle,
                 ),
 
-                const SizedBox(height: AuxSpacing.md),
-
-                // ── Continue as Guest ──
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: _isLoading ? null : _continueAsGuest,
-                    icon: const Icon(Icons.person_outline_rounded,
-                        size: 20, color: AuxColors.paperMuted),
-                    label: Text(
-                      'Continue as Guest',
-                      style: AuxTypography.button.copyWith(
-                          color: AuxColors.paperMuted),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      side: const BorderSide(color: AuxColors.hairline),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
-                  ),
-                ),
+                const SizedBox(height: AuxSpacing.lg),
 
                 // ── Error ──
                 if (_error != null) ...[
-                  const SizedBox(height: AuxSpacing.md),
                   Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: AuxSpacing.md, vertical: AuxSpacing.sm),
@@ -137,21 +226,35 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                       textAlign: TextAlign.center,
                     ),
                   ),
+                  const SizedBox(height: AuxSpacing.lg),
                 ],
 
-                const Spacer(flex: 1),
-
-                // ── Fine print ──
-                Text(
-                  'By continuing you agree to our Terms of Service.\nYour data stays on your device.',
-                  style: AuxTypography.caption
-                      .copyWith(color: AuxColors.paperMuted.withValues(alpha: 0.5)),
-                  textAlign: TextAlign.center,
+                // ── Sign Up Link ──
+                TextButton(
+                  onPressed: _isLoading ? null : () => context.push('/signup'),
+                  child: Text.rich(
+                    TextSpan(
+                      text: "Don't have an account? ",
+                      style: AuxTypography.body.copyWith(color: AuxColors.paperMuted),
+                      children: [
+                        TextSpan(
+                          text: 'Sign up',
+                          style: AuxTypography.body.copyWith(
+                            color: AuxColors.ember,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
 
                 const SizedBox(height: AuxSpacing.xl),
-              ],
-            ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -166,45 +269,19 @@ class _AuxLogo extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Glowing icon
-        Container(
-          width: 90,
-          height: 90,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: RadialGradient(
-              colors: [
-                AuxColors.ember.withValues(alpha: 0.35),
-                AuxColors.ember.withValues(alpha: 0.0),
-              ],
-            ),
-          ),
-          child: Center(
-            child: Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AuxColors.inkRaised,
-                border:
-                    Border.all(color: AuxColors.ember.withValues(alpha: 0.5), width: 1.5),
-              ),
-              child: const Icon(
-                Icons.headphones_rounded,
-                color: AuxColors.ember,
-                size: 30,
-              ),
-            ),
-          ),
+        Image.asset(
+          'assets/icons/Aux_applogo.png',
+          width: 100,
+          height: 100,
         ),
-        const SizedBox(height: AuxSpacing.lg),
+        const SizedBox(height: AuxSpacing.sm),
         Text(
           'Aux',
           style: AuxTypography.display.copyWith(
             color: AuxColors.ember,
-            fontSize: 52,
+            fontSize: 48,
             fontWeight: FontWeight.bold,
-            letterSpacing: -2,
+            letterSpacing: -1.5,
           ),
         ),
       ],
@@ -231,34 +308,22 @@ class _GoogleSignInButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 16),
-            child: isLoading
-                ? const Center(
-                    child: SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.5,
-                        color: Color(0xFF4285F4),
-                      ),
-                    ),
-                  )
-                : Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Google "G" icon
-                      _GoogleGIcon(),
-                      const SizedBox(width: 12),
-                      const Text(
-                        'Sign in with Google',
-                        style: TextStyle(
-                          color: Color(0xFF1F1F1F),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.2,
-                        ),
-                      ),
-                    ],
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _GoogleGIcon(),
+                const SizedBox(width: 12),
+                const Text(
+                  'Sign in with Google',
+                  style: TextStyle(
+                    color: Color(0xFF1F1F1F),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.2,
                   ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -284,19 +349,18 @@ class _GoogleGPainter extends CustomPainter {
     final center = rect.center;
     final radius = size.width / 2;
 
-    // Draw 4 colored arcs for the Google "G"
     final colors = [
-      const Color(0xFF4285F4), // Blue (top)
-      const Color(0xFFEA4335), // Red (right)
-      const Color(0xFFFBBC05), // Yellow (bottom)
-      const Color(0xFF34A853), // Green (left)
+      const Color(0xFF4285F4),
+      const Color(0xFFEA4335),
+      const Color(0xFFFBBC05),
+      const Color(0xFF34A853),
     ];
 
     final paint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = size.width * 0.22;
 
-    const sweep = 3.14159 * 0.5; // 90°
+    const sweep = 3.14159 * 0.5;
 
     for (int i = 0; i < 4; i++) {
       paint.color = colors[i];
@@ -309,7 +373,6 @@ class _GoogleGPainter extends CustomPainter {
       );
     }
 
-    // White cutout on the right for the horizontal bar
     final whitePaint = Paint()
       ..color = Colors.white
       ..style = PaintingStyle.fill;

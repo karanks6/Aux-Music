@@ -19,6 +19,67 @@ class AuthService {
   bool get isSignedInWithIdentity =>
       _auth.currentUser != null && !(_auth.currentUser!.isAnonymous);
 
+  /// Sign in with Email and Password
+  Future<User?> signInWithEmail(String email, String password) async {
+    try {
+      final credential = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      return credential.user;
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'user-not-found') {
+        throw Exception('No user found for that email.');
+      } else if (e.code == 'wrong-password') {
+        throw Exception('Wrong password provided.');
+      }
+      throw Exception(e.message ?? 'An error occurred during sign in.');
+    } catch (e) {
+      throw Exception('An unknown error occurred.');
+    }
+  }
+
+  /// Sign up with Email, Password, and Display Name
+  Future<User?> signUpWithEmail(String email, String password, String displayName) async {
+    try {
+      final credential = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      await credential.user?.updateDisplayName(displayName);
+      await credential.user?.sendEmailVerification();
+      await credential.user?.reload();
+      return _auth.currentUser;
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'weak-password') {
+        throw Exception('The password provided is too weak.');
+      } else if (e.code == 'email-already-in-use') {
+        throw Exception('The account already exists for that email.');
+      }
+      throw Exception(e.message ?? 'An error occurred during sign up.');
+    } catch (e) {
+      throw Exception('An unknown error occurred.');
+    }
+  }
+
+  /// Send email verification
+  Future<void> sendEmailVerification() async {
+    final user = _auth.currentUser;
+    if (user != null && !user.emailVerified) {
+      await user.sendEmailVerification();
+    }
+  }
+
+  /// Check if the user is verified
+  bool get isEmailVerified {
+    return _auth.currentUser?.emailVerified ?? false;
+  }
+
+  /// Reload the current user
+  Future<void> reloadUser() async {
+    await _auth.currentUser?.reload();
+  }
+
   /// Sign in with Google account.
   Future<User?> signInWithGoogle() async {
     try {
@@ -33,19 +94,7 @@ class AuthService {
       final result = await _auth.signInWithCredential(credential);
       return result.user;
     } catch (e) {
-      rethrow;
-    }
-  }
-
-  /// Sign in as anonymous with a user-provided nickname.
-  /// The nickname is stored as the Firebase display name.
-  Future<User?> signInAnonymously({required String displayName}) async {
-    try {
-      final result = await _auth.signInAnonymously();
-      await result.user?.updateDisplayName(displayName);
-      await result.user?.reload();
-      return _auth.currentUser;
-    } catch (e) {
+      print('Google Sign-In Error: $e'); // Added for debugging
       rethrow;
     }
   }
@@ -62,9 +111,6 @@ class AuthService {
     if (user == null) return 'Guest';
     if (user.displayName != null && user.displayName!.isNotEmpty) {
       return user.displayName!;
-    }
-    if (user.isAnonymous) {
-      return 'Guest#${user.uid.substring(0, 4).toUpperCase()}';
     }
     return user.email?.split('@').first ?? 'User';
   }

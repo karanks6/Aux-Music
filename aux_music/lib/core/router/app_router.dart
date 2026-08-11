@@ -9,14 +9,16 @@ import '../../features/now_playing/queue_screen.dart';
 import '../../features/artist_page/artist_page_screen.dart';
 import '../../features/album_page/album_page_screen.dart';
 import '../../features/playlist_detail/playlist_detail_screen.dart';
-import '../../features/settings/settings_screen.dart';
 import '../../features/social/social_screen.dart';
 import '../../features/podcasts/podcasts_screen.dart';
 import '../../features/podcasts/podcast_detail_screen.dart';
+import '../../features/podcasts/podcast_search_screen.dart';
 import '../../features/player_mini/mini_player_widget.dart';
 import '../../features/pass_the_aux/pass_the_aux_screen.dart';
 import '../../features/auth/login_screen.dart';
-import '../../features/auth/nickname_screen.dart';
+import '../../features/auth/signup_screen.dart';
+import '../../features/auth/verify_email_screen.dart';
+import '../../features/profile/profile_screen.dart';
 import '../../data/models/podcast.dart';
 import '../../services/auth_service.dart';
 
@@ -26,18 +28,20 @@ abstract final class AppRoutes {
   static const search = '/search';
   static const library = '/library';
   static const podcasts = '/podcasts';
+  static const podcastSearch = '/podcast-search';
   static const social = '/social';
   static const nowPlaying = '/now-playing';
   static const queue = '/queue';
   static const artist = '/artist/:id';
   static const album = '/album/:id';
   static const playlist = '/playlist/:id';
-  static const podcastDetail = '/podcast/:id';
-  static const settings = '/settings';
+  static const String podcastDetail = '/podcast/:id';
+  static const String profile = '/profile';
   static const socialSession = '/social/session/:code';
   static const passTheAux = '/pass-the-aux';
   static const login = '/login';
-  static const nickname = '/nickname';
+  static const signup = '/signup';
+  static const verifyEmail = '/verify-email';
 }
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -65,12 +69,26 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final user = ref.read(authStateProvider).valueOrNull;
       final isAuthenticated = user != null;
+      final isVerified = ref.read(authServiceProvider).isEmailVerified;
       final loc = state.matchedLocation;
-      final isGoingToAuth =
-          loc == AppRoutes.login || loc == AppRoutes.nickname;
+      
+      final isGoingToAuth = loc == AppRoutes.login || loc == AppRoutes.signup;
+      final isGoingToVerify = loc == AppRoutes.verifyEmail;
 
-      if (!isAuthenticated && !isGoingToAuth) return AppRoutes.login;
-      if (isAuthenticated && loc == AppRoutes.login) return AppRoutes.home;
+      if (!isAuthenticated) {
+        if (!isGoingToAuth) return AppRoutes.login;
+        return null;
+      }
+      
+      // If authenticated but not verified, force verify screen
+      if (!isVerified) {
+        if (!isGoingToVerify) return AppRoutes.verifyEmail;
+        return null;
+      }
+
+      // If authenticated and verified, don't let them stay on auth/verify screens
+      if (isGoingToAuth || isGoingToVerify) return AppRoutes.home;
+      
       return null;
     },
     routes: [
@@ -81,9 +99,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, __) => const LoginScreen(),
       ),
       GoRoute(
-        path: AppRoutes.nickname,
+        path: AppRoutes.signup,
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (_, __) => const NicknameScreen(),
+        builder: (_, __) => const SignupScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.verifyEmail,
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (_, __) => const VerifyEmailScreen(),
       ),
 
       // ── Shell (persistent scaffold) ──────────────────────────────
@@ -133,13 +156,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: AppRoutes.podcastDetail,
-            builder: (_, state) =>
+            builder: (context, state) =>
                 PodcastDetailScreen(podcast: state.extra as Podcast),
           ),
           GoRoute(
-            path: AppRoutes.settings,
-            builder: (_, __) => const SettingsScreen(),
+            path: AppRoutes.podcastSearch,
+            builder: (context, state) => const PodcastSearchScreen(),
           ),
+
           GoRoute(
             path: AppRoutes.passTheAux,
             pageBuilder: (_, state) => NoTransitionPage(
@@ -186,9 +210,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(
-        path: AppRoutes.settings,
+        path: AppRoutes.profile,
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (_, __) => const SettingsScreen(),
+        builder: (_, __) => const ProfileScreen(),
       ),
       GoRoute(
         path: AppRoutes.socialSession,
