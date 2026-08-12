@@ -1,7 +1,7 @@
 # Aux Music
 
 <div align="center">
-  <img src="assets/icons/Aux_applogo.png" alt="Aux Logo" width="120" />
+  <img src="aux_music/assets/icons/Aux_applogo.png" alt="Aux Logo" width="120" />
 </div>
 
 <h3 align="center">Free, Unlimited Music and Podcast Streaming. Powered entirely by open sources.</h3>
