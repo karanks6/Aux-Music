@@ -542,24 +542,16 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
 
   @override
   Future<void> addQueueItem(MediaItem mediaItem) async {
-    if (queue.value.isEmpty) {
-      await _updateQueueWithIndex([mediaItem], initialIndex: 0);
-    } else {
-      final q = List<MediaItem>.from(queue.value)..add(mediaItem);
-      queue.add(q);
-      await _playlist.add(_createAudioSource(mediaItem));
-    }
+    final q = List<MediaItem>.from(queue.value)..add(mediaItem);
+    queue.add(q);
+    await _playlist.add(_createAudioSource(mediaItem));
   }
 
   @override
   Future<void> insertQueueItem(int index, MediaItem mediaItem) async {
-    if (queue.value.isEmpty) {
-      await _updateQueueWithIndex([mediaItem], initialIndex: 0);
-    } else {
-      final q = List<MediaItem>.from(queue.value)..insert(index, mediaItem);
-      queue.add(q);
-      await _playlist.insert(index, _createAudioSource(mediaItem));
-    }
+    final q = List<MediaItem>.from(queue.value)..insert(index, mediaItem);
+    queue.add(q);
+    await _playlist.insert(index, _createAudioSource(mediaItem));
   }
 
   @override

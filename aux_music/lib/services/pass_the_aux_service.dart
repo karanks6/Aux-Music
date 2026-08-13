@@ -358,7 +358,7 @@ class PassTheAuxNotifier extends StateNotifier<PassTheAuxState> {
     if (newQueue.length == 1) {
       () async {
         await ref.read(audioHandlerProvider).addQueueItem(track.toMediaItem());
-        await ref.read(audioHandlerProvider).play();
+        await ref.read(audioHandlerProvider).skipToQueueItem(0);
       }();
     } else {
       ref.read(audioHandlerProvider).addQueueItem(track.toMediaItem());
