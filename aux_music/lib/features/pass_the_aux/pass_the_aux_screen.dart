@@ -488,7 +488,10 @@ class _HostRoomView extends ConsumerWidget {
                     return Dismissible(
                       key: ValueKey('${track.id}_$index'),
                       direction: DismissDirection.endToStart,
-                      onDismissed: (_) => notifier.kickTrack(index),
+                      onDismissed: (_) {
+                        notifier.kickTrack(index);
+                        ref.read(audioHandlerProvider).removeQueueItemAt(index);
+                      },
                       background: Container(
                         alignment: Alignment.centerRight,
                         padding: const EdgeInsets.only(right: AuxSpacing.lg),
