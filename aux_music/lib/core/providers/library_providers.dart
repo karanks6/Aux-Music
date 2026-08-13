@@ -1,4 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../data/local/database.dart' hide Playlist;
 import '../../data/repositories/library_repository.dart';
 import '../../data/models/playlist.dart';
@@ -13,7 +15,11 @@ final databaseProvider = Provider<AuxDatabase>((ref) {
 });
 
 final libraryRepositoryProvider = Provider<LibraryRepository>((ref) {
-  return LibraryRepository(ref.watch(databaseProvider));
+  return LibraryRepository(
+    ref.watch(databaseProvider),
+    FirebaseAuth.instance,
+    FirebaseFirestore.instance,
+  );
 });
 
 // ── Streams (Reactive UI) ──────────────────────────────────────────

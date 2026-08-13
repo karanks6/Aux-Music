@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
@@ -19,20 +20,17 @@ class SearchScreen extends ConsumerStatefulWidget {
 
 class _SearchScreenState extends ConsumerState<SearchScreen> {
   final _controller = TextEditingController();
-  final _debounce = ValueNotifier<String>('');
+  Timer? _debounceTimer;
   String _query = '';
 
   @override
   void initState() {
     super.initState();
     _controller.addListener(() {
-      // Debounce 500ms
-      Future.delayed(const Duration(milliseconds: 500), () {
+      if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
+      _debounceTimer = Timer(const Duration(milliseconds: 500), () {
         if (_controller.text == _query) return;
         setState(() => _query = _controller.text);
-        if (_query.trim().isNotEmpty) {
-          ref.read(libraryRepositoryProvider).addRecentSearch(_query);
-        }
       });
     });
   }
@@ -40,7 +38,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   @override
   void dispose() {
     _controller.dispose();
-    _debounce.dispose();
+    _debounceTimer?.cancel();
     super.dispose();
   }
 
@@ -77,6 +75,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       : null,
                 ),
                 textInputAction: TextInputAction.search,
+                onSubmitted: (value) {
+                  if (value.trim().isNotEmpty) {
+                    ref.read(libraryRepositoryProvider).addRecentSearch(value.trim());
+                  }
+                },
               ),
             ),
 

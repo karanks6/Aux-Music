@@ -198,32 +198,48 @@ class TrackListTile extends ConsumerWidget {
             return SafeArea(
               child: playlistsAsync.when(
                 data: (playlists) {
-                  if (playlists.isEmpty) {
-                    return Padding(
-                      padding: const EdgeInsets.all(AuxSpacing.xl),
-                      child: Center(
-                        heightFactor: 1,
-                        child: Text('No playlists yet.', style: AuxTypography.body.copyWith(color: AuxColors.paperMuted)),
-                      ),
-                    );
-                  }
-                  return ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: playlists.length,
-                    itemBuilder: (context, i) {
-                      final p = playlists[i];
-                      return ListTile(
-                        leading: const Icon(Icons.queue_music, color: AuxColors.paperMuted),
-                        title: Text(p.name, style: AuxTypography.body.copyWith(color: AuxColors.paper)),
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ListTile(
+                        leading: const Icon(Icons.add_rounded, color: AuxColors.ember),
+                        title: Text('Create new playlist', style: AuxTypography.body.copyWith(color: AuxColors.ember)),
                         onTap: () {
-                          ref.read(libraryRepositoryProvider).addTrackToPlaylist(int.parse(p.id), track);
                           context.pop();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Added to ${p.name}')),
-                          );
+                          _showCreatePlaylistDialog(context);
                         },
-                      );
-                    },
+                      ),
+                      if (playlists.isNotEmpty) const Divider(color: AuxColors.ink),
+                      if (playlists.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.all(AuxSpacing.xl),
+                          child: Center(
+                            heightFactor: 1,
+                            child: Text('No playlists yet.', style: AuxTypography.body.copyWith(color: AuxColors.paperMuted)),
+                          ),
+                        )
+                      else
+                        Flexible(
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: playlists.length,
+                            itemBuilder: (context, i) {
+                              final p = playlists[i];
+                              return ListTile(
+                                leading: const Icon(Icons.queue_music, color: AuxColors.paperMuted),
+                                title: Text(p.name, style: AuxTypography.body.copyWith(color: AuxColors.paper)),
+                                onTap: () {
+                                  ref.read(libraryRepositoryProvider).addTrackToPlaylist(int.parse(p.id), track);
+                                  context.pop();
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Added to ${p.name}')),
+                                  );
+                                },
+                              );
+                            },
+                          ),
+                        ),
+                    ],
                   );
                 },
                 loading: () => const SizedBox(height: 100, child: Center(child: CircularProgressIndicator())),
@@ -233,6 +249,68 @@ class TrackListTile extends ConsumerWidget {
           },
         );
       },
+    );
+  }
+
+  void _showCreatePlaylistDialog(BuildContext context) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => Consumer(
+        builder: (context, ref, _) => AlertDialog(
+          backgroundColor: AuxColors.inkRaised,
+          title: Text('New Playlist', style: AuxTypography.titleLg.copyWith(color: AuxColors.paper)),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            style: AuxTypography.body.copyWith(color: AuxColors.paper),
+            decoration: InputDecoration(
+              hintText: 'Playlist name',
+              hintStyle: const TextStyle(color: AuxColors.paperMuted),
+              filled: true,
+              fillColor: AuxColors.ink,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AuxSpacing.radiusCard),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => context.pop(),
+              child: const Text('Cancel', style: TextStyle(color: AuxColors.paperMuted)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AuxColors.ember,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () async {
+                final name = controller.text.trim();
+                if (name.isNotEmpty) {
+                  try {
+                    final id = await ref.read(libraryRepositoryProvider).createPlaylist(name);
+                    await ref.read(libraryRepositoryProvider).addTrackToPlaylist(id, track);
+                    if (context.mounted) {
+                      context.pop();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Added to $name')),
+                      );
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Error: $e')),
+                      );
+                    }
+                  }
+                }
+              },
+              child: const Text('Create'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

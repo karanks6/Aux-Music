@@ -191,12 +191,6 @@ class PodcastsScreen extends ConsumerWidget {
                           fontSize: 26,
                         ),
                       ),
-                      const Spacer(),
-                      IconButton(
-                        icon: const Icon(Icons.search_rounded),
-                        tooltip: 'Search Podcasts',
-                        onPressed: () => context.push(AppRoutes.podcastSearch),
-                      ),
                     ],
                   ),
                 ),

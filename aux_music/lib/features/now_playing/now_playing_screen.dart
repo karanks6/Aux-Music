@@ -275,9 +275,7 @@ class _TrackInfo extends ConsumerWidget {
                 onTap: () {
                   final albumId = mediaItem?.extras?['albumId'] as String?;
                   if (albumId != null && albumId.isNotEmpty) {
-                    // Close the Now Playing screen first
                     context.pop();
-                    // Navigate to Album page
                     context.push('/album/$albumId');
                   }
                 },
@@ -296,9 +294,7 @@ class _TrackInfo extends ConsumerWidget {
                 onTap: () {
                   final artistId = mediaItem?.extras?['artistId'] as String?;
                   if (artistId != null && artistId.isNotEmpty) {
-                    // Close the Now Playing screen first
                     context.pop();
-                    // Navigate to Artist page
                     context.push('/artist/$artistId');
                   }
                 },
@@ -315,6 +311,37 @@ class _TrackInfo extends ConsumerWidget {
           ),
         ),
         const SizedBox(width: AuxSpacing.md),
+        // Add to playlist button
+        if (mediaItem != null)
+          Semantics(
+            label: 'Add to playlist',
+            button: true,
+            child: IconButton(
+              icon: const Icon(Icons.add_rounded),
+              color: AuxColors.paperMuted,
+              iconSize: 28,
+              onPressed: () {
+                final track = Track(
+                  id: mediaItem!.extras?['trackId'] as String? ?? mediaItem!.id,
+                  title: mediaItem!.title,
+                  artistName: mediaItem!.artist ?? 'Unknown',
+                  artistId: '',
+                  albumName: mediaItem!.album ?? '',
+                  albumId: '',
+                  artworkUrl: mediaItem!.artUri?.toString(),
+                  thumbnailUrl: mediaItem!.artUri?.toString(),
+                  sourceId: mediaItem!.extras?['sourceId'] as String? ?? '',
+                  licenseType: LicenseType.custom, // generic
+                  attributionString: mediaItem!.extras?['attributionString'] as String? ?? '',
+                  sourceUrl: mediaItem!.extras?['sourceUrl'] as String? ?? '',
+                  durationMs: mediaItem!.duration?.inMilliseconds ?? 0,
+                  offlineAllowed: mediaItem!.extras?['offlineAllowed'] as bool? ?? false,
+                  streamUrl: mediaItem!.extras?['streamUrl'] as String?,
+                );
+                _showAddToPlaylistSheet(context, track);
+              },
+            ),
+          ),
         // Like button
         Semantics(
           label: isLiked ? 'Unlike this track' : 'Like this track',
@@ -327,7 +354,6 @@ class _TrackInfo extends ConsumerWidget {
             iconSize: 28,
             onPressed: () {
               if (mediaItem != null) {
-                // Reconstruct a basic Track object from MediaItem for the repository
                 final track = Track(
                   id: mediaItem!.extras?['trackId'] as String? ?? mediaItem!.id,
                   title: mediaItem!.title,
@@ -351,6 +377,133 @@ class _TrackInfo extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+
+  void _showAddToPlaylistSheet(BuildContext context, Track track) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AuxColors.inkRaised,
+      builder: (context) {
+        return Consumer(
+          builder: (context, ref, _) {
+            final playlistsAsync = ref.watch(playlistsProvider);
+            return SafeArea(
+              child: playlistsAsync.when(
+                data: (playlists) {
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ListTile(
+                        leading: const Icon(Icons.add_rounded, color: AuxColors.ember),
+                        title: Text('Create new playlist', style: AuxTypography.body.copyWith(color: AuxColors.ember)),
+                        onTap: () {
+                          context.pop();
+                          _showCreatePlaylistDialog(context, track);
+                        },
+                      ),
+                      if (playlists.isNotEmpty) const Divider(color: AuxColors.ink),
+                      if (playlists.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.all(AuxSpacing.xl),
+                          child: Center(
+                            heightFactor: 1,
+                            child: Text('No playlists yet.', style: AuxTypography.body.copyWith(color: AuxColors.paperMuted)),
+                          ),
+                        )
+                      else
+                        Flexible(
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: playlists.length,
+                            itemBuilder: (context, i) {
+                              final p = playlists[i];
+                              return ListTile(
+                                leading: const Icon(Icons.queue_music, color: AuxColors.paperMuted),
+                                title: Text(p.name, style: AuxTypography.body.copyWith(color: AuxColors.paper)),
+                                onTap: () {
+                                  ref.read(libraryRepositoryProvider).addTrackToPlaylist(int.parse(p.id), track);
+                                  context.pop();
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Added to ${p.name}')),
+                                  );
+                                },
+                              );
+                            },
+                          ),
+                        ),
+                    ],
+                  );
+                },
+                loading: () => const SizedBox(height: 100, child: Center(child: CircularProgressIndicator())),
+                error: (_, __) => const SizedBox(),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showCreatePlaylistDialog(BuildContext context, Track track) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => Consumer(
+        builder: (context, ref, _) => AlertDialog(
+          backgroundColor: AuxColors.inkRaised,
+          title: Text('New Playlist', style: AuxTypography.titleLg.copyWith(color: AuxColors.paper)),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            style: AuxTypography.body.copyWith(color: AuxColors.paper),
+            decoration: InputDecoration(
+              hintText: 'Playlist name',
+              hintStyle: const TextStyle(color: AuxColors.paperMuted),
+              filled: true,
+              fillColor: AuxColors.ink,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AuxSpacing.radiusCard),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => context.pop(),
+              child: const Text('Cancel', style: TextStyle(color: AuxColors.paperMuted)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AuxColors.ember,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () async {
+                final name = controller.text.trim();
+                if (name.isNotEmpty) {
+                  try {
+                    final id = await ref.read(libraryRepositoryProvider).createPlaylist(name);
+                    await ref.read(libraryRepositoryProvider).addTrackToPlaylist(id, track);
+                    if (context.mounted) {
+                      context.pop();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Added to $name')),
+                      );
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Error: $e')),
+                      );
+                    }
+                  }
+                }
+              },
+              child: const Text('Create'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

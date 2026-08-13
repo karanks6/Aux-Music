@@ -4,6 +4,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/di/providers.dart';
+import 'core/providers/library_providers.dart';
 import 'services/auth_service.dart';
 
 /// Root application widget.
@@ -15,6 +16,18 @@ class AuxApp extends ConsumerWidget {
     final themeMode = ref.watch(themeModeProvider);
     // Watch auth state so we rebuild when user signs in/out
     ref.watch(authStateProvider);
+    
+    // Sync local library with Firestore when auth state changes
+    ref.listen(authStateProvider, (previous, next) {
+      final user = next.valueOrNull;
+      final repo = ref.read(libraryRepositoryProvider);
+      if (user != null) {
+        repo.syncUserLibrary(user.uid);
+      } else if (previous?.valueOrNull != null) {
+        repo.clearUserData();
+      }
+    });
+    
     final router = ref.watch(appRouterProvider);
 
     return MaterialApp.router(
