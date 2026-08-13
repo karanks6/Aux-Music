@@ -160,8 +160,8 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
     _ref.listen<PassTheAuxState>(passTheAuxProvider, (previous, next) {
       // Clear the host's queue when they create a new room to ensure a fresh empty queue
       if (next.isHost && next.roomId != null && previous?.roomId == null) {
+        _player.pause();
         updateQueue([]);
-        stop();
       }
 
       if (!next.isHost && next.roomId != null && next.isSyncModeEnabled) {
