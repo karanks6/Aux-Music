@@ -9,6 +9,7 @@ import 'core/playback/playback_providers.dart';
 import 'core/node_server/node_server_service.dart';
 import 'features/splash/splash_screen.dart';
 import 'services/audio_handler.dart';
+import 'services/auth_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -58,6 +59,10 @@ class _BootstrapperState extends State<Bootstrapper> {
       if (mounted) setState(() => _status = 'Loading audio engine...');
       _container = ProviderContainer();
       _container.read(aggregatorInitProvider.future).catchError((_) {});
+      
+      // Wait for auth state to resolve so we don't flash the login screen
+      await _container.read(authStateProvider.future).catchError((_) {});
+      
       _audioHandler = await initAudioHandler(_container);
 
       if (mounted) setState(() => _isReady = true);
