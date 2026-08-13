@@ -395,17 +395,16 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
 
   @override
   Future<void> skipToNext() async {
-    if (_player.hasNext) {
-      final nextIndex = (_player.currentIndex ?? -1) + 1;
-      final q = queue.value;
-      if (nextIndex < q.length) {
-        final nextTrackId = q[nextIndex].extras?['trackId'] as String?;
-        if (nextTrackId != null) {
-          await _player.seekToNext();
-          return;
-        }
+    final q = queue.value;
+    final nextIndex = (_player.currentIndex ?? -1) + 1;
+    if (nextIndex < q.length) {
+      if (!_isLoadingStream) {
+        mediaItem.add(q[nextIndex]);
       }
-      await _player.seekToNext();
+      await _player.seek(Duration.zero, index: nextIndex);
+      if (!_player.playing) {
+        await _player.play();
+      }
     }
   }
 
@@ -414,8 +413,18 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
     // If >3s in, restart track; otherwise go to previous
     if (_player.position.inSeconds > 3) {
       await _player.seek(Duration.zero);
-    } else if (_player.hasPrevious) {
-      await _player.seekToPrevious();
+    } else {
+      final prevIndex = (_player.currentIndex ?? 1) - 1;
+      final q = queue.value;
+      if (prevIndex >= 0 && prevIndex < q.length) {
+        if (!_isLoadingStream) {
+          mediaItem.add(q[prevIndex]);
+        }
+        await _player.seek(Duration.zero, index: prevIndex);
+        if (!_player.playing) {
+          await _player.play();
+        }
+      }
     }
   }
 
