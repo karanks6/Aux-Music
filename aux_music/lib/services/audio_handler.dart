@@ -376,10 +376,28 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
   }
 
   @override
-  Future<void> play() => _player.play();
+  Future<void> play() async {
+    if (_inAuxSession()) {
+      final state = _ref.read(passTheAuxProvider);
+      if (!state.isHost) {
+        _ref.read(passTheAuxProvider.notifier).requestGuestAction('play');
+        return;
+      }
+    }
+    await _player.play();
+  }
 
   @override
-  Future<void> pause() => _player.pause();
+  Future<void> pause() async {
+    if (_inAuxSession()) {
+      final state = _ref.read(passTheAuxProvider);
+      if (!state.isHost) {
+        _ref.read(passTheAuxProvider.notifier).requestGuestAction('pause');
+        return;
+      }
+    }
+    await _player.pause();
+  }
 
   @override
   Future<void> stop() async {
@@ -389,12 +407,27 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
 
   @override
   Future<void> seek(Duration position) async {
+    if (_inAuxSession()) {
+      final state = _ref.read(passTheAuxProvider);
+      if (!state.isHost) {
+        _ref.read(passTheAuxProvider.notifier).requestGuestAction('seek_${position.inMilliseconds}');
+        return;
+      }
+    }
     await _player.seek(position);
     _syncToPassTheAux();
   }
 
   @override
   Future<void> skipToNext() async {
+    if (_inAuxSession()) {
+      final state = _ref.read(passTheAuxProvider);
+      if (!state.isHost) {
+        _ref.read(passTheAuxProvider.notifier).requestGuestAction('skipNext');
+        return;
+      }
+    }
+    
     if (_player.hasNext) {
       final nextIndex = (_player.currentIndex ?? -1) + 1;
       final q = queue.value;
@@ -411,6 +444,14 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
 
   @override
   Future<void> skipToPrevious() async {
+    if (_inAuxSession()) {
+      final state = _ref.read(passTheAuxProvider);
+      if (!state.isHost) {
+        _ref.read(passTheAuxProvider.notifier).requestGuestAction('skipPrevious');
+        return;
+      }
+    }
+
     // If >3s in, restart track; otherwise go to previous
     if (_player.position.inSeconds > 3) {
       await _player.seek(Duration.zero);

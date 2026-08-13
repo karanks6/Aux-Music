@@ -202,6 +202,13 @@ io.on('connection', (socket) => {
     }
   });
 
+  // ── Guest Requests Action ────────────────────────────────────────
+  socket.on('guest_action', ({ roomId, action }) => {
+    const room = rooms[roomId];
+    if (!room) return;
+    io.to(room.host).emit('guest_action_requested', { action, guestId: socket.id });
+  });
+
   // ── Disconnect ───────────────────────────────────────────────────
   socket.on('disconnect', () => {
     console.log(`[-] Disconnected: ${socket.id}`);
