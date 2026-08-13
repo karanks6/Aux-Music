@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
+import '../core/playback/playback_providers.dart';
+import 'audio_handler.dart';
 import '../../data/models/track.dart';
 import 'auth_service.dart';
 
