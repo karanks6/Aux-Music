@@ -542,16 +542,24 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
 
   @override
   Future<void> addQueueItem(MediaItem mediaItem) async {
-    final q = List<MediaItem>.from(queue.value)..add(mediaItem);
-    queue.add(q);
-    await _playlist.add(_createAudioSource(mediaItem));
+    if (queue.value.isEmpty) {
+      await _updateQueueWithIndex([mediaItem], initialIndex: 0);
+    } else {
+      final q = List<MediaItem>.from(queue.value)..add(mediaItem);
+      queue.add(q);
+      await _playlist.add(_createAudioSource(mediaItem));
+    }
   }
 
   @override
   Future<void> insertQueueItem(int index, MediaItem mediaItem) async {
-    final q = List<MediaItem>.from(queue.value)..insert(index, mediaItem);
-    queue.add(q);
-    await _playlist.insert(index, _createAudioSource(mediaItem));
+    if (queue.value.isEmpty) {
+      await _updateQueueWithIndex([mediaItem], initialIndex: 0);
+    } else {
+      final q = List<MediaItem>.from(queue.value)..insert(index, mediaItem);
+      queue.add(q);
+      await _playlist.insert(index, _createAudioSource(mediaItem));
+    }
   }
 
   @override
@@ -593,6 +601,11 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
   AudioSource _createAudioSource(MediaItem item) {
     final streamUrl = item.extras?['streamUrl'] as String?;
     if (streamUrl != null && streamUrl.isNotEmpty && streamUrl != 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=') {
+      if (streamUrl.startsWith('/')) {
+        return AudioSource.file(streamUrl, tag: item);
+      } else if (streamUrl.startsWith('file://')) {
+        return AudioSource.file(streamUrl.replaceFirst('file://', ''), tag: item);
+      }
       return AudioSource.uri(
         Uri.parse(streamUrl),
         headers: const {
