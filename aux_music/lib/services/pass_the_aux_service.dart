@@ -206,27 +206,6 @@ class PassTheAuxNotifier extends StateNotifier<PassTheAuxState> {
       _broadcastHostState();
     });
 
-    _socket!.on('guest_action_requested', (data) {
-      if (!state.isHost) return;
-      if (data is Map) {
-        final action = data['action'] as String?;
-        if (action == 'skipNext') {
-          _ref.read(audioHandlerProvider).skipToNext();
-        } else if (action == 'skipPrevious') {
-          _ref.read(audioHandlerProvider).skipToPrevious();
-        } else if (action == 'play') {
-          _ref.read(audioHandlerProvider).play();
-        } else if (action == 'pause') {
-          _ref.read(audioHandlerProvider).pause();
-        } else if (action != null && action.startsWith('seek_')) {
-          final ms = int.tryParse(action.split('_')[1]);
-          if (ms != null) {
-            _ref.read(audioHandlerProvider).seek(Duration(milliseconds: ms));
-          }
-        }
-      }
-    });
-
     _socket!.connect();
   }
 
@@ -420,14 +399,6 @@ class PassTheAuxNotifier extends StateNotifier<PassTheAuxState> {
       'queue': queue?.map((t) => t.toJson()).toList(),
       'position': position,
       'timestamp': timestamp,
-    });
-  }
-
-  void requestGuestAction(String action) {
-    if (state.isHost || state.roomId == null || _socket == null) return;
-    _socket!.emit('guest_action', {
-      'roomId': state.roomId,
-      'action': action,
     });
   }
 
