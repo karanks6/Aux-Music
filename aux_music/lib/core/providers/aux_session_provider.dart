@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/pass_the_aux_service.dart';
 import '../../data/models/track.dart';
+import '../../core/playback/playback_providers.dart';
 
 /// Exposes whether the user is currently in an active Pass the Aux session.
 final inAuxSessionProvider = Provider<bool>((ref) {
@@ -18,7 +19,7 @@ final isAuxHostProvider = Provider<bool>((ref) {
 void addTrackToAuxSession(WidgetRef ref, Track track) {
   final isHost = ref.read(isAuxHostProvider);
   if (isHost) {
-    ref.read(passTheAuxProvider.notifier).addTrackAsHost(track);
+    ref.read(audioHandlerProvider).addToQueue(track);
   } else {
     ref.read(passTheAuxProvider.notifier).addTrack(track);
   }

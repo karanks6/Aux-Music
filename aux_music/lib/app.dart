@@ -7,6 +7,8 @@ import 'core/di/providers.dart';
 import 'core/providers/library_providers.dart';
 import 'services/auth_service.dart';
 
+final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+
 /// Root application widget.
 class AuxApp extends ConsumerWidget {
   const AuxApp({super.key});
@@ -33,6 +35,7 @@ class AuxApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'Aux',
       debugShowCheckedModeBanner: false,
+      scaffoldMessengerKey: scaffoldMessengerKey,
 
       // ── Themes ──────────────────────────────────────────────────
       theme: AuxTheme.light,

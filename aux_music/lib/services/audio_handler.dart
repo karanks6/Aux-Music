@@ -146,9 +146,13 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
     // Listen to PassTheAuxState to mirror Host playback if Sync Mode is on
     final passTheAuxNotifier = _ref.read(passTheAuxProvider.notifier);
 
-    passTheAuxNotifier.onGuestAddedTrack.listen((track) {
+    passTheAuxNotifier.onGuestAddedTrack.listen((track) async {
       if (_ref.read(passTheAuxProvider).isHost) {
-        addToQueue(track);
+        final wasEmpty = queue.value.isEmpty;
+        await addToQueue(track);
+        if (wasEmpty) {
+          await skipToQueueItem(0);
+        }
       }
     });
 
@@ -215,7 +219,7 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
     if (positionMs != null && timestamp != null) {
       final now = DateTime.now().millisecondsSinceEpoch;
       final elapsed = now - timestamp;
-      final expectedPositionMs = positionMs + elapsed;
+      final expectedPositionMs = positionMs + elapsed + 100;
       try {
         await _player.seek(Duration(milliseconds: expectedPositionMs));
       } catch (_) {}
@@ -260,10 +264,32 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
 
   /// Play a single track immediately (replaces queue).
   Future<void> playTrack(Track track) async {
-    if (_isGuest()) {
-      _guestAddTrack(track);
-      return;
-    }
+    try {
+      final auxState = _ref.read(passTheAuxProvider);
+      if (auxState.roomId != null) {
+        if (auxState.isHost) {
+          final q = queue.value;
+          if (q.any((m) => m.id == track.id || m.extras?['trackId'] == track.id)) {
+            _ref.read(passTheAuxProvider.notifier).notifyMessage('Track is already in the queue');
+            return;
+          }
+          final wasEmpty = q.isEmpty;
+          await addToQueue(track);
+          if (wasEmpty) {
+            await skipToQueueItem(0);
+          }
+          _ref.read(passTheAuxProvider.notifier).notifyMessage('Added "${track.title}" to the queue!');
+        } else {
+          if (auxState.sharedQueue.any((t) => t.id == track.id)) {
+            _ref.read(passTheAuxProvider.notifier).notifyMessage('Track is already in the queue');
+            return;
+          }
+          _ref.read(passTheAuxProvider.notifier).addTrack(track);
+        }
+        return;
+      }
+    } catch (_) {}
+
     final mediaItem = track.toMediaItem();
     await updateQueue([mediaItem]);
     await _resolveAndPlay(track, index: 0);
@@ -271,11 +297,33 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
 
   /// Play a list of tracks starting at [startIndex].
   Future<void> playTracks(List<Track> tracks, {int startIndex = 0}) async {
-    if (_isGuest()) {
-      // Bug Fix #1: Only send the tapped track — not the entire shelf/list.
-      _guestAddTrack(tracks[startIndex]);
-      return;
-    }
+    try {
+      final auxState = _ref.read(passTheAuxProvider);
+      if (auxState.roomId != null) {
+        final track = tracks[startIndex];
+        if (auxState.isHost) {
+          final q = queue.value;
+          if (q.any((m) => m.id == track.id || m.extras?['trackId'] == track.id)) {
+            _ref.read(passTheAuxProvider.notifier).notifyMessage('Track is already in the queue');
+            return;
+          }
+          final wasEmpty = q.isEmpty;
+          await addToQueue(track);
+          if (wasEmpty) {
+            await skipToQueueItem(0);
+          }
+          _ref.read(passTheAuxProvider.notifier).notifyMessage('Added "${track.title}" to the queue!');
+        } else {
+          if (auxState.sharedQueue.any((t) => t.id == track.id)) {
+            _ref.read(passTheAuxProvider.notifier).notifyMessage('Track is already in the queue');
+            return;
+          }
+          _ref.read(passTheAuxProvider.notifier).addTrack(track);
+        }
+        return;
+      }
+    } catch (_) {}
+
     await _player.pause(); // Pause immediately to prevent auto-skipping silent tracks
     final items = tracks.map((t) => t.toMediaItem()).toList();
     await _updateQueueWithIndex(items, initialIndex: startIndex);

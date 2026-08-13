@@ -1,4 +1,6 @@
 import 'dart:async';
+import '../app.dart';
+import 'package:flutter/material.dart';
 import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
@@ -14,6 +16,7 @@ class PassTheAuxState {
   final bool isHost;
   final int guestCount;
   final List<String> guestNames; // NEW: display names of connected guests
+  final String? hostName;
   final List<Track> sharedQueue;
   final Track? nowPlaying;
   final bool isPlaying;
@@ -32,6 +35,7 @@ class PassTheAuxState {
     this.isHost = false,
     this.guestCount = 0,
     this.guestNames = const [],
+    this.hostName,
     this.sharedQueue = const [],
     this.nowPlaying,
     this.isPlaying = false,
@@ -49,6 +53,7 @@ class PassTheAuxState {
     bool? isHost,
     int? guestCount,
     List<String>? guestNames,
+    String? hostName,
     List<Track>? sharedQueue,
     Track? nowPlaying,
     bool? isPlaying,
@@ -66,6 +71,7 @@ class PassTheAuxState {
       isHost: isHost ?? this.isHost,
       guestCount: guestCount ?? this.guestCount,
       guestNames: guestNames ?? this.guestNames,
+      hostName: hostName ?? this.hostName,
       sharedQueue: sharedQueue ?? this.sharedQueue,
       nowPlaying: clearNowPlaying ? null : (nowPlaying ?? this.nowPlaying),
       isPlaying: isPlaying ?? this.isPlaying,
@@ -162,7 +168,7 @@ class PassTheAuxNotifier extends StateNotifier<PassTheAuxState> {
           isPlaying: data['isPlaying'] as bool? ?? state.isPlaying,
           sharedQueue: newQueue,
           position: data['position'] as int?,
-          timestamp: data['timestamp'] as int?,
+          timestamp: DateTime.now().millisecondsSinceEpoch,
         );
       }
     });
@@ -171,9 +177,11 @@ class PassTheAuxNotifier extends StateNotifier<PassTheAuxState> {
     _socket!.on('guest_list_changed', (data) {
       if (data is Map) {
         final names = (data['guests'] as List?)?.map((e) => e.toString()).toList() ?? [];
+        final hostName = data['hostName'] as String?;
         state = state.copyWith(
-          guestCount: data['count'] as int? ?? names.length,
+          guestCount: names.length,
           guestNames: names,
+          hostName: hostName,
         );
       }
     });
@@ -259,7 +267,7 @@ class PassTheAuxNotifier extends StateNotifier<PassTheAuxState> {
             nowPlaying: nowPlaying,
             isPlaying: data['isPlaying'] == true,
             position: data['position'] as int?,
-            timestamp: data['timestamp'] as int?,
+            timestamp: DateTime.now().millisecondsSinceEpoch,
             guestCount: data['guestCount'] as int? ?? 0,
             error: null,
           );
@@ -295,9 +303,25 @@ class PassTheAuxNotifier extends StateNotifier<PassTheAuxState> {
 
   // ── Track Management ─────────────────────────────────────────────
 
+  void notifyMessage(String message) {
+    _trackAddedController.add(message);
+    scaffoldMessengerKey.currentState?.showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   /// Guest adds a track to the shared queue.
   void addTrack(Track track) {
     if (state.roomId == null || _socket == null) return;
+    
+    if (state.sharedQueue.any((t) => t.id == track.id)) {
+      notifyMessage('Track is already in the queue');
+      return;
+    }
+
     _socket!.emit('add_track', {
       'roomId': state.roomId,
       'track': track.toJson(),
@@ -307,13 +331,19 @@ class PassTheAuxNotifier extends StateNotifier<PassTheAuxState> {
     if (!state.isHost) {
       final newQueue = [...state.sharedQueue, track];
       state = state.copyWith(sharedQueue: newQueue);
-      _trackAddedController.add('Added "${track.title}" to the party queue!');
+      notifyMessage('Added "${track.title}" to the party queue!');
     }
   }
 
   /// Host adds a track directly to the room queue.
   void addTrackAsHost(Track track) {
     if (!state.isHost || state.roomId == null || _socket == null) return;
+
+    if (state.sharedQueue.any((t) => t.id == track.id)) {
+      notifyMessage('Track is already in the queue');
+      return;
+    }
+
     _socket!.emit('add_track_by_host', {
       'roomId': state.roomId,
       'track': track.toJson(),
@@ -321,7 +351,7 @@ class PassTheAuxNotifier extends StateNotifier<PassTheAuxState> {
     // Optimistic update
     final newQueue = [...state.sharedQueue, track];
     state = state.copyWith(sharedQueue: newQueue);
-    _trackAddedController.add('Added "${track.title}" to the queue!');
+    notifyMessage('Added "${track.title}" to the queue!');
   }
 
   void kickTrack(int index) {
@@ -357,6 +387,7 @@ class PassTheAuxNotifier extends StateNotifier<PassTheAuxState> {
     state = state.copyWith(
       nowPlaying: nowPlaying,
       isPlaying: isPlaying,
+      sharedQueue: queue ?? state.sharedQueue,
       position: position,
       timestamp: timestamp,
     );
