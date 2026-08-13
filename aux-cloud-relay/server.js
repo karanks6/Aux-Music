@@ -33,6 +33,7 @@ function broadcastGuestList(roomId) {
   io.to(roomId).emit('guest_list_changed', {
     count: room.guests.size,
     guests,
+    hostName: room.hostName,
   });
 }
 

@@ -402,6 +402,7 @@ class _HostRoomView extends ConsumerWidget {
               _GuestCountBadge(
                 count: state.guestCount,
                 guestNames: state.guestNames,
+                hostName: displayName,
               ),
               const SizedBox(width: AuxSpacing.sm),
               TextButton.icon(
@@ -577,6 +578,12 @@ class _GuestRoomView extends ConsumerWidget {
                   ],
                 ),
               ),
+              _GuestCountBadge(
+                count: state.guestCount,
+                guestNames: state.guestNames,
+                hostName: state.hostName,
+              ),
+              const SizedBox(width: AuxSpacing.sm),
               TextButton.icon(
                 onPressed: () => _confirmLeave(context),
                 icon: const Icon(Icons.exit_to_app_rounded, size: 16, color: AuxColors.danger),
@@ -1195,11 +1202,17 @@ class _IconBtn extends StatelessWidget {
 }
 
 class _GuestCountBadge extends StatelessWidget {
-  const _GuestCountBadge({required this.count, required this.guestNames});
+  const _GuestCountBadge({required this.count, required this.guestNames, this.hostName});
   final int count;
   final List<String> guestNames;
+  final String? hostName;
 
   void _showGuestList(BuildContext context) {
+    final allMembers = [
+      if (hostName != null) '$hostName (Host)',
+      ...guestNames,
+    ];
+
     showModalBottomSheet(
       context: context,
       backgroundColor: AuxColors.inkRaised,
@@ -1224,7 +1237,7 @@ class _GuestCountBadge extends StatelessWidget {
               ),
             ),
             const SizedBox(height: AuxSpacing.md),
-            if (guestNames.isEmpty)
+            if (allMembers.isEmpty)
               Padding(
                 padding: const EdgeInsets.all(AuxSpacing.xl),
                 child: Text(
@@ -1238,20 +1251,25 @@ class _GuestCountBadge extends StatelessWidget {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 padding: const EdgeInsets.symmetric(horizontal: AuxSpacing.lg),
-                itemCount: guestNames.length,
+                itemCount: allMembers.length,
                 separatorBuilder: (_, __) => const Divider(color: AuxColors.hairline, height: 1),
-                itemBuilder: (_, i) => ListTile(
-                  contentPadding: const EdgeInsets.symmetric(vertical: 4),
-                  leading: CircleAvatar(
-                    backgroundColor: AuxColors.signalTeal.withValues(alpha: 0.15),
-                    child: Text(
-                      guestNames[i].isNotEmpty ? guestNames[i][0].toUpperCase() : '?',
-                      style: AuxTypography.bodySemiBold.copyWith(color: AuxColors.signalTeal),
+                itemBuilder: (_, i) {
+                  final name = allMembers[i];
+                  return ListTile(
+                    contentPadding: const EdgeInsets.symmetric(vertical: 4),
+                    leading: CircleAvatar(
+                      backgroundColor: AuxColors.signalTeal.withValues(alpha: 0.15),
+                      child: Text(
+                        name.isNotEmpty ? name[0].toUpperCase() : '?',
+                        style: AuxTypography.bodySemiBold.copyWith(color: AuxColors.signalTeal),
+                      ),
                     ),
-                  ),
-                  title: Text(guestNames[i],
-                      style: AuxTypography.body.copyWith(color: AuxColors.paper)),
-                ),
+                    title: Text(
+                      name,
+                      style: AuxTypography.body.copyWith(color: AuxColors.paper),
+                    ),
+                  );
+                },
               ),
             const SizedBox(height: AuxSpacing.xl),
           ],
