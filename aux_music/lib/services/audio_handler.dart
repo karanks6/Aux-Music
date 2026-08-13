@@ -88,32 +88,35 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
         
         // Infinite Radio: Fetch UpNext when approaching end of queue
         if (index >= queue.value.length - 3 && !_isFetchingUpNext) {
-          _isFetchingUpNext = true;
-          try {
-            final currentTrackId = queue.value[index].extras?['trackId'] as String?;
-            if (currentTrackId != null && currentTrackId.startsWith('youtube_music:')) {
-               final tracks = await _aggregator.getUpNext(currentTrackId);
-               if (tracks.isNotEmpty) {
-                 // Append tracks to the queue, avoiding duplicates if possible
-                 final q = queue.value;
-                 final existingIds = q.map((i) => i.extras?['trackId'] as String?).toSet();
-                 final newTracks = tracks.where((t) => !existingIds.contains(t.id)).toList();
-                 if (newTracks.isNotEmpty) {
-                   final newMediaItems = newTracks.map((t) => t.toMediaItem()).toList();
-                   final currentQ = List<MediaItem>.from(queue.value)..addAll(newMediaItems);
-                   queue.add(currentQ);
-                   
-                   for (final item in newMediaItems) {
-                     await _playlist.add(_createAudioSource(item));
+          final inAux = _inAuxSession();
+          if (!inAux) {
+            _isFetchingUpNext = true;
+            try {
+              final currentTrackId = queue.value[index].extras?['trackId'] as String?;
+              if (currentTrackId != null && currentTrackId.startsWith('youtube_music:')) {
+                 final tracks = await _aggregator.getUpNext(currentTrackId);
+                 if (tracks.isNotEmpty) {
+                   // Append tracks to the queue, avoiding duplicates if possible
+                   final q = queue.value;
+                   final existingIds = q.map((i) => i.extras?['trackId'] as String?).toSet();
+                   final newTracks = tracks.where((t) => !existingIds.contains(t.id)).toList();
+                   if (newTracks.isNotEmpty) {
+                     final newMediaItems = newTracks.map((t) => t.toMediaItem()).toList();
+                     final currentQ = List<MediaItem>.from(queue.value)..addAll(newMediaItems);
+                     queue.add(currentQ);
+                     
+                     for (final item in newMediaItems) {
+                       await _playlist.add(_createAudioSource(item));
+                     }
+                     print('[AudioHandler] Infinite Radio: Appended ${newTracks.length} tracks to queue');
                    }
-                   print('[AudioHandler] Infinite Radio: Appended ${newTracks.length} tracks to queue');
                  }
-               }
+              }
+            } catch (e) {
+              print('[AudioHandler] Infinite Radio fetch failed: $e');
+            } finally {
+              _isFetchingUpNext = false;
             }
-          } catch (e) {
-            print('[AudioHandler] Infinite Radio fetch failed: $e');
-          } finally {
-            _isFetchingUpNext = false;
           }
         }
       } else {
@@ -157,6 +160,12 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
     });
 
     _ref.listen<PassTheAuxState>(passTheAuxProvider, (previous, next) {
+      // Clear the host's queue when they create a new room to ensure a fresh empty queue
+      if (next.isHost && next.roomId != null && previous?.roomId == null) {
+        updateQueue([]);
+        stop();
+      }
+
       if (!next.isHost && next.roomId != null && next.isSyncModeEnabled) {
         // 1. Sync Track Changes
         final currentTrackId = mediaItem.valueOrNull?.id;
@@ -193,40 +202,46 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
     });
   }
 
-  /// Bug Fix #5: Wait for the audio source to be ready before seeking.
-  /// Previously we called seek() immediately after setAudioSource which failed silently.
+  String? _currentlyForcingTrackId;
+
+  /// Bug Fix #5: Secure guest force play against concurrent calls and race conditions
   Future<void> _guestForcePlay(
     Track track,
     bool shouldPlay,
     int? positionMs,
     int? timestamp,
   ) async {
-    final item = track.toMediaItem();
-    await updateQueue([item]);
+    if (_currentlyForcingTrackId == track.id) return;
+    _currentlyForcingTrackId = track.id;
+    
+    try {
+      final item = track.toMediaItem();
+      await updateQueue([item]);
 
-    // Trigger lazy loading by seeking to zero
-    await _player.seek(Duration.zero, index: 0);
+      // Seek to 0 to trigger loading
+      await _player.seek(Duration.zero, index: 0);
 
-    // Wait until the player has buffered enough to seek accurately
-    await _player.processingStateStream
-        .firstWhere((s) =>
-            s == ProcessingState.ready ||
-            s == ProcessingState.buffering ||
-            s == ProcessingState.completed)
-        .timeout(const Duration(seconds: 10), onTimeout: () => ProcessingState.idle);
+      // Now fetch the LATEST state to decide whether to play and where to seek
+      final latestState = _ref.read(passTheAuxProvider);
+      
+      if (latestState.position != null && latestState.timestamp != null) {
+        final now = DateTime.now().millisecondsSinceEpoch;
+        final elapsed = now - latestState.timestamp!;
+        final expectedPositionMs = latestState.position! + elapsed + 100;
+        try {
+          await _player.seek(Duration(milliseconds: expectedPositionMs));
+        } catch (_) {}
+      }
 
-    // Recalculate position accounting for network latency elapsed since host broadcast
-    if (positionMs != null && timestamp != null) {
-      final now = DateTime.now().millisecondsSinceEpoch;
-      final elapsed = now - timestamp;
-      final expectedPositionMs = positionMs + elapsed + 100;
-      try {
-        await _player.seek(Duration(milliseconds: expectedPositionMs));
-      } catch (_) {}
-    }
-
-    if (shouldPlay) {
-      await _player.play();
+      if (latestState.isPlaying) {
+        await _player.play();
+      } else {
+        await _player.pause();
+      }
+    } finally {
+      if (_currentlyForcingTrackId == track.id) {
+        _currentlyForcingTrackId = null;
+      }
     }
   }
 
@@ -246,6 +261,15 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
   }
 
   // ── Queue management ──────────────────────────────────────────────
+
+  bool _inAuxSession() {
+    try {
+      final state = _ref.read(passTheAuxProvider);
+      return state.roomId != null;
+    } catch (_) {
+      return false;
+    }
+  }
 
   bool _isGuest() {
     try {
@@ -399,6 +423,9 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
   Future<void> skipToQueueItem(int index) async {
     final q = queue.value;
     if (index < q.length) {
+      if (!_isLoadingStream) {
+        mediaItem.add(q[index]);
+      }
       await _player.seek(Duration.zero, index: index);
       if (!_player.playing) {
         await _player.play();
