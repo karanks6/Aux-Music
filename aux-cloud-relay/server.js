@@ -116,14 +116,22 @@ io.on('connection', (socket) => {
     }
   });
 
-  // ── Guest Leaves a Room ──────────────────────────────────────────
+  // ── Guest/Host Leaves a Room ─────────────────────────────────────
   socket.on('leave_room', (roomId) => {
     const room = rooms[roomId];
     if (room) {
-      room.guests.delete(socket.id);
-      socket.leave(roomId);
-      console.log(`[Guest] ${socket.id} left room: ${roomId}`);
-      broadcastGuestList(roomId);
+      if (room.host === socket.id) {
+        // Host ended the session
+        io.to(roomId).emit('room_closed', { reason: 'The host ended the session.' });
+        delete rooms[roomId];
+        console.log(`[Room] ${roomId} closed — host left.`);
+      } else {
+        // Guest left
+        room.guests.delete(socket.id);
+        socket.leave(roomId);
+        console.log(`[Guest] ${socket.id} left room: ${roomId}`);
+        broadcastGuestList(roomId);
+      }
     }
     socket.data.roomId = null;
     socket.data.isHost = false;
