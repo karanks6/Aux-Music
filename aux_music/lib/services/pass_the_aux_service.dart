@@ -351,6 +351,17 @@ class PassTheAuxNotifier extends StateNotifier<PassTheAuxState> {
     // Optimistic update
     final newQueue = [...state.sharedQueue, track];
     state = state.copyWith(sharedQueue: newQueue);
+    
+    // Auto-play if it's the first track
+    if (newQueue.length == 1) {
+      () async {
+        await ref.read(audioHandlerProvider).addQueueItem(track.toMediaItem());
+        await ref.read(audioHandlerProvider).skipToQueueItem(0);
+      }();
+    } else {
+      ref.read(audioHandlerProvider).addQueueItem(track.toMediaItem());
+    }
+    
     notifyMessage('Added "${track.title}" to the queue!');
   }
 

@@ -19,7 +19,7 @@ final isAuxHostProvider = Provider<bool>((ref) {
 void addTrackToAuxSession(WidgetRef ref, Track track) {
   final isHost = ref.read(isAuxHostProvider);
   if (isHost) {
-    ref.read(audioHandlerProvider).addToQueue(track);
+    ref.read(passTheAuxProvider.notifier).addTrackAsHost(track);
   } else {
     ref.read(passTheAuxProvider.notifier).addTrack(track);
   }
