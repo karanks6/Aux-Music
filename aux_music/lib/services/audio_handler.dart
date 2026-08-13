@@ -124,12 +124,10 @@ class AuxAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
       }
     });
 
-    // Handle playback completion
-    _player.processingStateStream.listen((state) {
-      if (state == ProcessingState.completed) {
-        stop();
-      }
-    });
+    // (Removed processingStateStream listener that calls stop() on completion)
+    // just_audio automatically pauses at the end of the queue. Calling stop() 
+    // sets platformActive to false, which causes 'already exists' exceptions 
+    // when trying to play again.
 
     try {
       await _player.setAudioSource(_playlist, preload: false);
