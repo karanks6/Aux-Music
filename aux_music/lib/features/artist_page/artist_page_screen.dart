@@ -21,7 +21,7 @@ class ArtistPageScreen extends ConsumerWidget {
         slivers: [
           SliverAppBar.large(
             title: const Text('Artist'),
-            backgroundColor: AuxColors.ink,
+            backgroundColor: context.colors.ink,
             surfaceTintColor: Colors.transparent,
             actions: [
               // Play All button
@@ -50,11 +50,11 @@ class ArtistPageScreen extends ConsumerWidget {
           tracksAsync.when(
             data: (tracks) {
               if (tracks.isEmpty) {
-                return const SliverFillRemaining(
+                return SliverFillRemaining(
                   child: Center(
                     child: Text(
                       'No tracks found for this artist.',
-                      style: TextStyle(color: AuxColors.paperMuted),
+                      style: TextStyle(color: context.colors.paperMuted),
                     ),
                   ),
                 );

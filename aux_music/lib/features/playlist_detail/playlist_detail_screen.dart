@@ -40,15 +40,15 @@ class PlaylistDetailScreen extends ConsumerWidget {
                           child: asyncPlaylist.when(
                             data: (p) => Text(
                               p.name,
-                              style: AuxTypography.display.copyWith(color: AuxColors.paper, fontSize: 32),
+                              style: AuxTypography.display.copyWith(color: context.colors.paper, fontSize: 32),
                             ),
-                            loading: () => Text('Loading...', style: AuxTypography.display.copyWith(color: AuxColors.paper, fontSize: 32)),
-                            error: (_, __) => Text('Playlist', style: AuxTypography.display.copyWith(color: AuxColors.paper, fontSize: 32)),
+                            loading: () => Text('Loading...', style: AuxTypography.display.copyWith(color: context.colors.paper, fontSize: 32)),
+                            error: (_, __) => Text('Playlist', style: AuxTypography.display.copyWith(color: context.colors.paper, fontSize: 32)),
                           ),
                         ),
                         PopupMenuButton<String>(
-                          icon: const Icon(Icons.more_vert_rounded, color: AuxColors.paperMuted),
-                          color: AuxColors.inkRaised,
+                          icon: Icon(Icons.more_vert_rounded, color: context.colors.paperMuted),
+                          color: context.colors.inkRaised,
                           onSelected: (val) {
                             if (val == 'rename') {
                               final currentName = asyncPlaylist.valueOrNull?.name ?? '';
@@ -56,15 +56,15 @@ class PlaylistDetailScreen extends ConsumerWidget {
                               showDialog(
                                 context: context,
                                 builder: (ctx) => AlertDialog(
-                                  backgroundColor: AuxColors.inkRaised,
-                                  title: Text('Rename Playlist', style: AuxTypography.titleMd.copyWith(color: AuxColors.paper)),
+                                  backgroundColor: context.colors.inkRaised,
+                                  title: Text('Rename Playlist', style: AuxTypography.titleMd.copyWith(color: context.colors.paper)),
                                   content: TextField(
                                     controller: controller,
-                                    style: const TextStyle(color: AuxColors.paper),
-                                    decoration: const InputDecoration(
+                                    style: TextStyle(color: context.colors.paper),
+                                    decoration: InputDecoration(
                                       hintText: 'Playlist Name',
-                                      hintStyle: TextStyle(color: AuxColors.paperMuted),
-                                      enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: AuxColors.paperMuted)),
+                                      hintStyle: TextStyle(color: context.colors.paperMuted),
+                                      enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: context.colors.paperMuted)),
                                       focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: AuxColors.signalTeal)),
                                     ),
                                     autofocus: true,
@@ -72,7 +72,7 @@ class PlaylistDetailScreen extends ConsumerWidget {
                                   actions: [
                                     TextButton(
                                       onPressed: () => Navigator.pop(ctx),
-                                      child: const Text('Cancel', style: TextStyle(color: AuxColors.paperMuted)),
+                                      child: Text('Cancel', style: TextStyle(color: context.colors.paperMuted)),
                                     ),
                                     TextButton(
                                       onPressed: () {
@@ -90,13 +90,13 @@ class PlaylistDetailScreen extends ConsumerWidget {
                               showDialog(
                                 context: context,
                                 builder: (ctx) => AlertDialog(
-                                  backgroundColor: AuxColors.inkRaised,
-                                  title: Text('Delete Playlist?', style: AuxTypography.titleMd.copyWith(color: AuxColors.paper)),
-                                  content: Text('Are you sure you want to delete this playlist? This action cannot be undone.', style: AuxTypography.body.copyWith(color: AuxColors.paperMuted)),
+                                  backgroundColor: context.colors.inkRaised,
+                                  title: Text('Delete Playlist?', style: AuxTypography.titleMd.copyWith(color: context.colors.paper)),
+                                  content: Text('Are you sure you want to delete this playlist? This action cannot be undone.', style: AuxTypography.body.copyWith(color: context.colors.paperMuted)),
                                   actions: [
                                     TextButton(
                                       onPressed: () => Navigator.pop(ctx),
-                                      child: const Text('Cancel', style: TextStyle(color: AuxColors.paperMuted)),
+                                      child: Text('Cancel', style: TextStyle(color: context.colors.paperMuted)),
                                     ),
                                     TextButton(
                                       onPressed: () {
@@ -138,9 +138,9 @@ class PlaylistDetailScreen extends ConsumerWidget {
                               value: 'rename',
                               child: Row(
                                 children: [
-                                  const Icon(Icons.edit_rounded, color: AuxColors.paperMuted, size: 20),
+                                  Icon(Icons.edit_rounded, color: context.colors.paperMuted, size: 20),
                                   const SizedBox(width: AuxSpacing.sm),
-                                  Text('Rename Playlist', style: AuxTypography.body.copyWith(color: AuxColors.paper)),
+                                  Text('Rename Playlist', style: AuxTypography.body.copyWith(color: context.colors.paper)),
                                 ],
                               ),
                             ),
@@ -172,8 +172,8 @@ class PlaylistDetailScreen extends ConsumerWidget {
                               context.push(AppRoutes.nowPlaying);
                             },
                             style: FilledButton.styleFrom(
-                              backgroundColor: AuxColors.inkRaised,
-                              foregroundColor: AuxColors.paper,
+                              backgroundColor: context.colors.inkRaised,
+                              foregroundColor: context.colors.paper,
                               padding: const EdgeInsets.symmetric(vertical: 14),
                             ),
                             icon: const Icon(Icons.shuffle_rounded),
@@ -190,7 +190,7 @@ class PlaylistDetailScreen extends ConsumerWidget {
                             },
                             style: FilledButton.styleFrom(
                               backgroundColor: AuxColors.ember,
-                              foregroundColor: AuxColors.ink,
+                              foregroundColor: context.colors.ink,
                               padding: const EdgeInsets.symmetric(vertical: 14),
                             ),
                             icon: const Icon(Icons.play_arrow_rounded),
@@ -208,11 +208,11 @@ class PlaylistDetailScreen extends ConsumerWidget {
           asyncTracks.when(
             data: (tracks) {
               if (tracks.isEmpty) {
-                return const SliverFillRemaining(
+                return SliverFillRemaining(
                   child: Center(
                     child: Text(
                       'This playlist is empty.',
-                      style: TextStyle(color: AuxColors.paperMuted),
+                      style: TextStyle(color: context.colors.paperMuted),
                     ),
                   ),
                 );

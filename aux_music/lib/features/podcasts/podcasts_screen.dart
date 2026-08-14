@@ -169,7 +169,7 @@ class PodcastsScreen extends ConsumerWidget {
     return Scaffold(
       body: RefreshIndicator(
         color: AuxColors.ember,
-        backgroundColor: AuxColors.inkRaised,
+        backgroundColor: context.colors.inkRaised,
         onRefresh: () async {
           ref.invalidate(_podcastShelvesProvider);
         },
@@ -187,7 +187,7 @@ class PodcastsScreen extends ConsumerWidget {
                       Text(
                         'Podcasts',
                         style: AuxTypography.display.copyWith(
-                          color: AuxColors.paper,
+                          color: context.colors.paper,
                           fontSize: 26,
                         ),
                       ),
@@ -198,7 +198,7 @@ class PodcastsScreen extends ConsumerWidget {
             ),
 
             // Local RSS subscriptions
-            _buildLocalSubscriptionsSection(subscriptions, ref),
+            _buildLocalSubscriptionsSection(context, subscriptions, ref),
 
             // Dynamic Shelves
             shelvesAsync.when(
@@ -209,7 +209,7 @@ class PodcastsScreen extends ConsumerWidget {
                     children: [
                       Padding(
                         padding: const EdgeInsets.all(AuxSpacing.lg),
-                        child: Container(width: 150, height: 24, color: AuxColors.inkRaised),
+                        child: Container(width: 150, height: 24, color: context.colors.inkRaised),
                       ),
                       SizedBox(height: 200, child: _buildShimmerShelf()),
                     ],
@@ -220,7 +220,7 @@ class PodcastsScreen extends ConsumerWidget {
                 child: Padding(
                   padding: const EdgeInsets.all(AuxSpacing.xl),
                   child: Center(
-                    child: Text('Failed to load podcasts.\n$e', style: AuxTypography.body.copyWith(color: AuxColors.paperMuted), textAlign: TextAlign.center,),
+                    child: Text('Failed to load podcasts.\n$e', style: AuxTypography.body.copyWith(color: context.colors.paperMuted), textAlign: TextAlign.center,),
                   ),
                 ),
               ),
@@ -238,14 +238,14 @@ class PodcastsScreen extends ConsumerWidget {
                             ),
                             child: Text(
                               shelf.title,
-                              style: AuxTypography.titleMd.copyWith(color: AuxColors.paper),
+                              style: AuxTypography.titleMd.copyWith(color: context.colors.paper),
                             ),
                           ),
                           SizedBox(
                             height: 200,
                             child: shelf.isEpisodes
                                 ? _TrackShelf(tracks: shelf.items as List<Track>)
-                                : _PodcastShelf(podcasts: shelf.items as List<Podcast>),
+                                : _buildPodcastShelf(context, podcasts: shelf.items as List<Podcast>),
                           ),
                         ],
                       );
@@ -265,7 +265,7 @@ class PodcastsScreen extends ConsumerWidget {
 
 
 
-  Widget _buildLocalSubscriptionsSection(AsyncValue subscriptions, WidgetRef ref) {
+  Widget _buildLocalSubscriptionsSection(BuildContext context, AsyncValue subscriptions, WidgetRef ref) {
     return SliverToBoxAdapter(
       child: subscriptions.when(
         loading: () => const SizedBox(),
@@ -277,7 +277,7 @@ class PodcastsScreen extends ConsumerWidget {
             children: [
               Padding(
                 padding: const EdgeInsets.fromLTRB(AuxSpacing.lg, AuxSpacing.xl, AuxSpacing.lg, AuxSpacing.md),
-                child: Text('My Subscriptions', style: AuxTypography.titleMd.copyWith(color: AuxColors.paper)),
+                child: Text('My Subscriptions', style: AuxTypography.titleMd.copyWith(color: context.colors.paper)),
               ),
               SizedBox(
                 height: 200,
@@ -296,7 +296,7 @@ class PodcastsScreen extends ConsumerWidget {
                         margin: const EdgeInsets.only(right: AuxSpacing.sm),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(AuxSpacing.radiusCard),
-                          color: AuxColors.inkRaised,
+                          color: context.colors.inkRaised,
                         ),
                         child: Stack(
                           fit: StackFit.expand,
@@ -384,19 +384,19 @@ class PodcastsScreen extends ConsumerWidget {
         height: 200,
         margin: const EdgeInsets.only(right: AuxSpacing.sm),
         decoration: BoxDecoration(
-          color: AuxColors.inkRaised,
+          color: context.colors.inkRaised,
           borderRadius: BorderRadius.circular(AuxSpacing.radiusCard),
         ),
       ),
     );
   }
 
-  Widget _PodcastShelf({required List<Podcast> podcasts}) {
+  Widget _buildPodcastShelf(BuildContext context, {required List<Podcast> podcasts}) {
     if (podcasts.isEmpty) {
       return Center(
         child: Text(
           'Temporarily unavailable.',
-          style: AuxTypography.body.copyWith(color: AuxColors.paperMuted),
+          style: AuxTypography.body.copyWith(color: context.colors.paperMuted),
           textAlign: TextAlign.center,
         ),
       );
@@ -416,7 +416,7 @@ class PodcastsScreen extends ConsumerWidget {
             margin: const EdgeInsets.only(right: AuxSpacing.sm),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(AuxSpacing.radiusCard),
-              color: AuxColors.inkRaised,
+              color: context.colors.inkRaised,
             ),
             child: Stack(
               fit: StackFit.expand,
@@ -492,7 +492,7 @@ class _TrackShelf extends ConsumerWidget {
       return Center(
         child: Text(
           'Nothing here yet. Check back soon.',
-          style: AuxTypography.body.copyWith(color: AuxColors.paperMuted),
+          style: AuxTypography.body.copyWith(color: context.colors.paperMuted),
         ),
       );
     }
@@ -519,7 +519,7 @@ class _TrackShelf extends ConsumerWidget {
             margin: const EdgeInsets.only(right: AuxSpacing.sm),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(AuxSpacing.radiusCard),
-              color: AuxColors.inkRaised,
+              color: context.colors.inkRaised,
             ),
             child: Stack(
               fit: StackFit.expand,

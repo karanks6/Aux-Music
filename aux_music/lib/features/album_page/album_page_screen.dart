@@ -21,7 +21,7 @@ class AlbumPageScreen extends ConsumerWidget {
         slivers: [
           SliverAppBar.large(
             title: const Text('Album'),
-            backgroundColor: AuxColors.ink,
+            backgroundColor: context.colors.ink,
             surfaceTintColor: Colors.transparent,
             actions: [
               // Play All button
@@ -50,11 +50,11 @@ class AlbumPageScreen extends ConsumerWidget {
           tracksAsync.when(
             data: (tracks) {
               if (tracks.isEmpty) {
-                return const SliverFillRemaining(
+                return SliverFillRemaining(
                   child: Center(
                     child: Text(
                       'No tracks found for this album.',
-                      style: TextStyle(color: AuxColors.paperMuted),
+                      style: TextStyle(color: context.colors.paperMuted),
                     ),
                   ),
                 );

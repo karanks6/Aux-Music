@@ -52,21 +52,21 @@ class _PodcastSearchScreenState extends ConsumerState<PodcastSearchScreen> {
     final searchResults = ref.watch(podcastSearchProvider);
 
     return Scaffold(
-      backgroundColor: AuxColors.ink,
+      backgroundColor: context.colors.ink,
       appBar: AppBar(
-        backgroundColor: AuxColors.ink,
+        backgroundColor: context.colors.ink,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AuxColors.paper),
+          icon: Icon(Icons.arrow_back, color: context.colors.paper),
           onPressed: () => context.pop(),
         ),
         title: TextField(
           controller: _searchController,
           focusNode: _focusNode,
-          style: AuxTypography.body.copyWith(color: AuxColors.paper),
+          style: AuxTypography.body.copyWith(color: context.colors.paper),
           decoration: InputDecoration(
             hintText: 'Search Podcasts on YouTube...',
-            hintStyle: AuxTypography.body.copyWith(color: AuxColors.paperMuted),
+            hintStyle: AuxTypography.body.copyWith(color: context.colors.paperMuted),
             border: InputBorder.none,
           ),
           onChanged: (val) {
@@ -76,7 +76,7 @@ class _PodcastSearchScreenState extends ConsumerState<PodcastSearchScreen> {
         actions: [
           if (_searchController.text.isNotEmpty)
             IconButton(
-              icon: const Icon(Icons.clear, color: AuxColors.paperMuted),
+              icon: Icon(Icons.clear, color: context.colors.paperMuted),
               onPressed: () {
                 _searchController.clear();
                 ref.read(_podcastSearchQueryProvider.notifier).state = '';
@@ -89,7 +89,7 @@ class _PodcastSearchScreenState extends ConsumerState<PodcastSearchScreen> {
           ? Center(
               child: Text(
                 'Search for podcast episodes.',
-                style: AuxTypography.body.copyWith(color: AuxColors.paperMuted),
+                style: AuxTypography.body.copyWith(color: context.colors.paperMuted),
               ),
             )
           : searchResults.when(
@@ -99,7 +99,7 @@ class _PodcastSearchScreenState extends ConsumerState<PodcastSearchScreen> {
               error: (e, st) => Center(
                 child: Text(
                   'Search failed.\n$e',
-                  style: AuxTypography.body.copyWith(color: AuxColors.paperMuted),
+                  style: AuxTypography.body.copyWith(color: context.colors.paperMuted),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -108,7 +108,7 @@ class _PodcastSearchScreenState extends ConsumerState<PodcastSearchScreen> {
                   return Center(
                     child: Text(
                       'No podcasts found.',
-                      style: AuxTypography.body.copyWith(color: AuxColors.paperMuted),
+                      style: AuxTypography.body.copyWith(color: context.colors.paperMuted),
                     ),
                   );
                 }
@@ -133,13 +133,13 @@ class _PodcastSearchScreenState extends ConsumerState<PodcastSearchScreen> {
                       ),
                       title: Text(
                         track.title,
-                        style: AuxTypography.bodySemiBold.copyWith(color: AuxColors.paper),
+                        style: AuxTypography.bodySemiBold.copyWith(color: context.colors.paper),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                       subtitle: Text(
                         track.artistName,
-                        style: AuxTypography.caption.copyWith(color: AuxColors.paperMuted),
+                        style: AuxTypography.caption.copyWith(color: context.colors.paperMuted),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),

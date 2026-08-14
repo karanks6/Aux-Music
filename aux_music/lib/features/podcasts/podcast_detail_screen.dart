@@ -26,12 +26,12 @@ class PodcastDetailScreen extends ConsumerWidget {
       body: episodes.when(
         loading: () => const Center(child: CircularProgressIndicator(color: AuxColors.ember)),
         error: (e, _) => Center(
-          child: Text('Failed to load episodes', style: AuxTypography.body.copyWith(color: AuxColors.paperMuted)),
+          child: Text('Failed to load episodes', style: AuxTypography.body.copyWith(color: context.colors.paperMuted)),
         ),
         data: (eps) {
           if (eps.isEmpty) {
             return Center(
-              child: Text('No episodes found', style: AuxTypography.body.copyWith(color: AuxColors.paperMuted)),
+              child: Text('No episodes found', style: AuxTypography.body.copyWith(color: context.colors.paperMuted)),
             );
           }
           return ListView.builder(
@@ -45,25 +45,25 @@ class PodcastDetailScreen extends ConsumerWidget {
                   child: Container(
                     width: AuxSpacing.artSm,
                     height: AuxSpacing.artSm,
-                    color: AuxColors.inkRaised,
+                    color: context.colors.inkRaised,
                     child: ep.artworkUrl != null
                         ? Image.network(
                             ep.artworkUrl!,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => const Icon(Icons.podcasts_rounded, color: AuxColors.paperMuted),
+                            errorBuilder: (_, __, ___) => Icon(Icons.podcasts_rounded, color: context.colors.paperMuted),
                           )
-                        : const Icon(Icons.podcasts_rounded, color: AuxColors.paperMuted),
+                        : Icon(Icons.podcasts_rounded, color: context.colors.paperMuted),
                   ),
                 ),
                 title: Text(
                   ep.title,
-                  style: AuxTypography.bodySemiBold.copyWith(color: AuxColors.paper),
+                  style: AuxTypography.bodySemiBold.copyWith(color: context.colors.paper),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
                 subtitle: Text(
                   '${_formatDate(ep.publishedAt)} • ${_formatDuration(ep.durationMs)}',
-                  style: AuxTypography.caption.copyWith(color: AuxColors.paperMuted),
+                  style: AuxTypography.caption.copyWith(color: context.colors.paperMuted),
                 ),
                 onTap: () {
                   final handler = ref.read(audioHandlerProvider);
