@@ -420,94 +420,90 @@ class _HostRoomView extends ConsumerWidget {
 
         const SizedBox(height: AuxSpacing.lg),
 
-        // ── Room Code Card ──
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AuxSpacing.lg),
-          child: _RoomCodeCard(roomId: state.roomId!),
-        ),
-
-        const SizedBox(height: AuxSpacing.md),
-
-        // ── Now Playing (if any) ──
-        if (state.nowPlaying != null)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AuxSpacing.lg),
-            child: _NowPlayingCard(track: state.nowPlaying!, isPlaying: state.isPlaying),
-          ),
-
-        const SizedBox(height: AuxSpacing.md),
-
-        // ── Queue Header ──
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AuxSpacing.lg),
-          child: Row(
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(AuxSpacing.lg, 0, AuxSpacing.lg, AuxSpacing.xxxl),
             children: [
-              Text('Shared Queue', style: AuxTypography.titleMd.copyWith(color: AuxColors.paper)),
-              if (state.sharedQueue.isNotEmpty) ...[
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: AuxColors.ember.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    '${state.sharedQueue.length}',
-                    style: AuxTypography.captionMedium.copyWith(color: AuxColors.ember),
-                  ),
-                ),
+              // ── Room Code Card ──
+              _RoomCodeCard(roomId: state.roomId!),
+
+              const SizedBox(height: AuxSpacing.md),
+
+              // ── Now Playing (if any) ──
+              if (state.nowPlaying != null) ...[
+                _NowPlayingCard(track: state.nowPlaying!, isPlaying: state.isPlaying),
+                const SizedBox(height: AuxSpacing.md),
               ],
-              const Spacer(),
-              // ── Add Song button for host ──
-              TextButton.icon(
-                onPressed: () => context.push(AppRoutes.search),
-                icon: const Icon(Icons.add_rounded, size: 16, color: AuxColors.ember),
-                label: Text('Add Song',
-                    style: AuxTypography.buttonSm.copyWith(color: AuxColors.ember)),
-                style: TextButton.styleFrom(
-                  backgroundColor: AuxColors.ember.withValues(alpha: 0.1),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                ),
+
+              // ── Queue Header ──
+              Row(
+                children: [
+                  Text('Shared Queue', style: AuxTypography.titleMd.copyWith(color: AuxColors.paper)),
+                  if (state.sharedQueue.isNotEmpty) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AuxColors.ember.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '${state.sharedQueue.length}',
+                        style: AuxTypography.captionMedium.copyWith(color: AuxColors.ember),
+                      ),
+                    ),
+                  ],
+                  const Spacer(),
+                  // ── Add Song button for host ──
+                  TextButton.icon(
+                    onPressed: () => context.push(AppRoutes.search),
+                    icon: const Icon(Icons.add_rounded, size: 16, color: AuxColors.ember),
+                    label: Text('Add Song',
+                        style: AuxTypography.buttonSm.copyWith(color: AuxColors.ember)),
+                    style: TextButton.styleFrom(
+                      backgroundColor: AuxColors.ember.withValues(alpha: 0.1),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    ),
+                  ),
+                ],
               ),
+
+              const SizedBox(height: AuxSpacing.sm),
+
+              // ── Queue List ──
+              if (state.sharedQueue.isEmpty)
+                const SizedBox(
+                  height: 200,
+                  child: _EmptyQueuePlaceholder(isHost: true),
+                )
+              else
+                ...state.sharedQueue.asMap().entries.map((e) {
+                  final index = e.key;
+                  final track = e.value;
+                  return Dismissible(
+                    key: ValueKey('${track.id}_$index'),
+                    direction: DismissDirection.endToStart,
+                    onDismissed: (_) {
+                      notifier.kickTrack(index);
+                      ref.read(audioHandlerProvider).removeQueueItemAt(index);
+                    },
+                    background: Container(
+                      alignment: Alignment.centerRight,
+                      padding: const EdgeInsets.only(right: AuxSpacing.lg),
+                      color: AuxColors.danger.withValues(alpha: 0.2),
+                      child: const Icon(Icons.delete_outline, color: AuxColors.danger),
+                    ),
+                    child: InkWell(
+                      onTap: () {
+                        ref.read(audioHandlerProvider).skipToQueueItem(index);
+                      },
+                      child: _QueueTrackTile(track: track, index: index),
+                    ),
+                  );
+                }),
             ],
           ),
-        ),
-
-        const SizedBox(height: AuxSpacing.sm),
-
-        // ── Queue List ──
-        Expanded(
-          child: state.sharedQueue.isEmpty
-              ? _EmptyQueuePlaceholder(isHost: true)
-              : ListView.builder(
-                  padding: const EdgeInsets.only(bottom: AuxSpacing.xxxl),
-                  itemCount: state.sharedQueue.length,
-                  itemBuilder: (context, index) {
-                    final track = state.sharedQueue[index];
-                    return Dismissible(
-                      key: ValueKey('${track.id}_$index'),
-                      direction: DismissDirection.endToStart,
-                      onDismissed: (_) {
-                        notifier.kickTrack(index);
-                        ref.read(audioHandlerProvider).removeQueueItemAt(index);
-                      },
-                      background: Container(
-                        alignment: Alignment.centerRight,
-                        padding: const EdgeInsets.only(right: AuxSpacing.lg),
-                        color: AuxColors.danger.withValues(alpha: 0.2),
-                        child: const Icon(Icons.delete_outline, color: AuxColors.danger),
-                      ),
-                      child: InkWell(
-                        onTap: () {
-                          // Play the track immediately when tapped by the host
-                          ref.read(audioHandlerProvider).skipToQueueItem(index);
-                        },
-                        child: _QueueTrackTile(track: track, index: index),
-                      ),
-                    );
-                  },
-                ),
         ),
       ],
     );
@@ -1456,7 +1452,10 @@ class _SyncModeCard extends StatelessWidget {
         trailing: Switch(
           value: isOn,
           onChanged: (v) => notifier.toggleSyncMode(v),
-          activeColor: AuxColors.signalTeal,
+          activeColor: AuxColors.ember,
+          activeTrackColor: AuxColors.signalTeal,
+          inactiveThumbColor: AuxColors.paperMuted,
+          inactiveTrackColor: AuxColors.ink,
           trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
         ),
       ),
