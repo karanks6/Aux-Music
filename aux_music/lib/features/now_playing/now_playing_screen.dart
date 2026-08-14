@@ -55,7 +55,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
       child: Scaffold(
         body: Container(
         decoration: BoxDecoration(
-          gradient: AuxColors.nowPlayingRadialGradient(AuxColors.ember),
+          gradient: AuxColors.nowPlayingRadialGradient(AuxColors.ember, context.colors.ink),
         ),
         child: SafeArea(
           child: Column(
@@ -141,7 +141,7 @@ class _DragHandle extends StatelessWidget {
           width: 40,
           height: 4,
           decoration: BoxDecoration(
-            color: AuxColors.paperMuted.withValues(alpha: 0.4),
+            color: context.colors.paperMuted.withValues(alpha: 0.4),
             borderRadius: BorderRadius.circular(2),
           ),
         ),
@@ -215,7 +215,7 @@ class _AlbumArtState extends ConsumerState<_AlbumArt>
           tag: 'now-playing-art',
           child: Container(
             decoration: BoxDecoration(
-              color: AuxColors.inkRaised,
+              color: context.colors.inkRaised,
               borderRadius: BorderRadius.circular(AuxSpacing.radiusCard),
               boxShadow: [
                 BoxShadow(
@@ -245,10 +245,10 @@ class _ArtPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Icon(
+    return Icon(
       Icons.music_note_rounded,
       size: 80,
-      color: AuxColors.paperMuted,
+      color: context.colors.paperMuted,
     );
   }
 }
@@ -282,7 +282,7 @@ class _TrackInfo extends ConsumerWidget {
                 child: Text(
                   mediaItem?.title ?? 'Nothing playing',
                   style: AuxTypography.display.copyWith(
-                    color: AuxColors.paper,
+                    color: context.colors.paper,
                     fontSize: 22,
                   ),
                   maxLines: 2,
@@ -318,7 +318,7 @@ class _TrackInfo extends ConsumerWidget {
             button: true,
             child: IconButton(
               icon: const Icon(Icons.add_rounded),
-              color: AuxColors.paperMuted,
+              color: context.colors.paperMuted,
               iconSize: 28,
               onPressed: () {
                 final track = Track(
@@ -350,7 +350,7 @@ class _TrackInfo extends ConsumerWidget {
             icon: Icon(
               isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
             ),
-            color: isLiked ? AuxColors.danger : AuxColors.paperMuted,
+            color: isLiked ? AuxColors.danger : context.colors.paperMuted,
             iconSize: 28,
             onPressed: () {
               if (mediaItem != null) {
@@ -383,7 +383,7 @@ class _TrackInfo extends ConsumerWidget {
   void _showAddToPlaylistSheet(BuildContext context, Track track) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AuxColors.inkRaised,
+      backgroundColor: context.colors.inkRaised,
       builder: (context) {
         return Consumer(
           builder: (context, ref, _) {
@@ -402,13 +402,13 @@ class _TrackInfo extends ConsumerWidget {
                           _showCreatePlaylistDialog(context, track);
                         },
                       ),
-                      if (playlists.isNotEmpty) const Divider(color: AuxColors.ink),
+                      if (playlists.isNotEmpty) Divider(color: context.colors.ink),
                       if (playlists.isEmpty)
                         Padding(
                           padding: const EdgeInsets.all(AuxSpacing.xl),
                           child: Center(
                             heightFactor: 1,
-                            child: Text('No playlists yet.', style: AuxTypography.body.copyWith(color: AuxColors.paperMuted)),
+                            child: Text('No playlists yet.', style: AuxTypography.body.copyWith(color: context.colors.paperMuted)),
                           ),
                         )
                       else
@@ -419,8 +419,8 @@ class _TrackInfo extends ConsumerWidget {
                             itemBuilder: (context, i) {
                               final p = playlists[i];
                               return ListTile(
-                                leading: const Icon(Icons.queue_music, color: AuxColors.paperMuted),
-                                title: Text(p.name, style: AuxTypography.body.copyWith(color: AuxColors.paper)),
+                                leading: Icon(Icons.queue_music, color: context.colors.paperMuted),
+                                title: Text(p.name, style: AuxTypography.body.copyWith(color: context.colors.paper)),
                                 onTap: () {
                                   ref.read(libraryRepositoryProvider).addTrackToPlaylist(int.parse(p.id), track);
                                   context.pop();
@@ -451,17 +451,17 @@ class _TrackInfo extends ConsumerWidget {
       context: context,
       builder: (context) => Consumer(
         builder: (context, ref, _) => AlertDialog(
-          backgroundColor: AuxColors.inkRaised,
-          title: Text('New Playlist', style: AuxTypography.titleLg.copyWith(color: AuxColors.paper)),
+          backgroundColor: context.colors.inkRaised,
+          title: Text('New Playlist', style: AuxTypography.titleLg.copyWith(color: context.colors.paper)),
           content: TextField(
             controller: controller,
             autofocus: true,
-            style: AuxTypography.body.copyWith(color: AuxColors.paper),
+            style: AuxTypography.body.copyWith(color: context.colors.paper),
             decoration: InputDecoration(
               hintText: 'Playlist name',
-              hintStyle: const TextStyle(color: AuxColors.paperMuted),
+              hintStyle: TextStyle(color: context.colors.paperMuted),
               filled: true,
-              fillColor: AuxColors.ink,
+              fillColor: context.colors.ink,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AuxSpacing.radiusCard),
                 borderSide: BorderSide.none,
@@ -471,7 +471,7 @@ class _TrackInfo extends ConsumerWidget {
           actions: [
             TextButton(
               onPressed: () => context.pop(),
-              child: const Text('Cancel', style: TextStyle(color: AuxColors.paperMuted)),
+              child: Text('Cancel', style: TextStyle(color: context.colors.paperMuted)),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -589,12 +589,12 @@ class _SeekBarState extends State<_SeekBar> {
                 ),
               ),
               style: AuxTypography.tabularProgress
-                  .copyWith(color: AuxColors.paperMuted),
+                  .copyWith(color: context.colors.paperMuted),
             ),
             Text(
               _formatDuration(duration),
               style: AuxTypography.tabularProgress
-                  .copyWith(color: AuxColors.paperMuted),
+                  .copyWith(color: context.colors.paperMuted),
             ),
           ],
         ),
@@ -639,7 +639,7 @@ class _TransportControls extends StatelessWidget {
             button: true,
             child: IconButton(
               icon: const Icon(Icons.shuffle_rounded),
-              color: shuffle ? AuxColors.signalTeal : AuxColors.paperMuted,
+              color: shuffle ? AuxColors.signalTeal : context.colors.paperMuted,
               iconSize: 28,
               onPressed: () {
                 final newShuffle = !shuffle;
@@ -656,7 +656,7 @@ class _TransportControls extends StatelessWidget {
             button: true,
             child: IconButton(
               icon: const Icon(Icons.skip_previous_rounded),
-              color: AuxColors.paper,
+              color: context.colors.paper,
               iconSize: 40,
               onPressed: handler.skipToPrevious,
             ),
@@ -690,7 +690,7 @@ class _TransportControls extends StatelessWidget {
             button: true,
             child: IconButton(
               icon: const Icon(Icons.skip_next_rounded),
-              color: AuxColors.paper,
+              color: context.colors.paper,
               iconSize: 40,
               onPressed: handler.skipToNext,
             ),
@@ -710,7 +710,7 @@ class _TransportControls extends StatelessWidget {
                 RepeatMode.all => Icons.repeat_rounded,
               }),
               color: repeatMode == RepeatMode.off
-                  ? AuxColors.paperMuted
+                  ? context.colors.paperMuted
                   : AuxColors.signalTeal,
               iconSize: 28,
               onPressed: () {
@@ -748,26 +748,26 @@ class _AttributionStrip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: AuxSpacing.xl),
         child: Row(
           children: [
-            const Icon(
+            Icon(
               Icons.info_outline_rounded,
               size: 14,
-              color: AuxColors.paperMuted,
+              color: context.colors.paperMuted,
             ),
             const SizedBox(width: AuxSpacing.xs),
             Expanded(
               child: Text(
                 attribution,
                 style: AuxTypography.caption.copyWith(
-                  color: AuxColors.paperMuted,
+                  color: context.colors.paperMuted,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            const Icon(
+            Icon(
               Icons.chevron_right_rounded,
               size: 16,
-              color: AuxColors.paperMuted,
+              color: context.colors.paperMuted,
             ),
           ],
         ),
@@ -791,7 +791,7 @@ class _AttributionStrip extends StatelessWidget {
           children: [
             Text('About this track',
                 style: AuxTypography.titleMd
-                    .copyWith(color: AuxColors.paper)),
+                    .copyWith(color: context.colors.paper)),
             const SizedBox(height: AuxSpacing.lg),
             _InfoRow('Title', item.title),
             _InfoRow('Artist', item.artist ?? '—'),
@@ -823,12 +823,12 @@ class _InfoRow extends StatelessWidget {
             width: 80,
             child: Text(label,
                 style: AuxTypography.captionMedium
-                    .copyWith(color: AuxColors.paperMuted)),
+                    .copyWith(color: context.colors.paperMuted)),
           ),
           Expanded(
             child: Text(value,
                 style: AuxTypography.body
-                    .copyWith(color: AuxColors.paper)),
+                    .copyWith(color: context.colors.paper)),
           ),
         ],
       ),
@@ -854,7 +854,7 @@ class _ExtraControls extends ConsumerWidget {
         children: [
           Icon(
             volume == 0 ? Icons.volume_off_rounded : Icons.volume_down_rounded,
-            color: AuxColors.paperMuted,
+            color: context.colors.paperMuted,
             size: 20,
           ),
           Expanded(
@@ -863,9 +863,9 @@ class _ExtraControls extends ConsumerWidget {
                 trackHeight: 2,
                 thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
                 overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
-                activeTrackColor: AuxColors.paperMuted,
-                inactiveTrackColor: AuxColors.hairline,
-                thumbColor: AuxColors.paperMuted,
+                activeTrackColor: context.colors.paperMuted,
+                inactiveTrackColor: context.colors.hairline,
+                thumbColor: context.colors.paperMuted,
               ),
               child: Slider(
                 value: volume,
@@ -880,7 +880,7 @@ class _ExtraControls extends ConsumerWidget {
             icon: const Icon(Icons.equalizer_rounded),
             color: eqPreset != EqPreset.flat
                 ? AuxColors.signalTeal
-                : AuxColors.paperMuted,
+                : context.colors.paperMuted,
             iconSize: 22,
             onPressed: () => _showEqSheet(context, ref, eqPreset),
           ),
@@ -889,7 +889,7 @@ class _ExtraControls extends ConsumerWidget {
               if (mediaItem == null) {
                 return IconButton(
                   icon: const Icon(Icons.download_rounded),
-                  color: AuxColors.paperMuted,
+                  color: context.colors.paperMuted,
                   iconSize: 22,
                   onPressed: null,
                 );
@@ -905,7 +905,7 @@ class _ExtraControls extends ConsumerWidget {
               
               return IconButton(
                 icon: Icon(isDownloaded ? Icons.download_done_rounded : Icons.download_rounded),
-                color: isDownloaded ? AuxColors.signalTeal : AuxColors.paperMuted,
+                color: isDownloaded ? AuxColors.signalTeal : context.colors.paperMuted,
                 iconSize: 22,
                 onPressed: isDownloaded ? null : () async {
                   try {
@@ -968,13 +968,13 @@ class _ExtraControls extends ConsumerWidget {
             ),
             color: sleepTimer.isActive
                 ? AuxColors.signalTeal
-                : AuxColors.paperMuted,
+                : context.colors.paperMuted,
             iconSize: 22,
             onPressed: () => _showSleepTimerSheet(context, ref, sleepTimer),
           ),
           IconButton(
             icon: const Icon(Icons.queue_music_rounded),
-            color: AuxColors.paperMuted,
+            color: context.colors.paperMuted,
             iconSize: 22,
             onPressed: () {
               context.push('/queue');
@@ -1000,7 +1000,7 @@ class _ExtraControls extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Equalizer',
-                    style: AuxTypography.titleMd.copyWith(color: AuxColors.paper)),
+                    style: AuxTypography.titleMd.copyWith(color: context.colors.paper)),
                 const SizedBox(height: AuxSpacing.md),
                 Wrap(
                   spacing: AuxSpacing.sm,
@@ -1011,7 +1011,7 @@ class _ExtraControls extends ConsumerWidget {
                       label: Text(
                         preset.name.toUpperCase(),
                         style: TextStyle(
-                          color: isSelected ? Colors.white : AuxColors.paper,
+                          color: isSelected ? Colors.white : context.colors.paper,
                           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                           fontSize: 12,
                         ),
@@ -1053,7 +1053,7 @@ class _ExtraControls extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Sleep Timer',
-                    style: AuxTypography.titleMd.copyWith(color: AuxColors.paper)),
+                    style: AuxTypography.titleMd.copyWith(color: context.colors.paper)),
                 const SizedBox(height: AuxSpacing.lg),
                 if (current.isActive) ...[
                   _SleepTimerCountdown(current),
@@ -1080,7 +1080,7 @@ class _ExtraControls extends ConsumerWidget {
                       label: Text(
                         'End of Track',
                         style: TextStyle(
-                          color: current.atEndOfTrack ? Colors.white : AuxColors.paper,
+                          color: current.atEndOfTrack ? Colors.white : context.colors.paper,
                           fontWeight: current.atEndOfTrack ? FontWeight.bold : FontWeight.normal,
                           fontSize: 12,
                         ),
@@ -1096,15 +1096,15 @@ class _ExtraControls extends ConsumerWidget {
                     ActionChip(
                       label: Text(
                         'Custom',
-                        style: const TextStyle(
-                          color: AuxColors.paper,
+                        style: TextStyle(
+                          color: context.colors.paper,
                           fontWeight: FontWeight.normal,
                           fontSize: 12,
                         ),
                       ),
                       backgroundColor: Colors.transparent,
-                      shape: const StadiumBorder(
-                        side: BorderSide(color: AuxColors.paperMuted),
+                      shape: StadiumBorder(
+                        side: BorderSide(color: context.colors.paperMuted),
                       ),
                       onPressed: () {
                         _showCustomTimerDialog(context, ref);
@@ -1126,18 +1126,18 @@ class _ExtraControls extends ConsumerWidget {
     await showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AuxColors.inkRaised,
-        title: Text('Custom Sleep Timer', style: AuxTypography.titleMd.copyWith(color: AuxColors.paper)),
+        backgroundColor: context.colors.inkRaised,
+        title: Text('Custom Sleep Timer', style: AuxTypography.titleMd.copyWith(color: context.colors.paper)),
         content: TextField(
           controller: controller,
           keyboardType: TextInputType.number,
-          style: const TextStyle(color: AuxColors.paper),
-          decoration: const InputDecoration(
+          style: TextStyle(color: context.colors.paper),
+          decoration: InputDecoration(
             labelText: 'Minutes',
-            labelStyle: TextStyle(color: AuxColors.paperMuted),
+            labelStyle: TextStyle(color: context.colors.paperMuted),
             suffixText: 'min',
-            suffixStyle: TextStyle(color: AuxColors.paperMuted),
-            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: AuxColors.paperMuted)),
+            suffixStyle: TextStyle(color: context.colors.paperMuted),
+            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: context.colors.paperMuted)),
             focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: AuxColors.ember)),
           ),
           autofocus: true,
@@ -1145,7 +1145,7 @@ class _ExtraControls extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: AuxColors.paperMuted)),
+            child: Text('Cancel', style: TextStyle(color: context.colors.paperMuted)),
           ),
           TextButton(
             onPressed: () {
@@ -1182,7 +1182,7 @@ class _TimerChip extends StatelessWidget {
       label: Text(
         label,
         style: TextStyle(
-          color: isSelected ? Colors.white : AuxColors.paper,
+          color: isSelected ? Colors.white : context.colors.paper,
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
           fontSize: 12,
         ),

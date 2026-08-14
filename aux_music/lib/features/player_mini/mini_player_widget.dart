@@ -32,10 +32,10 @@ class MiniPlayerWidget extends ConsumerWidget {
       onTap: () => context.push(AppRoutes.nowPlaying),
       child: Container(
         height: AuxSpacing.miniPlayerHeight,
-        decoration: const BoxDecoration(
-          color: AuxColors.inkRaised,
+        decoration: BoxDecoration(
+          color: context.colors.inkRaised,
           border: Border(
-            top: BorderSide(color: AuxColors.hairline, width: 0.5),
+            top: BorderSide(color: context.colors.hairline, width: 0.5),
           ),
         ),
         child: Column(
@@ -44,7 +44,7 @@ class MiniPlayerWidget extends ConsumerWidget {
             // Thin progress strip at the very top
             LinearProgressIndicator(
               value: progress,
-              backgroundColor: AuxColors.hairline,
+              backgroundColor: context.colors.hairline,
               valueColor:
                   const AlwaysStoppedAnimation<Color>(AuxColors.ember),
               minHeight: 2,
@@ -83,14 +83,14 @@ class MiniPlayerWidget extends ConsumerWidget {
                           Text(
                             mediaItem.title,
                             style: AuxTypography.bodySemiBold
-                                .copyWith(color: AuxColors.paper),
+                                .copyWith(color: context.colors.paper),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                           Text(
                             mediaItem.artist ?? '',
                             style: AuxTypography.caption
-                                .copyWith(color: AuxColors.paperMuted),
+                                .copyWith(color: context.colors.paperMuted),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -107,7 +107,7 @@ class MiniPlayerWidget extends ConsumerWidget {
                               ? Icons.pause_rounded
                               : Icons.play_arrow_rounded,
                         ),
-                        color: AuxColors.paper,
+                        color: context.colors.paper,
                         iconSize: 32,
                         onPressed: isPlaying ? handler.pause : handler.play,
                       ),
@@ -118,7 +118,7 @@ class MiniPlayerWidget extends ConsumerWidget {
                       button: true,
                       child: IconButton(
                         icon: const Icon(Icons.skip_next_rounded),
-                        color: AuxColors.paperMuted,
+                        color: context.colors.paperMuted,
                         iconSize: 28,
                         onPressed: handler.skipToNext,
                       ),
@@ -142,10 +142,10 @@ class _ArtFallback extends StatelessWidget {
     return Container(
       width: AuxSpacing.artSm,
       height: AuxSpacing.artSm,
-      color: AuxColors.hairline,
-      child: const Icon(
+      color: context.colors.hairline,
+      child: Icon(
         Icons.music_note_rounded,
-        color: AuxColors.paperMuted,
+        color: context.colors.paperMuted,
         size: 20,
       ),
     );

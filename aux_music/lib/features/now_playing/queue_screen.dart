@@ -58,10 +58,10 @@ class _QueueScreenState extends ConsumerState<QueueScreen> {
         }
       },
       child: Scaffold(
-        backgroundColor: AuxColors.ink,
+        backgroundColor: context.colors.ink,
         body: Container(
           decoration: BoxDecoration(
-            gradient: AuxColors.nowPlayingRadialGradient(AuxColors.ember),
+            gradient: AuxColors.nowPlayingRadialGradient(AuxColors.ember, context.colors.ink),
           ),
           child: SafeArea(
             child: Column(
@@ -72,10 +72,10 @@ class _QueueScreenState extends ConsumerState<QueueScreen> {
                   centerTitle: true,
                   title: Text(
                     'Up Next',
-                    style: AuxTypography.titleMd.copyWith(color: AuxColors.paper),
+                    style: AuxTypography.titleMd.copyWith(color: context.colors.paper),
                   ),
                   leading: IconButton(
-                    icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AuxColors.paper),
+                    icon: Icon(Icons.keyboard_arrow_down_rounded, color: context.colors.paper),
                     onPressed: () => context.pop(),
                   ),
                 ),
@@ -84,7 +84,7 @@ class _QueueScreenState extends ConsumerState<QueueScreen> {
                     ? Center(
                         child: Text(
                           'No tracks in queue',
-                          style: AuxTypography.body.copyWith(color: AuxColors.paperMuted),
+                          style: AuxTypography.body.copyWith(color: context.colors.paperMuted),
                         ),
                       )
                     : NotificationListener<ScrollUpdateNotification>(
@@ -115,7 +115,7 @@ class _QueueScreenState extends ConsumerState<QueueScreen> {
                     vertical: AuxSpacing.xs,
                     horizontal: AuxSpacing.sm,
                   ),
-                  tileColor: isPlaying ? AuxColors.inkRaised : Colors.transparent,
+                  tileColor: isPlaying ? context.colors.inkRaised : Colors.transparent,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(AuxSpacing.radiusCard),
                   ),
@@ -125,9 +125,9 @@ class _QueueScreenState extends ConsumerState<QueueScreen> {
                       if (!isPartyMode)
                         ReorderableDragStartListener(
                           index: index,
-                          child: const Padding(
+                          child: Padding(
                             padding: EdgeInsets.only(right: AuxSpacing.sm),
-                            child: Icon(Icons.drag_handle_rounded, color: AuxColors.paperMuted),
+                            child: Icon(Icons.drag_handle_rounded, color: context.colors.paperMuted),
                           ),
                         ),
                       ClipRRect(
@@ -151,7 +151,7 @@ class _QueueScreenState extends ConsumerState<QueueScreen> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: AuxTypography.body.copyWith(
-                      color: isPlaying ? AuxColors.ember : AuxColors.paper,
+                      color: isPlaying ? AuxColors.ember : context.colors.paper,
                       fontWeight: isPlaying ? FontWeight.bold : FontWeight.normal,
                     ),
                   ),
@@ -159,7 +159,7 @@ class _QueueScreenState extends ConsumerState<QueueScreen> {
                     item.artist ?? '',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: AuxTypography.caption.copyWith(color: AuxColors.paperMuted),
+                    style: AuxTypography.caption.copyWith(color: context.colors.paperMuted),
                   ),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -191,8 +191,8 @@ class _QueueScreenState extends ConsumerState<QueueScreen> {
     return Container(
       width: 48,
       height: 48,
-      color: AuxColors.inkRaised,
-      child: const Icon(Icons.music_note_rounded, color: AuxColors.paperMuted),
+      color: context.colors.inkRaised,
+      child: Icon(Icons.music_note_rounded, color: context.colors.paperMuted),
     );
   }
 }
@@ -211,14 +211,14 @@ class _TrackTrailingActions extends ConsumerWidget {
       children: [
         IconButton(
           icon: Icon(isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded),
-          color: isLiked ? AuxColors.ember : AuxColors.paperMuted,
+          color: isLiked ? AuxColors.ember : context.colors.paperMuted,
           onPressed: () {
             ref.read(libraryRepositoryProvider).toggleLikeTrack(track);
           },
         ),
         IconButton(
           icon: const Icon(Icons.more_vert_rounded),
-          color: AuxColors.paperMuted,
+          color: context.colors.paperMuted,
           onPressed: () => _showTrackOptions(context, ref, track),
         ),
       ],
@@ -228,7 +228,7 @@ class _TrackTrailingActions extends ConsumerWidget {
   void _showTrackOptions(BuildContext context, WidgetRef ref, Track track) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AuxColors.inkRaised,
+      backgroundColor: context.colors.inkRaised,
       builder: (context) {
         return Consumer(
           builder: (context, ref, _) {
@@ -267,8 +267,8 @@ class _TrackTrailingActions extends ConsumerWidget {
                     )
                   else
                     ListTile(
-                      leading: const Icon(Icons.download_rounded, color: AuxColors.paper),
-                      title: Text('Download for offline', style: AuxTypography.body.copyWith(color: AuxColors.paper)),
+                      leading: Icon(Icons.download_rounded, color: context.colors.paper),
+                      title: Text('Download for offline', style: AuxTypography.body.copyWith(color: context.colors.paper)),
                       onTap: () async {
                         context.pop();
                         
@@ -296,8 +296,8 @@ class _TrackTrailingActions extends ConsumerWidget {
                       },
                     ),
                   ListTile(
-                    leading: const Icon(Icons.playlist_add_rounded, color: AuxColors.paper),
-                    title: Text('Add to playlist', style: AuxTypography.body.copyWith(color: AuxColors.paper)),
+                    leading: Icon(Icons.playlist_add_rounded, color: context.colors.paper),
+                    title: Text('Add to playlist', style: AuxTypography.body.copyWith(color: context.colors.paper)),
                     onTap: () {
                       context.pop();
                       _showAddToPlaylistSheet(context, ref, track);
@@ -314,7 +314,7 @@ class _TrackTrailingActions extends ConsumerWidget {
   void _showAddToPlaylistSheet(BuildContext context, WidgetRef outerRef, Track track) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AuxColors.inkRaised,
+      backgroundColor: context.colors.inkRaised,
       builder: (context) {
         return Consumer(
           builder: (context, ref, _) {
@@ -333,13 +333,13 @@ class _TrackTrailingActions extends ConsumerWidget {
                           _showCreatePlaylistDialog(context, track);
                         },
                       ),
-                      if (playlists.isNotEmpty) const Divider(color: AuxColors.ink),
+                      if (playlists.isNotEmpty) Divider(color: context.colors.ink),
                       if (playlists.isEmpty)
                         Padding(
                           padding: const EdgeInsets.all(AuxSpacing.xl),
                           child: Center(
                             heightFactor: 1,
-                            child: Text('No playlists yet.', style: AuxTypography.body.copyWith(color: AuxColors.paperMuted)),
+                            child: Text('No playlists yet.', style: AuxTypography.body.copyWith(color: context.colors.paperMuted)),
                           ),
                         )
                       else
@@ -350,8 +350,8 @@ class _TrackTrailingActions extends ConsumerWidget {
                             itemBuilder: (context, i) {
                               final p = playlists[i];
                               return ListTile(
-                                leading: const Icon(Icons.queue_music, color: AuxColors.paperMuted),
-                                title: Text(p.name, style: AuxTypography.body.copyWith(color: AuxColors.paper)),
+                                leading: Icon(Icons.queue_music, color: context.colors.paperMuted),
+                                title: Text(p.name, style: AuxTypography.body.copyWith(color: context.colors.paper)),
                                 onTap: () {
                                   ref.read(libraryRepositoryProvider).addTrackToPlaylist(int.parse(p.id), track);
                                   context.pop();
@@ -382,17 +382,17 @@ class _TrackTrailingActions extends ConsumerWidget {
       context: context,
       builder: (context) => Consumer(
         builder: (context, ref, _) => AlertDialog(
-          backgroundColor: AuxColors.inkRaised,
-          title: Text('New Playlist', style: AuxTypography.titleLg.copyWith(color: AuxColors.paper)),
+          backgroundColor: context.colors.inkRaised,
+          title: Text('New Playlist', style: AuxTypography.titleLg.copyWith(color: context.colors.paper)),
           content: TextField(
             controller: controller,
             autofocus: true,
-            style: AuxTypography.body.copyWith(color: AuxColors.paper),
+            style: AuxTypography.body.copyWith(color: context.colors.paper),
             decoration: InputDecoration(
               hintText: 'Playlist name',
-              hintStyle: const TextStyle(color: AuxColors.paperMuted),
+              hintStyle: TextStyle(color: context.colors.paperMuted),
               filled: true,
-              fillColor: AuxColors.ink,
+              fillColor: context.colors.ink,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AuxSpacing.radiusCard),
                 borderSide: BorderSide.none,
@@ -402,7 +402,7 @@ class _TrackTrailingActions extends ConsumerWidget {
           actions: [
             TextButton(
               onPressed: () => context.pop(),
-              child: const Text('Cancel', style: TextStyle(color: AuxColors.paperMuted)),
+              child: Text('Cancel', style: TextStyle(color: context.colors.paperMuted)),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
