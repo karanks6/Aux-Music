@@ -51,8 +51,8 @@ class _PassTheAuxScreenState extends ConsumerState<PassTheAuxScreen>
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(msg, style: AuxTypography.body.copyWith(color: AuxColors.paper)),
-              backgroundColor: AuxColors.inkRaised,
+              content: Text(msg, style: AuxTypography.body.copyWith(color: context.colors.paper)),
+              backgroundColor: context.colors.inkRaised,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               duration: const Duration(seconds: 3),
@@ -76,7 +76,7 @@ class _PassTheAuxScreenState extends ConsumerState<PassTheAuxScreen>
     final notifier = ref.read(passTheAuxProvider.notifier);
 
     return Scaffold(
-      backgroundColor: AuxColors.ink,
+      backgroundColor: context.colors.ink,
       body: SafeArea(
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 350),
@@ -141,12 +141,12 @@ class _LandingView extends ConsumerWidget {
           // ── Header ──
           Text(
             'Pass the Aux',
-            style: AuxTypography.display.copyWith(color: AuxColors.paper, fontSize: 26),
+            style: AuxTypography.display.copyWith(color: context.colors.paper, fontSize: 26),
           ),
           const SizedBox(height: 4),
           Text(
             'Share music. Together, in real time.',
-            style: AuxTypography.body.copyWith(color: AuxColors.paperMuted),
+            style: AuxTypography.body.copyWith(color: context.colors.paperMuted),
           ),
 
           const SizedBox(height: 40),
@@ -198,7 +198,7 @@ class _LandingView extends ConsumerWidget {
                   trailing: state.isConnected
                       ? Icon(
                           showJoinInput ? Icons.expand_less : Icons.expand_more,
-                          color: AuxColors.paperMuted,
+                          color: context.colors.paperMuted,
                         )
                       : const SizedBox(
                           width: 18,
@@ -350,18 +350,18 @@ class _HostRoomView extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AuxColors.inkRaised,
+        backgroundColor: context.colors.inkRaised,
         title: Text('End Session?',
-            style: AuxTypography.titleMd.copyWith(color: AuxColors.paper)),
+            style: AuxTypography.titleMd.copyWith(color: context.colors.paper)),
         content: Text(
           'This will end the party for all guests. Are you sure?',
-          style: AuxTypography.body.copyWith(color: AuxColors.paperMuted),
+          style: AuxTypography.body.copyWith(color: context.colors.paperMuted),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
             child:
-                Text('Cancel', style: AuxTypography.button.copyWith(color: AuxColors.paperMuted)),
+                Text('Cancel', style: AuxTypography.button.copyWith(color: context.colors.paperMuted)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -390,11 +390,11 @@ class _HostRoomView extends ConsumerWidget {
                   children: [
                     Text(
                       'Pass the Aux',
-                      style: AuxTypography.display.copyWith(color: AuxColors.paper, fontSize: 26),
+                      style: AuxTypography.display.copyWith(color: context.colors.paper, fontSize: 26),
                     ),
                     Text(
                       'Hosting as $displayName',
-                      style: AuxTypography.caption.copyWith(color: AuxColors.paperMuted),
+                      style: AuxTypography.caption.copyWith(color: context.colors.paperMuted),
                     ),
                   ],
                 ),
@@ -438,7 +438,7 @@ class _HostRoomView extends ConsumerWidget {
               // ── Queue Header ──
               Row(
                 children: [
-                  Text('Shared Queue', style: AuxTypography.titleMd.copyWith(color: AuxColors.paper)),
+                  Text('Shared Queue', style: AuxTypography.titleMd.copyWith(color: context.colors.paper)),
                   if (state.sharedQueue.isNotEmpty) ...[
                     const SizedBox(width: 8),
                     Container(
@@ -527,18 +527,18 @@ class _GuestRoomView extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AuxColors.inkRaised,
+        backgroundColor: context.colors.inkRaised,
         title: Text('Leave the room?',
-            style: AuxTypography.titleMd.copyWith(color: AuxColors.paper)),
+            style: AuxTypography.titleMd.copyWith(color: context.colors.paper)),
         content: Text(
           'You\'ll need the room code to rejoin.',
-          style: AuxTypography.body.copyWith(color: AuxColors.paperMuted),
+          style: AuxTypography.body.copyWith(color: context.colors.paperMuted),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
             child:
-                Text('Cancel', style: AuxTypography.button.copyWith(color: AuxColors.paperMuted)),
+                Text('Cancel', style: AuxTypography.button.copyWith(color: context.colors.paperMuted)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -568,11 +568,11 @@ class _GuestRoomView extends ConsumerWidget {
                     Text(
                       'Pass the Aux',
                       style:
-                          AuxTypography.display.copyWith(color: AuxColors.paper, fontSize: 26),
+                          AuxTypography.display.copyWith(color: context.colors.paper, fontSize: 26),
                     ),
                     Text(
                       'Room ${state.roomId}  ·  $displayName',
-                      style: AuxTypography.caption.copyWith(color: AuxColors.paperMuted),
+                      style: AuxTypography.caption.copyWith(color: context.colors.paperMuted),
                     ),
                   ],
                 ),
@@ -628,7 +628,7 @@ class _GuestRoomView extends ConsumerWidget {
               // ── Queue Header ──
               Row(
                 children: [
-                  Text('Queue', style: AuxTypography.titleMd.copyWith(color: AuxColors.paper)),
+                  Text('Queue', style: AuxTypography.titleMd.copyWith(color: context.colors.paper)),
                   if (state.sharedQueue.isNotEmpty) ...[
                     const SizedBox(width: 8),
                     Container(
@@ -677,7 +677,7 @@ class _ConnectionBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: AuxSpacing.md, vertical: AuxSpacing.sm),
       decoration: BoxDecoration(
-        color: AuxColors.inkRaised,
+        color: context.colors.inkRaised,
         borderRadius: BorderRadius.circular(AuxSpacing.radiusCard),
       ),
       child: Row(
@@ -693,7 +693,7 @@ class _ConnectionBanner extends StatelessWidget {
           const SizedBox(width: AuxSpacing.sm),
           Text(
             'Connecting to server…',
-            style: AuxTypography.caption.copyWith(color: AuxColors.paperMuted),
+            style: AuxTypography.caption.copyWith(color: context.colors.paperMuted),
           ),
         ],
       ),
@@ -765,11 +765,11 @@ class _ActionCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(AuxSpacing.lg),
           decoration: BoxDecoration(
-            color: AuxColors.inkRaised,
+            color: context.colors.inkRaised,
             borderRadius: BorderRadius.circular(AuxSpacing.radiusCard),
             border: Border.all(
               color: disabled
-                  ? AuxColors.hairline
+                  ? context.colors.hairline
                   : accentColor.withValues(alpha: 0.2),
             ),
           ),
@@ -789,11 +789,11 @@ class _ActionCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: AuxTypography.titleMd.copyWith(color: AuxColors.paper)),
+                    Text(title, style: AuxTypography.titleMd.copyWith(color: context.colors.paper)),
                     const SizedBox(height: 4),
                     Text(
                       subtitle,
-                      style: AuxTypography.caption.copyWith(color: AuxColors.paperMuted),
+                      style: AuxTypography.caption.copyWith(color: context.colors.paperMuted),
                     ),
                   ],
                 ),
@@ -838,7 +838,7 @@ class _JoinInputCardState extends State<_JoinInputCard>
     return Container(
       padding: const EdgeInsets.all(AuxSpacing.md),
       decoration: BoxDecoration(
-        color: AuxColors.inkRaised,
+        color: context.colors.inkRaised,
         borderRadius: BorderRadius.circular(AuxSpacing.radiusCard),
         border: Border.all(color: AuxColors.signalTeal.withValues(alpha: 0.3)),
       ),
@@ -848,7 +848,7 @@ class _JoinInputCardState extends State<_JoinInputCard>
           Container(
             height: 38,
             decoration: BoxDecoration(
-              color: AuxColors.ink,
+              color: context.colors.ink,
               borderRadius: BorderRadius.circular(10),
             ),
             child: TabBar(
@@ -858,8 +858,8 @@ class _JoinInputCardState extends State<_JoinInputCard>
                 borderRadius: BorderRadius.circular(8),
               ),
               indicatorSize: TabBarIndicatorSize.tab,
-              labelColor: AuxColors.ink,
-              unselectedLabelColor: AuxColors.paperMuted,
+              labelColor: context.colors.ink,
+              unselectedLabelColor: context.colors.paperMuted,
               labelStyle: AuxTypography.captionMedium,
               dividerColor: Colors.transparent,
               tabs: const [
@@ -904,7 +904,7 @@ class _EnterCodeTab extends StatelessWidget {
         TextField(
           controller: controller,
           style: AuxTypography.titleMd.copyWith(
-            color: AuxColors.paper,
+            color: context.colors.paper,
             letterSpacing: 4,
           ),
           keyboardType: TextInputType.text,
@@ -913,11 +913,11 @@ class _EnterCodeTab extends StatelessWidget {
           decoration: InputDecoration(
             hintText: 'A3F91C',
             hintStyle: AuxTypography.titleMd.copyWith(
-              color: AuxColors.paperMuted.withValues(alpha: 0.4),
+              color: context.colors.paperMuted.withValues(alpha: 0.4),
               letterSpacing: 4,
             ),
             filled: true,
-            fillColor: AuxColors.ink,
+            fillColor: context.colors.ink,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
@@ -937,13 +937,13 @@ class _EnterCodeTab extends StatelessWidget {
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AuxColors.signalTeal,
-              foregroundColor: AuxColors.ink,
+              foregroundColor: context.colors.ink,
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               elevation: 0,
             ),
             child:
-                Text('Join Room', style: AuxTypography.button.copyWith(color: AuxColors.ink)),
+                Text('Join Room', style: AuxTypography.button.copyWith(color: context.colors.ink)),
           ),
         ),
       ],
@@ -964,10 +964,10 @@ class _ScanQrTab extends StatelessWidget {
         onPressed: () => _openScanner(context),
         icon: const Icon(Icons.qr_code_scanner_rounded, size: 20),
         label: Text('Open Camera Scanner',
-            style: AuxTypography.button.copyWith(color: AuxColors.ink)),
+            style: AuxTypography.button.copyWith(color: context.colors.ink)),
         style: ElevatedButton.styleFrom(
           backgroundColor: AuxColors.signalTeal,
-          foregroundColor: AuxColors.ink,
+          foregroundColor: context.colors.ink,
           padding: const EdgeInsets.symmetric(vertical: 14),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           elevation: 0,
@@ -980,7 +980,7 @@ class _ScanQrTab extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AuxColors.inkRaised,
+      backgroundColor: context.colors.inkRaised,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -1064,7 +1064,7 @@ class _RoomCodeCardState extends State<_RoomCodeCard> {
                       'ROOM CODE',
                       style: AuxTypography.buttonSm.copyWith(
                         letterSpacing: 2.5,
-                        color: AuxColors.paperMuted,
+                        color: context.colors.paperMuted,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -1080,7 +1080,7 @@ class _RoomCodeCardState extends State<_RoomCodeCard> {
                     const SizedBox(height: 4),
                     Text(
                       'Share this code with friends',
-                      style: AuxTypography.caption.copyWith(color: AuxColors.paperMuted),
+                      style: AuxTypography.caption.copyWith(color: context.colors.paperMuted),
                     ),
                   ],
                 ),
@@ -1096,8 +1096,8 @@ class _RoomCodeCardState extends State<_RoomCodeCard> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('Room code copied!',
-                          style: AuxTypography.body.copyWith(color: AuxColors.paper)),
-                      backgroundColor: AuxColors.inkRaised,
+                          style: AuxTypography.body.copyWith(color: context.colors.paper)),
+                      backgroundColor: context.colors.inkRaised,
                       behavior: SnackBarBehavior.floating,
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
@@ -1153,7 +1153,7 @@ class _RoomCodeCardState extends State<_RoomCodeCard> {
                           Text(
                             'Friends scan this to join',
                             style: AuxTypography.caption
-                                .copyWith(color: AuxColors.paperMuted),
+                                .copyWith(color: context.colors.paperMuted),
                           ),
                         ],
                       ),
@@ -1214,7 +1214,7 @@ class _GuestCountBadge extends StatelessWidget {
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: AuxColors.inkRaised,
+      backgroundColor: context.colors.inkRaised,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -1230,7 +1230,7 @@ class _GuestCountBadge extends StatelessWidget {
                   const SizedBox(width: 8),
                   Text(
                     '$count ${count == 1 ? 'Guest' : 'Guests'} in the room',
-                    style: AuxTypography.titleMd.copyWith(color: AuxColors.paper),
+                    style: AuxTypography.titleMd.copyWith(color: context.colors.paper),
                   ),
                 ],
               ),
@@ -1241,7 +1241,7 @@ class _GuestCountBadge extends StatelessWidget {
                 padding: const EdgeInsets.all(AuxSpacing.xl),
                 child: Text(
                   'No guests have joined yet.',
-                  style: AuxTypography.body.copyWith(color: AuxColors.paperMuted),
+                  style: AuxTypography.body.copyWith(color: context.colors.paperMuted),
                   textAlign: TextAlign.center,
                 ),
               )
@@ -1251,7 +1251,7 @@ class _GuestCountBadge extends StatelessWidget {
                 physics: const NeverScrollableScrollPhysics(),
                 padding: const EdgeInsets.symmetric(horizontal: AuxSpacing.lg),
                 itemCount: allMembers.length,
-                separatorBuilder: (_, __) => const Divider(color: AuxColors.hairline, height: 1),
+                separatorBuilder: (_, __) => Divider(color: context.colors.hairline, height: 1),
                 itemBuilder: (_, i) {
                   final name = allMembers[i];
                   return ListTile(
@@ -1265,7 +1265,7 @@ class _GuestCountBadge extends StatelessWidget {
                     ),
                     title: Text(
                       name,
-                      style: AuxTypography.body.copyWith(color: AuxColors.paper),
+                      style: AuxTypography.body.copyWith(color: context.colors.paper),
                     ),
                   );
                 },
@@ -1314,7 +1314,7 @@ class _NowPlayingCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AuxSpacing.md),
       decoration: BoxDecoration(
-        color: AuxColors.inkRaised,
+        color: context.colors.inkRaised,
         borderRadius: BorderRadius.circular(AuxSpacing.radiusCard),
       ),
       child: Row(
@@ -1324,15 +1324,15 @@ class _NowPlayingCard extends StatelessWidget {
             child: Container(
               width: 52,
               height: 52,
-              color: AuxColors.hairline,
+              color: context.colors.hairline,
               child: track.thumbnailUrl != null || track.artworkUrl != null
                   ? Image.network(
                       track.thumbnailUrl ?? track.artworkUrl ?? '',
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) =>
-                          const Icon(Icons.music_note_rounded, color: AuxColors.paperMuted),
+                          Icon(Icons.music_note_rounded, color: context.colors.paperMuted),
                     )
-                  : const Icon(Icons.music_note_rounded, color: AuxColors.paperMuted),
+                  : Icon(Icons.music_note_rounded, color: context.colors.paperMuted),
             ),
           ),
           const SizedBox(width: AuxSpacing.md),
@@ -1342,18 +1342,18 @@ class _NowPlayingCard extends StatelessWidget {
               children: [
                 Text(
                   'Now Playing',
-                  style: AuxTypography.caption.copyWith(color: AuxColors.paperMuted),
+                  style: AuxTypography.caption.copyWith(color: context.colors.paperMuted),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   track.title,
-                  style: AuxTypography.bodySemiBold.copyWith(color: AuxColors.paper),
+                  style: AuxTypography.bodySemiBold.copyWith(color: context.colors.paper),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
                   track.artistName,
-                  style: AuxTypography.caption.copyWith(color: AuxColors.paperMuted),
+                  style: AuxTypography.caption.copyWith(color: context.colors.paperMuted),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -1362,7 +1362,7 @@ class _NowPlayingCard extends StatelessWidget {
           ),
           Icon(
             isPlaying ? Icons.equalizer_rounded : Icons.pause_circle_outline_rounded,
-            color: isPlaying ? AuxColors.ember : AuxColors.paperMuted,
+            color: isPlaying ? AuxColors.ember : context.colors.paperMuted,
             size: 22,
           ),
         ],
@@ -1387,10 +1387,10 @@ class _SyncModeCard extends StatelessWidget {
     final isOn = state.isSyncModeEnabled;
     return Container(
       decoration: BoxDecoration(
-        color: AuxColors.inkRaised,
+        color: context.colors.inkRaised,
         borderRadius: BorderRadius.circular(AuxSpacing.radiusCard),
         border: Border.all(
-          color: isOn ? AuxColors.signalTeal.withValues(alpha: 0.5) : AuxColors.hairline,
+          color: isOn ? AuxColors.signalTeal.withValues(alpha: 0.5) : context.colors.hairline,
           width: isOn ? 1.5 : 1,
         ),
       ),
@@ -1408,12 +1408,12 @@ class _SyncModeCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: isOn
                       ? AuxColors.signalTeal.withValues(alpha: 0.2)
-                      : AuxColors.hairline,
+                      : context.colors.hairline,
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   Icons.sync_rounded,
-                  color: isOn ? AuxColors.signalTeal : AuxColors.paperMuted,
+                  color: isOn ? AuxColors.signalTeal : context.colors.paperMuted,
                   size: 20,
                 ),
               ),
@@ -1422,7 +1422,7 @@ class _SyncModeCard extends StatelessWidget {
         ),
         title: Row(
           children: [
-            Text('Listen Along', style: AuxTypography.bodySemiBold.copyWith(color: AuxColors.paper)),
+            Text('Listen Along', style: AuxTypography.bodySemiBold.copyWith(color: context.colors.paper)),
             if (isOn) ...[
               const SizedBox(width: 8),
               Container(
@@ -1447,15 +1447,15 @@ class _SyncModeCard extends StatelessWidget {
           isOn
               ? 'Playing what the host is playing in real time.'
               : 'Enable to hear exactly what the host is playing.',
-          style: AuxTypography.caption.copyWith(color: AuxColors.paperMuted),
+          style: AuxTypography.caption.copyWith(color: context.colors.paperMuted),
         ),
         trailing: Switch(
           value: isOn,
           onChanged: (v) => notifier.toggleSyncMode(v),
           activeColor: AuxColors.ember,
           activeTrackColor: AuxColors.signalTeal,
-          inactiveThumbColor: AuxColors.paperMuted,
-          inactiveTrackColor: AuxColors.ink,
+          inactiveThumbColor: context.colors.paperMuted,
+          inactiveTrackColor: context.colors.ink,
           trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
         ),
       ),
@@ -1495,16 +1495,16 @@ class _AddSongCard extends StatelessWidget {
               children: [
                 Text(
                   'Add a Song',
-                  style: AuxTypography.bodySemiBold.copyWith(color: AuxColors.paper),
+                  style: AuxTypography.bodySemiBold.copyWith(color: context.colors.paper),
                 ),
                 Text(
                   'Go to Search and tap any track.',
-                  style: AuxTypography.caption.copyWith(color: AuxColors.paperMuted),
+                  style: AuxTypography.caption.copyWith(color: context.colors.paperMuted),
                 ),
               ],
             ),
             const Spacer(),
-            const Icon(Icons.arrow_forward_ios_rounded, color: AuxColors.paperMuted, size: 14),
+            Icon(Icons.arrow_forward_ios_rounded, color: context.colors.paperMuted, size: 14),
           ],
         ),
       ),
@@ -1527,7 +1527,7 @@ class _QueueTrackTile extends StatelessWidget {
             width: 20,
             child: Text(
               '${index + 1}',
-              style: AuxTypography.tabularDuration.copyWith(color: AuxColors.paperMuted),
+              style: AuxTypography.tabularDuration.copyWith(color: context.colors.paperMuted),
               textAlign: TextAlign.right,
             ),
           ),
@@ -1537,28 +1537,28 @@ class _QueueTrackTile extends StatelessWidget {
             child: Container(
               width: 44,
               height: 44,
-              color: AuxColors.hairline,
+              color: context.colors.hairline,
               child: track.thumbnailUrl != null || track.artworkUrl != null
                   ? Image.network(
                       track.thumbnailUrl ?? track.artworkUrl ?? '',
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) =>
-                          const Icon(Icons.music_note, color: AuxColors.paperMuted, size: 18),
+                          Icon(Icons.music_note, color: context.colors.paperMuted, size: 18),
                     )
-                  : const Icon(Icons.music_note, color: AuxColors.paperMuted, size: 18),
+                  : Icon(Icons.music_note, color: context.colors.paperMuted, size: 18),
             ),
           ),
         ],
       ),
       title: Text(
         track.title,
-        style: AuxTypography.bodyLg.copyWith(color: AuxColors.paper),
+        style: AuxTypography.bodyLg.copyWith(color: context.colors.paper),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
       subtitle: Text(
         track.artistName,
-        style: AuxTypography.caption.copyWith(color: AuxColors.paperMuted),
+        style: AuxTypography.caption.copyWith(color: context.colors.paperMuted),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
@@ -1581,13 +1581,13 @@ class _EmptyQueuePlaceholder extends StatelessWidget {
           children: [
             Icon(
               isHost ? Icons.queue_music_rounded : Icons.music_note_rounded,
-              color: AuxColors.hairline,
+              color: context.colors.hairline,
               size: 56,
             ),
             const SizedBox(height: AuxSpacing.md),
             Text(
               isHost ? 'Queue is empty' : 'Nothing queued yet',
-              style: AuxTypography.titleMd.copyWith(color: AuxColors.paperMuted),
+              style: AuxTypography.titleMd.copyWith(color: context.colors.paperMuted),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 6),
@@ -1595,7 +1595,7 @@ class _EmptyQueuePlaceholder extends StatelessWidget {
               isHost
                   ? 'Guests can add songs from anywhere in the app.'
                   : 'Tap "Add a Song" above to suggest one.',
-              style: AuxTypography.caption.copyWith(color: AuxColors.paperMuted),
+              style: AuxTypography.caption.copyWith(color: context.colors.paperMuted),
               textAlign: TextAlign.center,
             ),
           ],
@@ -1621,17 +1621,17 @@ class _FeatureDivider extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Expanded(child: Container(height: 1, color: AuxColors.hairline)),
+        Expanded(child: Container(height: 1, color: context.colors.hairline)),
         const SizedBox(width: AuxSpacing.sm),
         Text(
           label,
           style: AuxTypography.buttonSm.copyWith(
-            color: AuxColors.paperMuted,
+            color: context.colors.paperMuted,
             letterSpacing: 2,
           ),
         ),
         const SizedBox(width: AuxSpacing.sm),
-        Expanded(child: Container(height: 1, color: AuxColors.hairline)),
+        Expanded(child: Container(height: 1, color: context.colors.hairline)),
       ],
     );
   }
@@ -1657,7 +1657,7 @@ class _FeatureCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AuxSpacing.lg),
       decoration: BoxDecoration(
-        color: AuxColors.inkRaised,
+        color: context.colors.inkRaised,
         borderRadius: BorderRadius.circular(AuxSpacing.radiusCard),
         border: Border.all(color: color.withValues(alpha: 0.15)),
       ),
@@ -1682,7 +1682,7 @@ class _FeatureCard extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: AuxTypography.bodySemiBold.copyWith(color: AuxColors.paper),
+                    style: AuxTypography.bodySemiBold.copyWith(color: context.colors.paper),
                   ),
                   Text(
                     subtitle,
@@ -1725,7 +1725,7 @@ class _FeatureCard extends StatelessWidget {
                     child: Text(
                       step.text,
                       style: AuxTypography.caption.copyWith(
-                        color: AuxColors.paperMuted,
+                        color: context.colors.paperMuted,
                         height: 1.5,
                       ),
                     ),
@@ -1795,11 +1795,11 @@ class _QrScannerSheetState extends State<_QrScannerSheet> {
             child: Row(
               children: [
                 Text('Scan QR Code',
-                    style: AuxTypography.titleMd.copyWith(color: AuxColors.paper)),
+                    style: AuxTypography.titleMd.copyWith(color: context.colors.paper)),
                 const Spacer(),
                 IconButton(
                   onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close_rounded, color: AuxColors.paperMuted),
+                  icon: Icon(Icons.close_rounded, color: context.colors.paperMuted),
                 ),
               ],
             ),
@@ -1809,7 +1809,7 @@ class _QrScannerSheetState extends State<_QrScannerSheet> {
             padding: const EdgeInsets.only(bottom: AuxSpacing.md),
             child: Text(
               'Point at the host\'s QR code to join instantly',
-              style: AuxTypography.caption.copyWith(color: AuxColors.paperMuted),
+              style: AuxTypography.caption.copyWith(color: context.colors.paperMuted),
             ),
           ),
 
@@ -1859,7 +1859,7 @@ class _QrScannerSheetState extends State<_QrScannerSheet> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: AuxSpacing.md, vertical: 8),
                         decoration: BoxDecoration(
-                          color: AuxColors.inkRaised.withValues(alpha: 0.85),
+                          color: context.colors.inkRaised.withValues(alpha: 0.85),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
