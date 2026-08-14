@@ -100,7 +100,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AuxColors.ink,
+      backgroundColor: context.colors.ink,
       body: FadeTransition(
         opacity: _fadeAnim,
         child: SafeArea(
@@ -123,7 +123,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                 Text(
                   'Free music. No limits.',
                   style: AuxTypography.body.copyWith(
-                    color: AuxColors.paperMuted,
+                    color: context.colors.paperMuted,
                     letterSpacing: 0.3,
                   ),
                 ),
@@ -133,12 +133,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                 // ── Email Field ──
                 TextField(
                   controller: _emailController,
-                  style: AuxTypography.body.copyWith(color: AuxColors.paper),
+                  style: AuxTypography.body.copyWith(color: context.colors.paper),
                   decoration: InputDecoration(
                     hintText: 'Email',
-                    hintStyle: AuxTypography.body.copyWith(color: AuxColors.paperMuted),
+                    hintStyle: AuxTypography.body.copyWith(color: context.colors.paperMuted),
                     filled: true,
-                    fillColor: AuxColors.inkRaised,
+                    fillColor: context.colors.inkRaised,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
                       borderSide: BorderSide.none,
@@ -154,12 +154,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                 // ── Password Field ──
                 TextField(
                   controller: _passwordController,
-                  style: AuxTypography.body.copyWith(color: AuxColors.paper),
+                  style: AuxTypography.body.copyWith(color: context.colors.paper),
                   decoration: InputDecoration(
                     hintText: 'Password',
-                    hintStyle: AuxTypography.body.copyWith(color: AuxColors.paperMuted),
+                    hintStyle: AuxTypography.body.copyWith(color: context.colors.paperMuted),
                     filled: true,
-                    fillColor: AuxColors.inkRaised,
+                    fillColor: context.colors.inkRaised,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
                       borderSide: BorderSide.none,
@@ -180,7 +180,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                     onPressed: _isLoading ? null : _signInWithEmail,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AuxColors.ember,
-                      foregroundColor: AuxColors.ink,
+                      foregroundColor: context.colors.ink,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
@@ -188,11 +188,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                       elevation: 0,
                     ),
                     child: _isLoading
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 22,
                             height: 22,
                             child: CircularProgressIndicator(
-                                strokeWidth: 2.5, color: AuxColors.ink),
+                                strokeWidth: 2.5, color: context.colors.ink),
                           )
                         : Text('Log in',
                             style: AuxTypography.button
@@ -235,7 +235,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                   child: Text.rich(
                     TextSpan(
                       text: "Don't have an account? ",
-                      style: AuxTypography.body.copyWith(color: AuxColors.paperMuted),
+                      style: AuxTypography.body.copyWith(color: context.colors.paperMuted),
                       children: [
                         TextSpan(
                           text: 'Sign up',

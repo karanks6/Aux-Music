@@ -72,12 +72,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AuxColors.ink,
+      backgroundColor: context.colors.ink,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: AuxColors.paper),
+          icon: Icon(Icons.arrow_back_rounded, color: context.colors.paper),
           onPressed: () => context.pop(),
         ),
       ),
@@ -95,24 +95,24 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               const SizedBox(height: AuxSpacing.lg),
               Text(
                 'Create Account',
-                style: AuxTypography.display.copyWith(color: AuxColors.paper, fontSize: 32),
+                style: AuxTypography.display.copyWith(color: context.colors.paper, fontSize: 32),
               ),
               const SizedBox(height: AuxSpacing.xs),
               Text(
                 'Join the party and start listening.',
-                style: AuxTypography.body.copyWith(color: AuxColors.paperMuted),
+                style: AuxTypography.body.copyWith(color: context.colors.paperMuted),
               ),
               const SizedBox(height: AuxSpacing.xxl),
 
               // ── Name Field ──
               TextField(
                 controller: _nameController,
-                style: AuxTypography.body.copyWith(color: AuxColors.paper),
+                style: AuxTypography.body.copyWith(color: context.colors.paper),
                 decoration: InputDecoration(
                   hintText: 'Display Name',
-                  hintStyle: AuxTypography.body.copyWith(color: AuxColors.paperMuted),
+                  hintStyle: AuxTypography.body.copyWith(color: context.colors.paperMuted),
                   filled: true,
-                  fillColor: AuxColors.inkRaised,
+                  fillColor: context.colors.inkRaised,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
                     borderSide: BorderSide.none,
@@ -126,12 +126,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               // ── Email Field ──
               TextField(
                 controller: _emailController,
-                style: AuxTypography.body.copyWith(color: AuxColors.paper),
+                style: AuxTypography.body.copyWith(color: context.colors.paper),
                 decoration: InputDecoration(
                   hintText: 'Email',
-                  hintStyle: AuxTypography.body.copyWith(color: AuxColors.paperMuted),
+                  hintStyle: AuxTypography.body.copyWith(color: context.colors.paperMuted),
                   filled: true,
-                  fillColor: AuxColors.inkRaised,
+                  fillColor: context.colors.inkRaised,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
                     borderSide: BorderSide.none,
@@ -146,12 +146,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               // ── Password Field ──
               TextField(
                 controller: _passwordController,
-                style: AuxTypography.body.copyWith(color: AuxColors.paper),
+                style: AuxTypography.body.copyWith(color: context.colors.paper),
                 decoration: InputDecoration(
                   hintText: 'Password',
-                  hintStyle: AuxTypography.body.copyWith(color: AuxColors.paperMuted),
+                  hintStyle: AuxTypography.body.copyWith(color: context.colors.paperMuted),
                   filled: true,
-                  fillColor: AuxColors.inkRaised,
+                  fillColor: context.colors.inkRaised,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
                     borderSide: BorderSide.none,
@@ -166,12 +166,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               // ── Confirm Password Field ──
               TextField(
                 controller: _confirmPasswordController,
-                style: AuxTypography.body.copyWith(color: AuxColors.paper),
+                style: AuxTypography.body.copyWith(color: context.colors.paper),
                 decoration: InputDecoration(
                   hintText: 'Confirm Password',
-                  hintStyle: AuxTypography.body.copyWith(color: AuxColors.paperMuted),
+                  hintStyle: AuxTypography.body.copyWith(color: context.colors.paperMuted),
                   filled: true,
-                  fillColor: AuxColors.inkRaised,
+                  fillColor: context.colors.inkRaised,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
                     borderSide: BorderSide.none,
@@ -192,7 +192,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   onPressed: _isLoading ? null : _signUp,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AuxColors.ember,
-                    foregroundColor: AuxColors.ink,
+                    foregroundColor: context.colors.ink,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
@@ -200,11 +200,11 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     elevation: 0,
                   ),
                   child: _isLoading
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 22,
                           height: 22,
                           child: CircularProgressIndicator(
-                              strokeWidth: 2.5, color: AuxColors.ink),
+                              strokeWidth: 2.5, color: context.colors.ink),
                         )
                       : Text('Sign up',
                           style: AuxTypography.button

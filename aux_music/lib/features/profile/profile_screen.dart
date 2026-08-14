@@ -27,10 +27,10 @@ class ProfileScreen extends ConsumerWidget {
     final String initial = displayName.isNotEmpty ? displayName[0].toUpperCase() : '?';
 
     return Scaffold(
-      backgroundColor: AuxColors.ink,
+      backgroundColor: context.colors.ink,
       appBar: AppBar(
         title: const Text('My Profile'),
-        backgroundColor: AuxColors.ink,
+        backgroundColor: context.colors.ink,
         elevation: 0,
       ),
       body: ListView(
@@ -59,12 +59,12 @@ class ProfileScreen extends ConsumerWidget {
                     children: [
                       Text(
                         displayName,
-                        style: AuxTypography.titleMd.copyWith(color: AuxColors.paper),
+                        style: AuxTypography.titleMd.copyWith(color: context.colors.paper),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         email,
-                        style: AuxTypography.body.copyWith(color: AuxColors.paperMuted),
+                        style: AuxTypography.body.copyWith(color: context.colors.paperMuted),
                       ),
                     ],
                   ),
@@ -73,14 +73,14 @@ class ProfileScreen extends ConsumerWidget {
             ),
           ),
           
-          const Divider(color: AuxColors.hairline),
+          Divider(color: context.colors.hairline),
 
           // ── Appearance ──────────────────────────────────────────
           const _SectionHeader('Appearance'),
           SwitchListTile(
             title: Text(
               'Dark mode',
-              style: AuxTypography.body.copyWith(color: AuxColors.paper),
+              style: AuxTypography.body.copyWith(color: context.colors.paper),
             ),
             value: themeMode == ThemeMode.dark,
             onChanged: (on) => ref.read(themeModeProvider.notifier).state =
@@ -90,11 +90,11 @@ class ProfileScreen extends ConsumerWidget {
           SwitchListTile(
             title: Text(
               'Reduce motion',
-              style: AuxTypography.body.copyWith(color: AuxColors.paper),
+              style: AuxTypography.body.copyWith(color: context.colors.paper),
             ),
             subtitle: Text(
               'Disables the Now Playing pulse ring and parallax effects',
-              style: AuxTypography.caption.copyWith(color: AuxColors.paperMuted),
+              style: AuxTypography.caption.copyWith(color: context.colors.paperMuted),
             ),
             value: reduceMotion,
             onChanged: (on) =>
@@ -107,11 +107,11 @@ class ProfileScreen extends ConsumerWidget {
           SwitchListTile(
             title: Text(
               'Force offline mode',
-              style: AuxTypography.body.copyWith(color: AuxColors.paper),
+              style: AuxTypography.body.copyWith(color: context.colors.paper),
             ),
             subtitle: Text(
               'Only play downloaded tracks, save data',
-              style: AuxTypography.caption.copyWith(color: AuxColors.paperMuted),
+              style: AuxTypography.caption.copyWith(color: context.colors.paperMuted),
             ),
             value: offlineMode,
             onChanged: (on) =>
@@ -121,13 +121,13 @@ class ProfileScreen extends ConsumerWidget {
           ListTile(
             title: Text(
               'Export downloaded library',
-              style: AuxTypography.body.copyWith(color: AuxColors.paper),
+              style: AuxTypography.body.copyWith(color: context.colors.paper),
             ),
             subtitle: Text(
               'Generate an .m3u playlist of all offline tracks',
-              style: AuxTypography.caption.copyWith(color: AuxColors.paperMuted),
+              style: AuxTypography.caption.copyWith(color: context.colors.paperMuted),
             ),
-            trailing: const Icon(Icons.download_rounded, color: AuxColors.paperMuted),
+            trailing: Icon(Icons.download_rounded, color: context.colors.paperMuted),
             onTap: () async {
               try {
                 final m3uContent = await ref.read(libraryRepositoryProvider).generateM3uExport();
@@ -155,7 +155,7 @@ class ProfileScreen extends ConsumerWidget {
           ...healthStatuses.map((status) => ListTile(
                 title: Text(
                   status.displayName,
-                  style: AuxTypography.body.copyWith(color: AuxColors.paper),
+                  style: AuxTypography.body.copyWith(color: context.colors.paper),
                 ),
                 subtitle: Text(
                   status.isHealthy
@@ -193,46 +193,46 @@ class ProfileScreen extends ConsumerWidget {
           ListTile(
             title: Text(
               'App Version',
-              style: AuxTypography.body.copyWith(color: AuxColors.paper),
+              style: AuxTypography.body.copyWith(color: context.colors.paper),
             ),
             subtitle: Text(
               '0.1.0',
-              style: AuxTypography.caption.copyWith(color: AuxColors.paperMuted),
+              style: AuxTypography.caption.copyWith(color: context.colors.paperMuted),
             ),
-            leading: const Icon(Icons.info_outline_rounded, color: AuxColors.paperMuted),
+            leading: Icon(Icons.info_outline_rounded, color: context.colors.paperMuted),
           ),
           ListTile(
             title: Text(
               'Developer',
-              style: AuxTypography.body.copyWith(color: AuxColors.paper),
+              style: AuxTypography.body.copyWith(color: context.colors.paper),
             ),
             subtitle: Text(
               'Karan S Suvarna',
-              style: AuxTypography.caption.copyWith(color: AuxColors.paperMuted),
+              style: AuxTypography.caption.copyWith(color: context.colors.paperMuted),
             ),
-            leading: const Icon(Icons.person_outline_rounded, color: AuxColors.paperMuted),
+            leading: Icon(Icons.person_outline_rounded, color: context.colors.paperMuted),
           ),
           ListTile(
             title: Text(
               'Contact',
-              style: AuxTypography.body.copyWith(color: AuxColors.paper),
+              style: AuxTypography.body.copyWith(color: context.colors.paper),
             ),
             subtitle: Text(
               'suvarnakaran77@gmail.com',
-              style: AuxTypography.caption.copyWith(color: AuxColors.paperMuted),
+              style: AuxTypography.caption.copyWith(color: context.colors.paperMuted),
             ),
-            leading: const Icon(Icons.email_outlined, color: AuxColors.paperMuted),
+            leading: Icon(Icons.email_outlined, color: context.colors.paperMuted),
           ),
           ListTile(
             title: Text(
               'GitHub',
-              style: AuxTypography.body.copyWith(color: AuxColors.paper),
+              style: AuxTypography.body.copyWith(color: context.colors.paper),
             ),
             subtitle: Text(
               'https://github.com/karanks6',
-              style: AuxTypography.caption.copyWith(color: AuxColors.paperMuted),
+              style: AuxTypography.caption.copyWith(color: context.colors.paperMuted),
             ),
-            leading: const Icon(Icons.code_rounded, color: AuxColors.paperMuted),
+            leading: Icon(Icons.code_rounded, color: context.colors.paperMuted),
             onTap: () async {
               final url = Uri.parse('https://github.com/karanks6');
               try {

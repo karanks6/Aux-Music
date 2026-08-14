@@ -70,7 +70,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AuxColors.ink,
+      backgroundColor: context.colors.ink,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: AuxSpacing.xl),
@@ -86,13 +86,13 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
               const SizedBox(height: AuxSpacing.xl),
               Text(
                 'Verify your email',
-                style: AuxTypography.display.copyWith(color: AuxColors.paper, fontSize: 32),
+                style: AuxTypography.display.copyWith(color: context.colors.paper, fontSize: 32),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: AuxSpacing.md),
               Text(
                 'We\'ve sent a verification link to your email address. Please click the link to activate your account.',
-                style: AuxTypography.body.copyWith(color: AuxColors.paperMuted, height: 1.5),
+                style: AuxTypography.body.copyWith(color: context.colors.paperMuted, height: 1.5),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: AuxSpacing.xxl),
@@ -104,7 +104,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
                   onPressed: _isLoading ? null : _checkVerification,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AuxColors.ember,
-                    foregroundColor: AuxColors.ink,
+                    foregroundColor: context.colors.ink,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
@@ -112,10 +112,10 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
                     elevation: 0,
                   ),
                   child: _isLoading
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 22,
                           height: 22,
-                          child: CircularProgressIndicator(strokeWidth: 2.5, color: AuxColors.ink),
+                          child: CircularProgressIndicator(strokeWidth: 2.5, color: context.colors.ink),
                         )
                       : Text('I\'ve Verified', style: AuxTypography.button.copyWith(fontWeight: FontWeight.w600)),
                 ),
@@ -129,14 +129,14 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
                   onPressed: _isLoading ? null : _resendEmail,
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    side: const BorderSide(color: AuxColors.hairline),
+                    side: BorderSide(color: context.colors.hairline),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
                   child: Text(
                     'Resend Email',
-                    style: AuxTypography.button.copyWith(color: AuxColors.paper),
+                    style: AuxTypography.button.copyWith(color: context.colors.paper),
                   ),
                 ),
               ),
@@ -169,7 +169,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
                 onPressed: _isLoading ? null : _signOut,
                 child: Text(
                   'Cancel and Sign out',
-                  style: AuxTypography.body.copyWith(color: AuxColors.paperMuted),
+                  style: AuxTypography.body.copyWith(color: context.colors.paperMuted),
                 ),
               ),
               const SizedBox(height: AuxSpacing.xl),
