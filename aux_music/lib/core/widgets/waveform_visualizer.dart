@@ -39,6 +39,7 @@ class WaveformVisualizer extends StatelessWidget {
               barCount: barCount,
               barWidth: barWidth,
               spacing: spacing,
+              inactiveColor: context.colors.paperMuted.withValues(alpha: 0.3),
             ),
           );
         },
@@ -54,6 +55,7 @@ class _WaveformPainter extends CustomPainter {
     required this.barCount,
     required this.barWidth,
     required this.spacing,
+    required this.inactiveColor,
   });
 
   final String seed;
@@ -61,6 +63,7 @@ class _WaveformPainter extends CustomPainter {
   final int barCount;
   final double barWidth;
   final double spacing;
+  final Color inactiveColor;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -73,7 +76,7 @@ class _WaveformPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
 
     final paintInactive = Paint()
-      ..color = AuxColors.paperMuted.withValues(alpha: 0.3)
+      ..color = inactiveColor
       ..style = PaintingStyle.fill
       ..strokeCap = StrokeCap.round;
 

@@ -35,7 +35,7 @@ class TrackListTile extends ConsumerWidget {
         width: 48,
         height: 48,
         decoration: BoxDecoration(
-          color: AuxColors.inkRaised,
+          color: context.colors.inkRaised,
           borderRadius: BorderRadius.circular(AuxSpacing.radiusCard),
         ),
         clipBehavior: Clip.antiAlias,
@@ -43,21 +43,21 @@ class TrackListTile extends ConsumerWidget {
             ? Image.network(
                 track.artworkUrl!,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => const Icon(
+                errorBuilder: (_, __, ___) => Icon(
                   Icons.music_note_rounded,
-                  color: AuxColors.paperMuted,
+                  color: context.colors.paperMuted,
                 ),
               )
-            : const Icon(
+            : Icon(
                 Icons.music_note_rounded,
-                color: AuxColors.paperMuted,
+                color: context.colors.paperMuted,
               ),
       ),
       title: Text(
         track.title,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: AuxTypography.body.copyWith(color: AuxColors.paper),
+        style: AuxTypography.body.copyWith(color: context.colors.paper),
       ),
       subtitle: Text(
         track.artistName,
@@ -72,14 +72,14 @@ class TrackListTile extends ConsumerWidget {
             icon: Icon(
               isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
             ),
-            color: isLiked ? AuxColors.ember : AuxColors.paperMuted,
+            color: isLiked ? AuxColors.ember : context.colors.paperMuted,
             onPressed: () {
               ref.read(libraryRepositoryProvider).toggleLikeTrack(track);
             },
           ),
           IconButton(
             icon: const Icon(Icons.more_vert_rounded),
-            color: AuxColors.paperMuted,
+            color: context.colors.paperMuted,
             onPressed: () => _showTrackOptions(context, ref),
           ),
         ],
@@ -98,7 +98,7 @@ class TrackListTile extends ConsumerWidget {
   void _showTrackOptions(BuildContext context, WidgetRef ref) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AuxColors.inkRaised,
+      backgroundColor: context.colors.inkRaised,
       builder: (context) {
         return Consumer(
           builder: (context, ref, _) {
@@ -142,8 +142,8 @@ class TrackListTile extends ConsumerWidget {
                       )
                     else
                       ListTile(
-                        leading: const Icon(Icons.download_rounded, color: AuxColors.paper),
-                        title: Text('Download for offline', style: AuxTypography.body.copyWith(color: AuxColors.paper)),
+                        leading: Icon(Icons.download_rounded, color: context.colors.paper),
+                        title: Text('Download for offline', style: AuxTypography.body.copyWith(color: context.colors.paper)),
                         onTap: () async {
                           context.pop();
                           
@@ -171,8 +171,8 @@ class TrackListTile extends ConsumerWidget {
                         },
                       ),
                     ListTile(
-                      leading: const Icon(Icons.playlist_add_rounded, color: AuxColors.paper),
-                      title: Text('Add to playlist', style: AuxTypography.body.copyWith(color: AuxColors.paper)),
+                      leading: Icon(Icons.playlist_add_rounded, color: context.colors.paper),
+                      title: Text('Add to playlist', style: AuxTypography.body.copyWith(color: context.colors.paper)),
                       onTap: () {
                         context.pop();
                         _showAddToPlaylistSheet(context, ref);
@@ -190,7 +190,7 @@ class TrackListTile extends ConsumerWidget {
   void _showAddToPlaylistSheet(BuildContext context, WidgetRef outerRef) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AuxColors.inkRaised,
+      backgroundColor: context.colors.inkRaised,
       builder: (context) {
         return Consumer(
           builder: (context, ref, _) {
@@ -209,13 +209,13 @@ class TrackListTile extends ConsumerWidget {
                           _showCreatePlaylistDialog(context);
                         },
                       ),
-                      if (playlists.isNotEmpty) const Divider(color: AuxColors.ink),
+                      if (playlists.isNotEmpty) Divider(color: context.colors.ink),
                       if (playlists.isEmpty)
                         Padding(
                           padding: const EdgeInsets.all(AuxSpacing.xl),
                           child: Center(
                             heightFactor: 1,
-                            child: Text('No playlists yet.', style: AuxTypography.body.copyWith(color: AuxColors.paperMuted)),
+                            child: Text('No playlists yet.', style: AuxTypography.body.copyWith(color: context.colors.paperMuted)),
                           ),
                         )
                       else
@@ -226,8 +226,8 @@ class TrackListTile extends ConsumerWidget {
                             itemBuilder: (context, i) {
                               final p = playlists[i];
                               return ListTile(
-                                leading: const Icon(Icons.queue_music, color: AuxColors.paperMuted),
-                                title: Text(p.name, style: AuxTypography.body.copyWith(color: AuxColors.paper)),
+                                leading: Icon(Icons.queue_music, color: context.colors.paperMuted),
+                                title: Text(p.name, style: AuxTypography.body.copyWith(color: context.colors.paper)),
                                 onTap: () {
                                   ref.read(libraryRepositoryProvider).addTrackToPlaylist(int.parse(p.id), track);
                                   context.pop();
@@ -258,17 +258,17 @@ class TrackListTile extends ConsumerWidget {
       context: context,
       builder: (context) => Consumer(
         builder: (context, ref, _) => AlertDialog(
-          backgroundColor: AuxColors.inkRaised,
-          title: Text('New Playlist', style: AuxTypography.titleLg.copyWith(color: AuxColors.paper)),
+          backgroundColor: context.colors.inkRaised,
+          title: Text('New Playlist', style: AuxTypography.titleLg.copyWith(color: context.colors.paper)),
           content: TextField(
             controller: controller,
             autofocus: true,
-            style: AuxTypography.body.copyWith(color: AuxColors.paper),
+            style: AuxTypography.body.copyWith(color: context.colors.paper),
             decoration: InputDecoration(
               hintText: 'Playlist name',
-              hintStyle: const TextStyle(color: AuxColors.paperMuted),
+              hintStyle: TextStyle(color: context.colors.paperMuted),
               filled: true,
-              fillColor: AuxColors.ink,
+              fillColor: context.colors.ink,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AuxSpacing.radiusCard),
                 borderSide: BorderSide.none,
@@ -278,7 +278,7 @@ class TrackListTile extends ConsumerWidget {
           actions: [
             TextButton(
               onPressed: () => context.pop(),
-              child: const Text('Cancel', style: TextStyle(color: AuxColors.paperMuted)),
+              child: Text('Cancel', style: TextStyle(color: context.colors.paperMuted)),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
