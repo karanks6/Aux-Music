@@ -21,6 +21,8 @@ import '../../features/auth/verify_email_screen.dart';
 import '../../features/profile/profile_screen.dart';
 import '../../data/models/podcast.dart';
 import '../../services/auth_service.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_typography.dart';
 
 // Route path constants
 abstract final class AppRoutes {
@@ -262,45 +264,122 @@ class _BottomNav extends StatelessWidget {
     final location = GoRouterState.of(context).matchedLocation;
 
     int selectedIndex = 0;
-    if (location.startsWith('/search')) selectedIndex = 1;
-    else if (location.startsWith('/library')) selectedIndex = 2;
-    else if (location.startsWith('/podcasts')) selectedIndex = 3;
-    else if (location.startsWith('/pass-the-aux') ||
-        location.startsWith('/social')) selectedIndex = 4;
+    if (location.startsWith('/search')) {
+      selectedIndex = 1;
+    } else if (location.startsWith('/library')) {
+      selectedIndex = 2;
+    } else if (location.startsWith('/podcasts')) {
+      selectedIndex = 3;
+    } else if (location.startsWith('/pass-the-aux') ||
+        location.startsWith('/social')) {
+      selectedIndex = 4;
+    }
 
-    return NavigationBar(
+    return _SlidingBottomNav(
       selectedIndex: selectedIndex,
       onDestinationSelected: (index) {
         switch (index) {
-          case 0: context.go(AppRoutes.home);
-          case 1: context.go(AppRoutes.search);
-          case 2: context.go(AppRoutes.library);
-          case 3: context.go(AppRoutes.podcasts);
-          case 4: context.go(AppRoutes.passTheAux);
+          case 0: context.go(AppRoutes.home); break;
+          case 1: context.go(AppRoutes.search); break;
+          case 2: context.go(AppRoutes.library); break;
+          case 3: context.go(AppRoutes.podcasts); break;
+          case 4: context.go(AppRoutes.passTheAux); break;
         }
       },
-      destinations: const [
-        NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home_rounded),
-            label: 'Home'),
-        NavigationDestination(
-            icon: Icon(Icons.search_rounded),
-            selectedIcon: Icon(Icons.search_rounded),
-            label: 'Search'),
-        NavigationDestination(
-            icon: Icon(Icons.library_music_outlined),
-            selectedIcon: Icon(Icons.library_music_rounded),
-            label: 'Library'),
-        NavigationDestination(
-            icon: Icon(Icons.podcasts_outlined),
-            selectedIcon: Icon(Icons.podcasts_rounded),
-            label: 'Podcasts'),
-        NavigationDestination(
-            icon: Icon(Icons.people_outlined),
-            selectedIcon: Icon(Icons.people_rounded),
-            label: 'Pass the Aux'),
-      ],
+    );
+  }
+}
+
+class _SlidingBottomNav extends StatelessWidget {
+  final int selectedIndex;
+  final ValueChanged<int> onDestinationSelected;
+
+  const _SlidingBottomNav({
+    required this.selectedIndex,
+    required this.onDestinationSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final items = [
+      (icon: Icons.home_outlined, activeIcon: Icons.home_rounded, label: 'Home'),
+      (icon: Icons.search_rounded, activeIcon: Icons.search_rounded, label: 'Search'),
+      (icon: Icons.library_music_outlined, activeIcon: Icons.library_music_rounded, label: 'Library'),
+      (icon: Icons.podcasts_outlined, activeIcon: Icons.podcasts_rounded, label: 'Podcasts'),
+      (icon: Icons.people_outlined, activeIcon: Icons.people_rounded, label: 'Aux'),
+    ];
+
+    return Container(
+      height: 80,
+      decoration: BoxDecoration(
+        color: context.colors.ink,
+        border: Border(
+          top: BorderSide(color: context.colors.inkRaised, width: 1),
+        ),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final itemWidth = constraints.maxWidth / items.length;
+          const pillWidth = 64.0;
+          const pillHeight = 32.0;
+
+          return Stack(
+            children: [
+              // Sliding Pill
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 600),
+                curve: Curves.easeOutQuart,
+                top: 12,
+                left: (selectedIndex * itemWidth) + (itemWidth / 2) - (pillWidth / 2),
+                child: Container(
+                  width: pillWidth,
+                  height: pillHeight,
+                  decoration: BoxDecoration(
+                    color: AuxColors.ember.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
+              // Items
+              Row(
+                children: List.generate(items.length, (index) {
+                  final item = items[index];
+                  final isSelected = selectedIndex == index;
+                  return Expanded(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => onDestinationSelected(index),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const SizedBox(height: 12),
+                          Icon(
+                            isSelected ? item.activeIcon : item.icon,
+                            color: isSelected ? AuxColors.ember : context.colors.paperMuted,
+                            size: 24,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            item.label,
+                            maxLines: 1,
+                            overflow: TextOverflow.visible,
+                            style: AuxTypography.navLabel.copyWith(
+                              color: isSelected ? AuxColors.ember : context.colors.paperMuted,
+                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 }
