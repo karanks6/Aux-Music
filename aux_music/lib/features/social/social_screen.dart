@@ -29,14 +29,14 @@ class SocialScreen extends StatelessWidget {
             Icon(
               Icons.people_outlined,
               size: 64,
-              color: AuxColors.paperMuted.withValues(alpha: 0.4),
+              color: context.colors.paperMuted.withValues(alpha: 0.4),
             ),
             const SizedBox(height: AuxSpacing.lg),
             Text(
               sessionCode != null
                   ? 'Joining session "$sessionCode"…'
                   : 'Start a group session and share the code.',
-              style: AuxTypography.body.copyWith(color: AuxColors.paperMuted),
+              style: AuxTypography.body.copyWith(color: context.colors.paperMuted),
               textAlign: TextAlign.center,
             ),
           ],

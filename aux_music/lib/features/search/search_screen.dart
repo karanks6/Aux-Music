@@ -101,7 +101,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                         child: Text(
                           'No matches. Try an artist, mood, or genre instead.',
                           style: AuxTypography.body.copyWith(
-                            color: AuxColors.paperMuted,
+                            color: context.colors.paperMuted,
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -111,7 +111,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                               child: Text(
                                 'No matches. Try an artist, mood, or genre instead.',
                                 style: AuxTypography.body.copyWith(
-                                  color: AuxColors.paperMuted,
+                                  color: context.colors.paperMuted,
                                 ),
                                 textAlign: TextAlign.center,
                               ),
@@ -153,7 +153,7 @@ class _EmptySearchState extends ConsumerWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Recent Searches', style: AuxTypography.titleMd.copyWith(color: AuxColors.paper)),
+                  Text('Recent Searches', style: AuxTypography.titleMd.copyWith(color: context.colors.paper)),
                   TextButton(
                     onPressed: () {
                       ref.read(libraryRepositoryProvider).clearRecentSearches();
@@ -169,8 +169,8 @@ class _EmptySearchState extends ConsumerWidget {
               (context, index) {
                 final r = recent[index];
                 return ListTile(
-                  leading: const Icon(Icons.history_rounded, color: AuxColors.paperMuted),
-                  title: Text(r, style: AuxTypography.body.copyWith(color: AuxColors.paper)),
+                  leading: Icon(Icons.history_rounded, color: context.colors.paperMuted),
+                  title: Text(r, style: AuxTypography.body.copyWith(color: context.colors.paper)),
                   onTap: () => onTapSearch(r),
                 );
               },
@@ -181,7 +181,7 @@ class _EmptySearchState extends ConsumerWidget {
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(AuxSpacing.lg, AuxSpacing.xl, AuxSpacing.lg, AuxSpacing.sm),
-            child: Text('Browse Genres', style: AuxTypography.titleMd.copyWith(color: AuxColors.paper)),
+            child: Text('Browse Genres', style: AuxTypography.titleMd.copyWith(color: context.colors.paper)),
           ),
         ),
         SliverPadding(
@@ -241,38 +241,38 @@ class _SearchResults extends ConsumerWidget {
             child: Container(
               width: AuxSpacing.artSm,
               height: AuxSpacing.artSm,
-              color: AuxColors.inkRaised,
+              color: context.colors.inkRaised,
               child: track.thumbnailUrl != null
                   ? Image.network(
                       track.thumbnailUrl!,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const Icon(
+                      errorBuilder: (_, __, ___) => Icon(
                         Icons.music_note_rounded,
-                        color: AuxColors.paperMuted,
+                        color: context.colors.paperMuted,
                       ),
                     )
-                  : const Icon(
+                  : Icon(
                       Icons.music_note_rounded,
-                      color: AuxColors.paperMuted,
+                      color: context.colors.paperMuted,
                     ),
             ),
           ),
           title: Text(
             track.title,
-            style: AuxTypography.body.copyWith(color: AuxColors.paper),
+            style: AuxTypography.body.copyWith(color: context.colors.paper),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           subtitle: Text(
             '${track.artistName} · ${track.licenseType.displayLabel}',
-            style: AuxTypography.caption.copyWith(color: AuxColors.paperMuted),
+            style: AuxTypography.caption.copyWith(color: context.colors.paperMuted),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           trailing: Text(
             track.durationDisplay,
             style: AuxTypography.tabularDuration.copyWith(
-              color: AuxColors.paperMuted,
+              color: context.colors.paperMuted,
             ),
           ),
           onTap: () {

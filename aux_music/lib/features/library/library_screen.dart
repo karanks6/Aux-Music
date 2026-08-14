@@ -42,7 +42,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                   Text(
                     'Your Library',
                     style: AuxTypography.display.copyWith(
-                      color: AuxColors.paper,
+                      color: context.colors.paper,
                       fontSize: 26,
                     ),
                   ),
@@ -52,7 +52,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                     IconButton(
                       icon: Icon(
                         _isGrid ? Icons.list_rounded : Icons.grid_view_rounded,
-                        color: AuxColors.paperMuted,
+                        color: context.colors.paperMuted,
                       ),
                       onPressed: () => setState(() => _isGrid = !_isGrid),
                       tooltip: _isGrid ? 'List view' : 'Grid view',
@@ -119,7 +119,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AuxColors.inkRaised,
+      backgroundColor: context.colors.inkRaised,
       builder: (context) => Padding(
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -131,17 +131,17 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('New Playlist', style: AuxTypography.titleLg.copyWith(color: AuxColors.paper)),
+            Text('New Playlist', style: AuxTypography.titleLg.copyWith(color: context.colors.paper)),
             const SizedBox(height: AuxSpacing.lg),
             TextField(
               controller: controller,
               autofocus: true,
-              style: AuxTypography.body.copyWith(color: AuxColors.paper),
+              style: AuxTypography.body.copyWith(color: context.colors.paper),
               decoration: InputDecoration(
                 hintText: 'Playlist name',
-                hintStyle: const TextStyle(color: AuxColors.paperMuted),
+                hintStyle: TextStyle(color: context.colors.paperMuted),
                 filled: true,
-                fillColor: AuxColors.ink,
+                fillColor: context.colors.ink,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AuxSpacing.radiusCard),
                   borderSide: BorderSide.none,
@@ -180,7 +180,7 @@ class _LikedTracksView extends ConsumerWidget {
       data: (tracks) {
         if (tracks.isEmpty) {
           return Center(
-            child: Text('No liked tracks yet.', style: AuxTypography.body.copyWith(color: AuxColors.paperMuted)),
+            child: Text('No liked tracks yet.', style: AuxTypography.body.copyWith(color: context.colors.paperMuted)),
           );
         }
         return ListView.builder(
@@ -213,7 +213,7 @@ class _PlaylistsView extends ConsumerWidget {
       data: (playlists) {
         if (playlists.isEmpty) {
           return Center(
-            child: Text('No playlists yet.', style: AuxTypography.body.copyWith(color: AuxColors.paperMuted)),
+            child: Text('No playlists yet.', style: AuxTypography.body.copyWith(color: context.colors.paperMuted)),
           );
         }
         if (isGrid) {
@@ -240,11 +240,11 @@ class _PlaylistsView extends ConsumerWidget {
               contentPadding: const EdgeInsets.symmetric(horizontal: AuxSpacing.lg, vertical: AuxSpacing.xs),
               leading: Container(
                 width: 48, height: 48,
-                decoration: BoxDecoration(color: AuxColors.inkRaised, borderRadius: BorderRadius.circular(AuxSpacing.radiusCard)),
+                decoration: BoxDecoration(color: context.colors.inkRaised, borderRadius: BorderRadius.circular(AuxSpacing.radiusCard)),
                 child: const Icon(Icons.queue_music, color: AuxColors.signalTeal),
               ),
-              title: Text(p.name, style: AuxTypography.body.copyWith(color: AuxColors.paper)),
-              subtitle: Text(p.description ?? '', maxLines: 1, overflow: TextOverflow.ellipsis, style: AuxTypography.caption.copyWith(color: AuxColors.paperMuted)),
+              title: Text(p.name, style: AuxTypography.body.copyWith(color: context.colors.paper)),
+              subtitle: Text(p.description ?? '', maxLines: 1, overflow: TextOverflow.ellipsis, style: AuxTypography.caption.copyWith(color: context.colors.paperMuted)),
               onTap: () => context.push('/playlist/${p.id}'),
               onLongPress: () {
                 if (ref.read(inAuxSessionProvider)) {
@@ -267,7 +267,7 @@ void _showPlaylistOptions(BuildContext context, WidgetRef ref, int playlistId) a
   
   showModalBottomSheet(
     context: context,
-    backgroundColor: AuxColors.inkRaised,
+    backgroundColor: context.colors.inkRaised,
     builder: (_) => SafeArea(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -310,12 +310,12 @@ class _PlaylistCard extends ConsumerWidget {
           Expanded(
             child: Container(
               width: double.infinity,
-              decoration: BoxDecoration(color: AuxColors.inkRaised, borderRadius: BorderRadius.circular(AuxSpacing.radiusCard)),
+              decoration: BoxDecoration(color: context.colors.inkRaised, borderRadius: BorderRadius.circular(AuxSpacing.radiusCard)),
               child: const Icon(Icons.queue_music, size: 48, color: AuxColors.signalTeal),
             ),
           ),
           const SizedBox(height: AuxSpacing.sm),
-          Text(playlist.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: AuxTypography.body.copyWith(color: AuxColors.paper)),
+          Text(playlist.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: AuxTypography.body.copyWith(color: context.colors.paper)),
         ],
       ),
     );
@@ -330,7 +330,7 @@ class _DownloadedView extends ConsumerWidget {
       data: (downloads) {
         if (downloads.isEmpty) {
           return Center(
-            child: Text('Downloaded tracks will appear here.', style: AuxTypography.body.copyWith(color: AuxColors.paperMuted)),
+            child: Text('Downloaded tracks will appear here.', style: AuxTypography.body.copyWith(color: context.colors.paperMuted)),
           );
         }
         

@@ -26,7 +26,7 @@ class HomeScreen extends ConsumerWidget {
     return Scaffold(
       body: RefreshIndicator(
         color: AuxColors.ember,
-        backgroundColor: AuxColors.inkRaised,
+        backgroundColor: context.colors.inkRaised,
         onRefresh: () async {
           ref.invalidate(_homeRecommendationsProvider);
         },
@@ -65,7 +65,7 @@ class HomeScreen extends ConsumerWidget {
             recommendationsAsync.when(
               loading: () => SliverList(
                 delegate: SliverChildBuilderDelegate(
-                  (context, index) => _buildShimmerSection(),
+                  (context, index) => _buildShimmerSection(context),
                   childCount: 3,
                 ),
               ),
@@ -75,7 +75,7 @@ class HomeScreen extends ConsumerWidget {
                   child: Center(
                     child: Text(
                       'Temporarily unavailable.',
-                      style: AuxTypography.body.copyWith(color: AuxColors.paperMuted),
+                      style: AuxTypography.body.copyWith(color: context.colors.paperMuted),
                       textAlign: TextAlign.center,
                     ),
                   ),
@@ -89,7 +89,7 @@ class HomeScreen extends ConsumerWidget {
                       child: Center(
                         child: Text(
                           'No recommendations found.',
-                          style: AuxTypography.body.copyWith(color: AuxColors.paperMuted),
+                          style: AuxTypography.body.copyWith(color: context.colors.paperMuted),
                         ),
                       ),
                     ),
@@ -101,7 +101,7 @@ class HomeScreen extends ConsumerWidget {
                       final shelf = shelves[index];
                       final title = shelf['title'] as String;
                       final tracks = shelf['tracks'] as List<Track>;
-                      return _buildCategorySection(title, tracks);
+                      return _buildCategorySection(context, title, tracks);
                     },
                     childCount: shelves.length,
                   ),
@@ -116,7 +116,7 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildCategorySection(String title, List<Track> tracks) {
+  Widget _buildCategorySection(BuildContext context, String title, List<Track> tracks) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -126,7 +126,7 @@ class HomeScreen extends ConsumerWidget {
           ),
           child: Text(
             title,
-            style: AuxTypography.titleMd.copyWith(color: AuxColors.paper),
+            style: AuxTypography.titleMd.copyWith(color: context.colors.paper),
           ),
         ),
         SizedBox(
@@ -137,7 +137,7 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildShimmerSection() {
+  Widget _buildShimmerSection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -149,7 +149,7 @@ class HomeScreen extends ConsumerWidget {
             width: 150,
             height: 24,
             decoration: BoxDecoration(
-              color: AuxColors.inkRaised,
+              color: context.colors.inkRaised,
               borderRadius: BorderRadius.circular(4),
             ),
           ),
@@ -172,7 +172,7 @@ class HomeScreen extends ConsumerWidget {
         height: 200,
         margin: const EdgeInsets.only(right: AuxSpacing.sm),
         decoration: BoxDecoration(
-          color: AuxColors.inkRaised,
+          color: context.colors.inkRaised,
           borderRadius: BorderRadius.circular(AuxSpacing.radiusCard),
         ),
       ),
@@ -192,7 +192,7 @@ class _TrackShelf extends ConsumerWidget {
       return Center(
         child: Text(
           'Nothing here yet. Check back soon.',
-          style: AuxTypography.body.copyWith(color: AuxColors.paperMuted),
+          style: AuxTypography.body.copyWith(color: context.colors.paperMuted),
         ),
       );
     }
@@ -219,7 +219,7 @@ class _TrackShelf extends ConsumerWidget {
             margin: const EdgeInsets.only(right: AuxSpacing.sm),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(AuxSpacing.radiusCard),
-              color: AuxColors.inkRaised,
+              color: context.colors.inkRaised,
             ),
             child: Stack(
               fit: StackFit.expand,
