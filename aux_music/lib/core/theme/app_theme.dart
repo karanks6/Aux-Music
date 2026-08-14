@@ -52,6 +52,9 @@ abstract final class AuxTheme {
       useMaterial3: true,
       brightness: brightness,
       scaffoldBackgroundColor: bg,
+      extensions: [
+        isDark ? AuxThemeColors.dark : AuxThemeColors.light,
+      ],
       colorScheme: ColorScheme(
         brightness: brightness,
         primary: AuxColors.ember,

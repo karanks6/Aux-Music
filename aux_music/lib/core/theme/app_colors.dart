@@ -47,13 +47,13 @@ abstract final class AuxColors {
   );
 
   /// Warm radial background for Now Playing screen
-  static RadialGradient nowPlayingRadialGradient(Color dominantColor) {
+  static RadialGradient nowPlayingRadialGradient(Color dominantColor, Color bgColor) {
     return RadialGradient(
       center: Alignment.topCenter,
       radius: 1.2,
       colors: [
         dominantColor.withValues(alpha: 0.35),
-        ink,
+        bgColor,
       ],
     );
   }
@@ -75,14 +75,67 @@ abstract final class AuxColorsLight {
   static const Color danger = AuxColors.danger;
 }
 
-/// High-contrast overrides for accessibility.
-abstract final class AuxColorsHighContrast {
-  static const Color ink = Color(0xFF000000);
-  static const Color inkRaised = Color(0xFF0A0A0A);
-  static const Color hairline = Color(0xFF444444);
-  static const Color paper = Color(0xFFFFFFFF);
-  static const Color paperMuted = Color(0xFFCCCCCC);
+class AuxThemeColors extends ThemeExtension<AuxThemeColors> {
+  const AuxThemeColors({
+    required this.ink,
+    required this.inkRaised,
+    required this.hairline,
+    required this.paper,
+    required this.paperMuted,
+  });
 
-  static const Color ember = Color(0xFFFF7A4A); // slightly brighter for contrast
-  static const Color signalTeal = Color(0xFF33E8D4);
+  final Color ink;
+  final Color inkRaised;
+  final Color hairline;
+  final Color paper;
+  final Color paperMuted;
+
+  @override
+  AuxThemeColors copyWith({
+    Color? ink,
+    Color? inkRaised,
+    Color? hairline,
+    Color? paper,
+    Color? paperMuted,
+  }) {
+    return AuxThemeColors(
+      ink: ink ?? this.ink,
+      inkRaised: inkRaised ?? this.inkRaised,
+      hairline: hairline ?? this.hairline,
+      paper: paper ?? this.paper,
+      paperMuted: paperMuted ?? this.paperMuted,
+    );
+  }
+
+  @override
+  AuxThemeColors lerp(ThemeExtension<AuxThemeColors>? other, double t) {
+    if (other is! AuxThemeColors) return this;
+    return AuxThemeColors(
+      ink: Color.lerp(ink, other.ink, t)!,
+      inkRaised: Color.lerp(inkRaised, other.inkRaised, t)!,
+      hairline: Color.lerp(hairline, other.hairline, t)!,
+      paper: Color.lerp(paper, other.paper, t)!,
+      paperMuted: Color.lerp(paperMuted, other.paperMuted, t)!,
+    );
+  }
+
+  static const dark = AuxThemeColors(
+    ink: AuxColors.ink,
+    inkRaised: AuxColors.inkRaised,
+    hairline: AuxColors.hairline,
+    paper: AuxColors.paper,
+    paperMuted: AuxColors.paperMuted,
+  );
+
+  static const light = AuxThemeColors(
+    ink: AuxColorsLight.ink,
+    inkRaised: AuxColorsLight.inkRaised,
+    hairline: AuxColorsLight.hairline,
+    paper: AuxColorsLight.paper,
+    paperMuted: AuxColorsLight.paperMuted,
+  );
+}
+
+extension AuxColorsExtension on BuildContext {
+  AuxThemeColors get colors => Theme.of(this).extension<AuxThemeColors>() ?? AuxThemeColors.dark;
 }
